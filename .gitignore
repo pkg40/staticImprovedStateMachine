@@ -1,0 +1,88 @@
+# Build artifacts
+build/
+dist/
+*.bin
+*.elf
+*.hex
+*.map
+*.o
+*.obj
+
+# GCC coverage files
+*.gcno
+*.gcda
+*.gcov
+
+# Debug files
+*.dSYM/
+
+# IDE files
+*.code-workspace
+.vscode/
+.idea/
+*.sublime-*
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Node modules (if using any web tools)
+node_modules/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.env
+
+# Archives
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+# Certificate files (security)
+*.pem
+*.key
+*.crt
+*.p12
+
+# Local configuration files that shouldn't be shared
+config_local.json
+secrets.h
+credentials.h
+
+# Documentation build
+docs/_build/
+.pio

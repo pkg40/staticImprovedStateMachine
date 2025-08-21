@@ -36,7 +36,7 @@
 #pragma once
 
 #include <Arduino.h>
-#include <TRACE.h>
+// #include <TRACE.h>  // Commented out - TRACE.h not available
 #include "stateMachineTypes.h"
 
 constexpr int8_t eventStrLEN=12;

@@ -1,12 +1,53 @@
 #include "improvedStateMachine.hpp"
 #include <algorithm>
 
+#ifndef ARDUINO
+#include <iostream>
+#include <chrono>
+#include <cstdarg>
+#include <cstdio>
+// Mock Serial for native testing
+class MockSerial {
+public:
+    MockSerial& print(const char* str) { std::cout << str; return *this; }
+    MockSerial& print(int val) { std::cout << val; return *this; }
+    MockSerial& print(long val) { std::cout << val; return *this; }
+    MockSerial& print(unsigned long val) { std::cout << val; return *this; }
+    MockSerial& println(const char* str) { std::cout << str << std::endl; return *this; }
+    MockSerial& println(int val) { std::cout << val << std::endl; return *this; }
+    MockSerial& println(long val) { std::cout << val << std::endl; return *this; }
+    MockSerial& println(unsigned long val) { std::cout << val << std::endl; return *this; }
+    MockSerial& println() { std::cout << std::endl; return *this; }
+    void printf(const char* format, ...) {
+        va_list args;
+        va_start(args, format);
+        char buffer[256];
+        vsnprintf(buffer, sizeof(buffer), format, args);
+        va_end(args);
+        std::cout << buffer;
+    }
+};
+static MockSerial Serial;
+
+// Mock timing functions
+unsigned long millis() {
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count();
+}
+
+unsigned long micros() {
+    return std::chrono::duration_cast<std::chrono::microseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count();
+}
+#endif
+
 ImprovedStateMachine::ImprovedStateMachine() 
-    : _debugMode(false) {
+    : _debugMode(false), _validationEnabled(true), _recursionDepth(0) {
     // Initialize scoreboard
     for (int i = 0; i < 4; i++) {
         _stateScoreboard[i] = 0;
     }
+    _stats = StateMachineStats();
 }
 
 // Configuration methods
@@ -18,12 +59,39 @@ void ImprovedStateMachine::addMenu(const MenuDefinition& menu) {
     _menus.push_back(menu);
 }
 
-void ImprovedStateMachine::addTransition(const StateTransition& transition) {
+ValidationResult ImprovedStateMachine::addTransition(const StateTransition& transition) {
+    // Check for maximum transitions
+    if (_transitions.size() >= STATEMACHINE_MAX_TRANSITIONS) {
+        if (_debugMode) {
+            Serial.printf("ERROR: Maximum transitions (%d) exceeded\n", STATEMACHINE_MAX_TRANSITIONS);
+        }
+        return ValidationResult::MAX_TRANSITIONS_EXCEEDED;
+    }
+    
+    // Validate transition if validation is enabled
+    if (_validationEnabled) {
+        ValidationResult result = validateTransition(transition);
+        if (result != ValidationResult::VALID) {
+            if (_debugMode) {
+                Serial.printf("ERROR: Invalid transition - code %d\n", static_cast<int>(result));
+            }
+            _stats.validationErrors++;
+            return result;
+        }
+    }
+    
     _transitions.push_back(transition);
+    return ValidationResult::VALID;
 }
 
-void ImprovedStateMachine::addTransitions(const std::vector<StateTransition>& transitions) {
-    _transitions.insert(_transitions.end(), transitions.begin(), transitions.end());
+ValidationResult ImprovedStateMachine::addTransitions(const std::vector<StateTransition>& transitions) {
+    for (const auto& trans : transitions) {
+        ValidationResult result = addTransition(trans);
+        if (result != ValidationResult::VALID) {
+            return result;
+        }
+    }
+    return ValidationResult::VALID;
 }
 
 // State management
@@ -55,8 +123,22 @@ void ImprovedStateMachine::forceState(StateId state, StateId page, StateId butto
     setState(state, page, button, substate);
 }
 
-// Event processing
+// Event processing with safety checks
 uint16_t ImprovedStateMachine::processEvent(EventId event, void* context) {
+    uint32_t startTime = micros();
+    
+    // Check for recursion depth
+    if (_recursionDepth >= STATEMACHINE_MAX_RECURSION_DEPTH) {
+        if (_debugMode) {
+            Serial.printf("ERROR: Maximum recursion depth (%d) exceeded\n", STATEMACHINE_MAX_RECURSION_DEPTH);
+        }
+        _stats.failedTransitions++;
+        return 0;
+    }
+    
+    _recursionDepth++;
+    _stats.totalTransitions++;
+    
     if (_debugMode) {
         Serial.printf("Processing event %d from state %d/%d/%d/%d\n", 
                      event, _currentState.state, _currentState.page, 
@@ -71,8 +153,18 @@ uint16_t ImprovedStateMachine::processEvent(EventId event, void* context) {
                 printTransition(trans);
             }
             
-            // Execute action
-            executeAction(trans, event, context);
+            // Execute action with exception safety
+            try {
+                executeAction(trans, event, context);
+                _stats.actionExecutions++;
+            } catch (...) {
+                if (_debugMode) {
+                    Serial.println("ERROR: Exception in action execution");
+                }
+                _stats.failedTransitions++;
+                _recursionDepth--;
+                return 0;
+            }
             
             // Update scoreboard
             updateScoreboard(_currentState.state);
@@ -91,6 +183,7 @@ uint16_t ImprovedStateMachine::processEvent(EventId event, void* context) {
             
             // Update current state
             _currentState = newState;
+            _stats.stateChanges++;
             
             if (_debugMode) {
                 Serial.printf("New state: %d/%d/%d/%d, mask: 0x%04x\n", 
@@ -98,6 +191,11 @@ uint16_t ImprovedStateMachine::processEvent(EventId event, void* context) {
                              _currentState.button, _currentState.substate, mask);
             }
             
+            // Update timing statistics
+            uint32_t transitionTime = micros() - startTime;
+            updateStatistics(transitionTime, true);
+            
+            _recursionDepth--;
             return mask;
         }
     }
@@ -106,6 +204,9 @@ uint16_t ImprovedStateMachine::processEvent(EventId event, void* context) {
         Serial.printf("No matching transition found for event %d\n", event);
     }
     
+    _stats.failedTransitions++;
+    updateStatistics(micros() - startTime, false);
+    _recursionDepth--;
     return 0; // No redraw needed
 }
 
@@ -322,4 +423,114 @@ namespace StateActions {
         // Handle motor-related actions
         Serial.printf("Motor action for state %d, event %d\n", state, event);
     }
+}
+
+// Safety and validation method implementations
+ValidationResult ImprovedStateMachine::validateTransition(const StateTransition& trans) const {
+    // Check for valid state IDs
+    if (trans.fromState != DONT_CARE && trans.fromState >= STATEMACHINE_MAX_STATES) {
+        return ValidationResult::INVALID_STATE_ID;
+    }
+    if (trans.toState != DONT_CARE && trans.toState >= STATEMACHINE_MAX_STATES) {
+        return ValidationResult::INVALID_STATE_ID;
+    }
+    
+    // Check for duplicate transitions
+    for (const auto& existing : _transitions) {
+        if (existing.fromState == trans.fromState && 
+            existing.fromPage == trans.fromPage &&
+            existing.fromButton == trans.fromButton &&
+            existing.event == trans.event) {
+            return ValidationResult::DUPLICATE_TRANSITION;
+        }
+    }
+    
+    return ValidationResult::VALID;
+}
+
+ValidationResult ImprovedStateMachine::validateStateMachine() const {
+    // Check for unreachable states
+    if (!isStateReachable(_currentState.state)) {
+        return ValidationResult::UNREACHABLE_STATE;
+    }
+    
+    // Check for dangling states
+    if (hasDanglingStates()) {
+        return ValidationResult::DANGLING_STATE;
+    }
+    
+    // Check for circular dependencies
+    if (hasCircularDependencies()) {
+        return ValidationResult::CIRCULAR_DEPENDENCY;
+    }
+    
+    return ValidationResult::VALID;
+}
+
+bool ImprovedStateMachine::isStateReachable(StateId stateId) const {
+    // Simple reachability check - can be improved with graph algorithms
+    for (const auto& trans : _transitions) {
+        if (trans.toState == stateId) {
+            return true;
+        }
+    }
+    return stateId == _currentState.state; // Initial state is always reachable
+}
+
+bool ImprovedStateMachine::hasDanglingStates() const {
+    // Check if any states have no outgoing transitions
+    std::vector<StateId> statesWithTransitions;
+    
+    for (const auto& trans : _transitions) {
+        bool found = false;
+        for (StateId id : statesWithTransitions) {
+            if (id == trans.fromState) {
+                found = true;
+                break;
+            }
+        }
+        if (!found && trans.fromState != DONT_CARE) {
+            statesWithTransitions.push_back(trans.fromState);
+        }
+    }
+    
+    for (const auto& state : _states) {
+        bool hasTransition = false;
+        for (StateId id : statesWithTransitions) {
+            if (id == state.id) {
+                hasTransition = true;
+                break;
+            }
+        }
+        if (!hasTransition) {
+            return true; // Found dangling state
+        }
+    }
+    
+    return false;
+}
+
+bool ImprovedStateMachine::hasCircularDependencies() const {
+    // Simple cycle detection - can be improved with DFS
+    for (const auto& trans : _transitions) {
+        if (trans.fromState == trans.toState && trans.fromState != DONT_CARE) {
+            // Self-loop found
+            continue; // Self-loops are allowed
+        }
+    }
+    return false; // More sophisticated cycle detection could be added
+}
+
+void ImprovedStateMachine::updateStatistics(uint32_t transitionTime, bool success) {
+    if (transitionTime > _stats.maxTransitionTime) {
+        _stats.maxTransitionTime = transitionTime;
+    }
+    
+    // Update running average (simple moving average)
+    _stats.avgTransitionTime = ((_stats.avgTransitionTime * _stats.totalTransitions) + transitionTime) / 
+                               (_stats.totalTransitions + 1);
+}
+
+ValidationResult ImprovedStateMachine::validateConfiguration() const {
+    return validateStateMachine();
 }

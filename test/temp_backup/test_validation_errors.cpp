@@ -1,0 +1,471 @@
+#ifdef ARDUINO
+#include <Arduino.h>
+#endif
+#include <unity.h>
+#include "../src/improvedStateMachine.hpp"
+
+// Include the implementation for proper linking
+#include "../src/improvedStateMachine.cpp"
+
+// Test instance
+ImprovedStateMachine* sm = nullptr;
+
+void setUp() {
+#ifdef ARDUINO
+    if (!Serial) {
+        Serial.begin(115200);
+        while (!Serial) {
+            delay(100);
+        }
+        delay(1000);
+    }
+#endif
+    delete sm;
+    sm = new ImprovedStateMachine();
+}
+
+void tearDown() {
+    delete sm;
+    sm = nullptr;
+}
+
+// =============================================================================
+// VALIDATION AND ERROR HANDLING TESTS (25 tests)
+// =============================================================================
+
+void test_026_duplicate_transition_validation() {
+    sm->setInitialState(1);
+    StateTransition t(1, 1, 2);
+    
+    ValidationResult result1 = sm->addTransition(t);
+    ValidationResult result2 = sm->addTransition(t); // Duplicate
+    
+    TEST_ASSERT_EQUAL_UINT8(static_cast<uint8_t>(ValidationResult::VALID), static_cast<uint8_t>(result1));
+    TEST_ASSERT_NOT_EQUAL(static_cast<uint8_t>(ValidationResult::VALID), static_cast<uint8_t>(result2));
+}
+
+void test_027_invalid_state_transitions() {
+    sm->setInitialState(1);
+    
+    // Try to add transition from non-existent state pattern
+    StateTransition t(99, 1, 2);
+    sm->addTransition(t);
+    
+    sm->processEvent(1); // Should not transition
+    TEST_ASSERT_EQUAL_UINT8(1, sm->getCurrentStateId());
+}
+
+void test_028_state_definition_validation() {
+    StateDefinition state1(1, "State1", nullptr, nullptr);
+    ValidationResult result = sm->addState(state1);
+    TEST_ASSERT_EQUAL_UINT8(static_cast<uint8_t>(ValidationResult::VALID), static_cast<uint8_t>(result));
+    
+    const StateDefinition* retrieved = sm->getState(1);
+    TEST_ASSERT_NOT_NULL(retrieved);
+    TEST_ASSERT_EQUAL_UINT8(1, retrieved->id);
+}
+
+void test_029_duplicate_state_validation() {
+    StateDefinition state1(1, "State1", nullptr, nullptr);
+    StateDefinition state2(1, "State2", nullptr, nullptr); // Same ID
+    
+    ValidationResult result1 = sm->addState(state1);
+    ValidationResult result2 = sm->addState(state2);
+    
+    TEST_ASSERT_EQUAL_UINT8(static_cast<uint8_t>(ValidationResult::VALID), static_cast<uint8_t>(result1));
+    TEST_ASSERT_NOT_EQUAL(static_cast<uint8_t>(ValidationResult::VALID), static_cast<uint8_t>(result2));
+}
+
+void test_030_null_state_retrieval() {
+    const StateDefinition* state = sm->getState(99); // Non-existent state
+    TEST_ASSERT_NULL(state);
+}
+
+void test_031_multiple_state_definitions() {
+    StateDefinition state1(1, "Menu", nullptr, nullptr);
+    StateDefinition state2(2, "Settings", nullptr, nullptr);
+    StateDefinition state3(3, "Display", nullptr, nullptr);
+    
+    sm->addState(state1);
+    sm->addState(state2);
+    sm->addState(state3);
+    
+    const StateDefinition* retrieved1 = sm->getState(1);
+    const StateDefinition* retrieved2 = sm->getState(2);
+    const StateDefinition* retrieved3 = sm->getState(3);
+    
+    TEST_ASSERT_NOT_NULL(retrieved1);
+    TEST_ASSERT_NOT_NULL(retrieved2);
+    TEST_ASSERT_NOT_NULL(retrieved3);
+    
+    TEST_ASSERT_EQUAL_UINT8(1, retrieved1->id);
+    TEST_ASSERT_EQUAL_UINT8(2, retrieved2->id);
+    TEST_ASSERT_EQUAL_UINT8(3, retrieved3->id);
+}
+
+void test_032_state_boundary_validation() {
+    StateDefinition state0(0, "State0", nullptr, nullptr);
+    StateDefinition state255(255, "State255", nullptr, nullptr);
+    
+    ValidationResult result0 = sm->addState(state0);
+    ValidationResult result255 = sm->addState(state255);
+    
+    TEST_ASSERT_EQUAL_UINT8(static_cast<uint8_t>(ValidationResult::VALID), static_cast<uint8_t>(result0));
+    TEST_ASSERT_EQUAL_UINT8(static_cast<uint8_t>(ValidationResult::VALID), static_cast<uint8_t>(result255));
+}
+
+void test_033_transition_validation_comprehensive() {
+    sm->setInitialState(1);
+    
+    // Valid transitions
+    TEST_ASSERT_EQUAL_UINT8(static_cast<uint8_t>(ValidationResult::VALID), 
+                           static_cast<uint8_t>(sm->addTransition(StateTransition(1, 1, 2))));
+    TEST_ASSERT_EQUAL_UINT8(static_cast<uint8_t>(ValidationResult::VALID), 
+                           static_cast<uint8_t>(sm->addTransition(StateTransition(2, 2, 3))));
+    TEST_ASSERT_EQUAL_UINT8(static_cast<uint8_t>(ValidationResult::VALID), 
+                           static_cast<uint8_t>(sm->addTransition(StateTransition(3, 3, 1))));
+}
+
+void test_034_error_recovery() {
+    sm->setInitialState(1);
+    sm->addTransition(StateTransition(1, 1, 2));
+    
+    // Valid transition
+    sm->processEvent(1);
+    TEST_ASSERT_EQUAL_UINT8(2, sm->getCurrentStateId());
+    
+    // Invalid event - should stay in same state
+    sm->processEvent(99);
+    TEST_ASSERT_EQUAL_UINT8(2, sm->getCurrentStateId());
+    
+    // Recovery - add valid transition and use it
+    sm->addTransition(StateTransition(2, 3, 1));
+    sm->processEvent(3);
+    TEST_ASSERT_EQUAL_UINT8(1, sm->getCurrentStateId());
+}
+
+void test_035_boundary_event_handling() {
+    sm->setInitialState(1);
+    sm->addTransition(StateTransition(1, 0, 2));    // Min event
+    sm->addTransition(StateTransition(1, 255, 3));  // Max event
+    sm->addTransition(StateTransition(1, 128, 4));  // Mid event
+    
+    // Test minimum event
+    sm->processEvent(0);
+    TEST_ASSERT_EQUAL_UINT8(2, sm->getCurrentStateId());
+    
+    sm->setInitialState(1);
+    // Test maximum event
+    sm->processEvent(255);
+    TEST_ASSERT_EQUAL_UINT8(3, sm->getCurrentStateId());
+    
+    sm->setInitialState(1);
+    // Test middle event
+    sm->processEvent(128);
+    TEST_ASSERT_EQUAL_UINT8(4, sm->getCurrentStateId());
+}
+
+void test_036_malformed_transitions() {
+    sm->setInitialState(1);
+    
+    // Add transitions with unusual but valid patterns
+    sm->addTransition(StateTransition(DONT_CARE, DONT_CARE, 5)); // Universal transition
+    sm->addTransition(StateTransition(5, DONT_CARE, 6));         // Any event from state 5
+    sm->addTransition(StateTransition(DONT_CARE, 10, 7));        // Event 10 from any state
+    
+    // Test universal transition
+    sm->processEvent(1);
+    TEST_ASSERT_EQUAL_UINT8(5, sm->getCurrentStateId());
+    
+    // Test any event from specific state
+    sm->processEvent(99);
+    TEST_ASSERT_EQUAL_UINT8(6, sm->getCurrentStateId());
+}
+
+void test_037_transition_overflow_protection() {
+    sm->setInitialState(1);
+    
+    // Add many transitions to test capacity limits
+    for (int i = 0; i < 100; i++) {
+        StateTransition t(1, i, 2);
+        ValidationResult result = sm->addTransition(t);
+        
+        // Should either be valid or indicate capacity issue
+        TEST_ASSERT_TRUE(result == ValidationResult::VALID || 
+                        result == ValidationResult::INVALID_TRANSITION ||
+                        result == ValidationResult::DUPLICATE_TRANSITION);
+    }
+}
+
+void test_038_state_consistency_check() {
+    sm->setInitialState(5);
+    
+    // Add state definition
+    StateDefinition state5(5, "TestState", nullptr, nullptr);
+    sm->addState(state5);
+    
+    // Verify consistency
+    TEST_ASSERT_EQUAL_UINT8(5, sm->getCurrentStateId());
+    const StateDefinition* retrieved = sm->getState(5);
+    TEST_ASSERT_NOT_NULL(retrieved);
+    TEST_ASSERT_EQUAL_UINT8(5, retrieved->id);
+}
+
+void test_039_invalid_event_sequence() {
+    sm->setInitialState(1);
+    sm->addTransition(StateTransition(1, 1, 2));
+    sm->addTransition(StateTransition(2, 2, 3));
+    
+    // Valid sequence
+    sm->processEvent(1); // 1->2
+    TEST_ASSERT_EQUAL_UINT8(2, sm->getCurrentStateId());
+    
+    // Invalid event
+    sm->processEvent(99); // Should stay in 2
+    TEST_ASSERT_EQUAL_UINT8(2, sm->getCurrentStateId());
+    
+    // Resume valid sequence
+    sm->processEvent(2); // 2->3
+    TEST_ASSERT_EQUAL_UINT8(3, sm->getCurrentStateId());
+}
+
+void test_040_transition_table_integrity() {
+    sm->setInitialState(1);
+    
+    // Build a comprehensive transition table
+    for (uint8_t from = 1; from <= 5; from++) {
+        for (uint8_t event = 1; event <= 3; event++) {
+            uint8_t to = ((from + event - 1) % 5) + 1; // Circular mapping
+            sm->addTransition(StateTransition(from, event, to));
+        }
+    }
+    
+    // Test random transitions
+    sm->processEvent(1); // Should work regardless of current state
+    uint8_t state1 = sm->getCurrentStateId();
+    TEST_ASSERT_TRUE(state1 >= 1 && state1 <= 5);
+    
+    sm->processEvent(2);
+    uint8_t state2 = sm->getCurrentStateId();
+    TEST_ASSERT_TRUE(state2 >= 1 && state2 <= 5);
+}
+
+void test_041_wildcard_priority_validation() {
+    sm->setInitialState(1);
+    
+    // Add wildcard first, then specific
+    sm->addTransition(StateTransition(DONT_CARE, 5, 10)); // Wildcard
+    sm->addTransition(StateTransition(1, 5, 20));         // Specific
+    
+    // Specific should take priority
+    sm->processEvent(5);
+    TEST_ASSERT_EQUAL_UINT8(20, sm->getCurrentStateId());
+}
+
+void test_042_event_wildcard_priority() {
+    sm->setInitialState(1);
+    
+    // Add event wildcard first, then specific
+    sm->addTransition(StateTransition(1, DONT_CARE, 10)); // Event wildcard
+    sm->addTransition(StateTransition(1, 7, 20));         // Specific event
+    
+    // Specific event should take priority
+    sm->processEvent(7);
+    TEST_ASSERT_EQUAL_UINT8(20, sm->getCurrentStateId());
+}
+
+void test_043_validation_error_codes() {
+    sm->setInitialState(1);
+    StateTransition valid(1, 1, 2);
+    StateTransition duplicate(1, 1, 2);
+    
+    ValidationResult result1 = sm->addTransition(valid);
+    ValidationResult result2 = sm->addTransition(duplicate);
+    
+    TEST_ASSERT_EQUAL_UINT8(static_cast<uint8_t>(ValidationResult::VALID), static_cast<uint8_t>(result1));
+    TEST_ASSERT_EQUAL_UINT8(static_cast<uint8_t>(ValidationResult::DUPLICATE_TRANSITION), static_cast<uint8_t>(result2));
+}
+
+void test_044_state_validation_error_codes() {
+    StateDefinition state1(1, "State1", nullptr, nullptr);
+    StateDefinition duplicate(1, "Duplicate", nullptr, nullptr);
+    
+    ValidationResult result1 = sm->addState(state1);
+    ValidationResult result2 = sm->addState(duplicate);
+    
+    TEST_ASSERT_EQUAL_UINT8(static_cast<uint8_t>(ValidationResult::VALID), static_cast<uint8_t>(result1));
+    TEST_ASSERT_EQUAL_UINT8(static_cast<uint8_t>(ValidationResult::DUPLICATE_STATE), static_cast<uint8_t>(result2));
+}
+
+void test_045_complex_validation_scenario() {
+    // Complex scenario with multiple validation aspects
+    sm->setInitialState(1);
+    
+    // Add states
+    sm->addState(StateDefinition(1, "State1", nullptr, nullptr));
+    sm->addState(StateDefinition(2, "State2", nullptr, nullptr));
+    sm->addState(StateDefinition(3, "State3", nullptr, nullptr));
+    
+    // Add transitions
+    sm->addTransition(StateTransition(1, 1, 2));
+    sm->addTransition(StateTransition(2, 2, 3));
+    sm->addTransition(StateTransition(3, 3, 1));
+    
+    // Test complete cycle
+    sm->processEvent(1);
+    TEST_ASSERT_EQUAL_UINT8(2, sm->getCurrentStateId());
+    
+    sm->processEvent(2);
+    TEST_ASSERT_EQUAL_UINT8(3, sm->getCurrentStateId());
+    
+    sm->processEvent(3);
+    TEST_ASSERT_EQUAL_UINT8(1, sm->getCurrentStateId());
+    
+    // Verify all states are still accessible
+    TEST_ASSERT_NOT_NULL(sm->getState(1));
+    TEST_ASSERT_NOT_NULL(sm->getState(2));
+    TEST_ASSERT_NOT_NULL(sm->getState(3));
+}
+
+void test_046_robustness_under_stress() {
+    sm->setInitialState(1);
+    
+    // Add a robust set of transitions
+    sm->addTransition(StateTransition(1, 1, 2));
+    sm->addTransition(StateTransition(2, 2, 3));
+    sm->addTransition(StateTransition(3, 3, 1));
+    sm->addTransition(StateTransition(DONT_CARE, 0, 1)); // Reset capability
+    
+    // Stress test with rapid events
+    for (int i = 0; i < 50; i++) {
+        uint8_t currentState = sm->getCurrentStateId();
+        
+        if (currentState == 1) {
+            sm->processEvent(1);
+        } else if (currentState == 2) {
+            sm->processEvent(2);
+        } else if (currentState == 3) {
+            sm->processEvent(3);
+        }
+        
+        // Verify state is always valid
+        uint8_t newState = sm->getCurrentStateId();
+        TEST_ASSERT_TRUE(newState >= 1 && newState <= 3);
+    }
+}
+
+void test_047_error_boundary_conditions() {
+    sm->setInitialState(0);
+    
+    // Test boundary conditions
+    sm->addTransition(StateTransition(0, 0, 1));
+    sm->addTransition(StateTransition(1, 255, 254));
+    sm->addTransition(StateTransition(254, 1, 255));
+    
+    // Test minimum boundaries
+    sm->processEvent(0);
+    TEST_ASSERT_EQUAL_UINT8(1, sm->getCurrentStateId());
+    
+    // Test maximum boundaries
+    sm->processEvent(255);
+    TEST_ASSERT_EQUAL_UINT8(254, sm->getCurrentStateId());
+    
+    sm->processEvent(1);
+    TEST_ASSERT_EQUAL_UINT8(255, sm->getCurrentStateId());
+}
+
+void test_048_validation_consistency() {
+    // Test that validation is consistent across multiple operations
+    sm->setInitialState(1);
+    
+    StateTransition t1(1, 1, 2);
+    StateTransition t2(1, 1, 2); // Identical
+    StateTransition t3(1, 1, 3); // Different target
+    
+    ValidationResult r1 = sm->addTransition(t1);
+    ValidationResult r2 = sm->addTransition(t2);
+    ValidationResult r3 = sm->addTransition(t3);
+    
+    TEST_ASSERT_EQUAL_UINT8(static_cast<uint8_t>(ValidationResult::VALID), static_cast<uint8_t>(r1));
+    TEST_ASSERT_EQUAL_UINT8(static_cast<uint8_t>(ValidationResult::DUPLICATE_TRANSITION), static_cast<uint8_t>(r2));
+    TEST_ASSERT_EQUAL_UINT8(static_cast<uint8_t>(ValidationResult::DUPLICATE_TRANSITION), static_cast<uint8_t>(r3));
+}
+
+void test_049_comprehensive_error_handling() {
+    sm->setInitialState(1);
+    
+    // Setup a valid transition
+    sm->addTransition(StateTransition(1, 1, 2));
+    
+    // Test various error conditions
+    sm->processEvent(99); // Non-existent event
+    TEST_ASSERT_EQUAL_UINT8(1, sm->getCurrentStateId());
+    
+    sm->processEvent(1);  // Valid transition
+    TEST_ASSERT_EQUAL_UINT8(2, sm->getCurrentStateId());
+    
+    sm->processEvent(99); // Non-existent event from new state
+    TEST_ASSERT_EQUAL_UINT8(2, sm->getCurrentStateId());
+}
+
+void test_050_validation_performance() {
+    sm->setInitialState(1);
+    
+    uint32_t start = micros();
+    
+    // Add many transitions and measure performance
+    for (int i = 0; i < 50; i++) {
+        StateTransition t(1, i, 2);
+        sm->addTransition(t);
+    }
+    
+    uint32_t elapsed = micros() - start;
+    
+    // Should complete within reasonable time
+    TEST_ASSERT_TRUE(elapsed < 50000); // Less than 50ms
+}
+
+// Unity test registration
+void setup() {
+    UNITY_BEGIN();
+    
+#ifdef ARDUINO
+    Serial.println("=== VALIDATION & ERROR HANDLING TEST SUITE (25 tests) ===");
+#endif
+    
+    RUN_TEST(test_026_duplicate_transition_validation);
+    RUN_TEST(test_027_invalid_state_transitions);
+    RUN_TEST(test_028_state_definition_validation);
+    RUN_TEST(test_029_duplicate_state_validation);
+    RUN_TEST(test_030_null_state_retrieval);
+    RUN_TEST(test_031_multiple_state_definitions);
+    RUN_TEST(test_032_state_boundary_validation);
+    RUN_TEST(test_033_transition_validation_comprehensive);
+    RUN_TEST(test_034_error_recovery);
+    RUN_TEST(test_035_boundary_event_handling);
+    RUN_TEST(test_036_malformed_transitions);
+    RUN_TEST(test_037_transition_overflow_protection);
+    RUN_TEST(test_038_state_consistency_check);
+    RUN_TEST(test_039_invalid_event_sequence);
+    RUN_TEST(test_040_transition_table_integrity);
+    RUN_TEST(test_041_wildcard_priority_validation);
+    RUN_TEST(test_042_event_wildcard_priority);
+    RUN_TEST(test_043_validation_error_codes);
+    RUN_TEST(test_044_state_validation_error_codes);
+    RUN_TEST(test_045_complex_validation_scenario);
+    RUN_TEST(test_046_robustness_under_stress);
+    RUN_TEST(test_047_error_boundary_conditions);
+    RUN_TEST(test_048_validation_consistency);
+    RUN_TEST(test_049_comprehensive_error_handling);
+    RUN_TEST(test_050_validation_performance);
+    
+#ifdef ARDUINO
+    Serial.println("=== VALIDATION & ERROR HANDLING TESTS COMPLETED ===");
+#endif
+    
+    UNITY_END();
+}
+
+void loop() {
+    // Required for Arduino, but not used in this test
+}

@@ -1,8 +1,31 @@
 #pragma once
 
+#ifdef ARDUINO
 #include <Arduino.h>
+#else
+#include <cstdint>
+#include <cstddef>
+#include <algorithm>
+// Forward declarations for mock functions
+unsigned long millis();
+unsigned long micros();
+#endif
 #include <vector>
 #include <functional>
+#include <limits>
+
+// Safety and validation macros
+#ifndef STATEMACHINE_MAX_TRANSITIONS
+#define STATEMACHINE_MAX_TRANSITIONS 256
+#endif
+
+#ifndef STATEMACHINE_MAX_STATES
+#define STATEMACHINE_MAX_STATES 128
+#endif
+
+#ifndef STATEMACHINE_MAX_RECURSION_DEPTH
+#define STATEMACHINE_MAX_RECURSION_DEPTH 10
+#endif
 
 // Forward declarations
 class ImprovedStateMachine;
@@ -14,9 +37,37 @@ using EventId = uint8_t;
 // Action function type
 using ActionFunction = std::function<void(StateId, EventId, void*)>;
 
-// Don't care constant
-constexpr StateId DONT_CARE = 0xFF;
-constexpr EventId ANY_EVENT = 0xFF;
+// Don't care constant - using max values to avoid conflicts
+constexpr StateId DONT_CARE = std::numeric_limits<StateId>::max();
+constexpr EventId ANY_EVENT = std::numeric_limits<EventId>::max();
+
+// Safety validation results
+enum class ValidationResult : uint8_t {
+    VALID = 0,
+    INVALID_STATE_ID,
+    INVALID_EVENT_ID,
+    DUPLICATE_TRANSITION,
+    UNREACHABLE_STATE,
+    DANGLING_STATE,
+    CIRCULAR_DEPENDENCY,
+    MAX_TRANSITIONS_EXCEEDED,
+    MAX_STATES_EXCEEDED
+};
+
+// State machine statistics for monitoring
+struct StateMachineStats {
+    uint32_t totalTransitions;
+    uint32_t failedTransitions;
+    uint32_t stateChanges;
+    uint32_t actionExecutions;
+    uint32_t validationErrors;
+    uint32_t maxTransitionTime;  // microseconds
+    uint32_t avgTransitionTime;  // microseconds
+    
+    StateMachineStats() : totalTransitions(0), failedTransitions(0), stateChanges(0),
+                         actionExecutions(0), validationErrors(0), maxTransitionTime(0), 
+                         avgTransitionTime(0) {}
+};
 
 // Compact state transition definition
 struct StateTransition {
@@ -102,7 +153,7 @@ struct CurrentState {
     }
 };
 
-// Improved State Machine Class
+// Improved State Machine Class with Safety Features
 class ImprovedStateMachine {
 private:
     std::vector<StateTransition> _transitions;
@@ -112,11 +163,22 @@ private:
     CurrentState _lastState;
     uint32_t _stateScoreboard[4];
     bool _debugMode;
+    bool _validationEnabled;
+    uint8_t _recursionDepth;
+    StateMachineStats _stats;
     
     // Helper methods
     bool matchesTransition(const StateTransition& trans, const CurrentState& state, EventId event) const;
     void executeAction(const StateTransition& trans, EventId event, void* context);
     uint16_t calculateRedrawMask(const CurrentState& oldState, const CurrentState& newState) const;
+    
+    // Safety and validation methods
+    ValidationResult validateTransition(const StateTransition& trans) const;
+    ValidationResult validateStateMachine() const;
+    bool isStateReachable(StateId stateId) const;
+    bool hasDanglingStates() const;
+    bool hasCircularDependencies() const;
+    void updateStatistics(uint32_t transitionTime, bool success);
     
 public:
     ImprovedStateMachine();
@@ -124,8 +186,14 @@ public:
     // Configuration methods
     void addState(const StateDefinition& state);
     void addMenu(const MenuDefinition& menu);
-    void addTransition(const StateTransition& transition);
-    void addTransitions(const std::vector<StateTransition>& transitions);
+    ValidationResult addTransition(const StateTransition& transition);
+    ValidationResult addTransitions(const std::vector<StateTransition>& transitions);
+    
+    // Safety methods
+    void enableValidation(bool enabled = true) { _validationEnabled = enabled; }
+    ValidationResult validateConfiguration() const;
+    StateMachineStats getStatistics() const { return _stats; }
+    void resetStatistics() { _stats = StateMachineStats(); }
     
     // State management
     void setInitialState(StateId state, StateId page = 0, StateId button = 0, StateId substate = 0);

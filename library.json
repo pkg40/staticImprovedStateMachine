@@ -1,0 +1,77 @@
+{
+  "name": "ImprovedStateMachine",
+  "version": "2.0.0",
+  "description": "A robust, type-safe finite state machine library for embedded systems with extensive testing and safety features",
+  "keywords": [
+    "state machine",
+    "fsm",
+    "menu system",
+    "embedded",
+    "arduino",
+    "platformio",
+    "motor control",
+    "ui",
+    "navigation"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/improved-statemachine.git"
+  },
+  "authors": [
+    {
+      "name": "Peter K Green",
+      "email": "pkg40@yahoo.com",
+      "maintainer": true
+    }
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/yourusername/improved-statemachine",
+  "export": {
+    "include": "src"
+  },
+  "frameworks": [
+    "arduino",
+    "espidf",
+    "native"
+  ],
+  "platforms": [
+    "espressif32",
+    "espressif8266",
+    "atmelmegaavr",
+    "atmelavr",
+    "native"
+  ],
+  "dependencies": {},
+  "build": {
+    "flags": [
+      "-std=c++14",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic",
+      "-Werror=return-type",
+      "-Werror=uninitialized"
+    ],
+    "srcFilter": [
+      "+<src/>",
+      "-<archive/>",
+      "-<test/>",
+      "-<example/>"
+    ]
+  },
+  "examples": [
+    {
+      "name": "Basic Usage",
+      "base": "example",
+      "files": [
+        "example_usage.cpp"
+      ]
+    },
+    {
+      "name": "Motor Controller Config",
+      "base": "example", 
+      "files": [
+        "improvedMotorControllerConfig.hpp"
+      ]
+    }
+  ]
+}
