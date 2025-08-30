@@ -4,11 +4,15 @@
 // Unity Configuration for State Machine Testing
 
 // Enable floating point support
-#define UNITY_INCLUDE_DOUBLE
-#define UNITY_DOUBLE_PRECISION 1e-12f
+#ifndef UNITY_INCLUDE_DOUBLE
+#define     UNITY_INCLUDE_DOUBLE
+#define     UNITY_DOUBLE_PRECISION 1e-12f
+#endif
 
 // Enable formatted print support
-#define UNITY_INCLUDE_PRINT_FORMATTED
+#ifndef UNITY_INCLUDE_PRINT_FORMATTED
+#define     UNITY_INCLUDE_PRINT_FORMATTED
+#endif
 
 // Color output for terminal
 #define UNITY_OUTPUT_COLOR

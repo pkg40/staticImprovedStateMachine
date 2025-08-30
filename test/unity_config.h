@@ -4,11 +4,16 @@
 // Unity Configuration for State Machine Testing
 
 // Enable floating point support
-#define UNITY_INCLUDE_DOUBLE
+#ifndef UNITY_INCLUDE_DOUBLE
+#define     UNITY_INCLUDE_DOUBLE
 #define UNITY_DOUBLE_PRECISION 1e-12f
+#endif
+
 
 // Enable formatted print support
-#define UNITY_INCLUDE_PRINT_FORMATTED
+#ifndef UNITY_INCLUDE_PRINT_FORMATTED
+#define     UNITY_INCLUDE_PRINT_FORMATTED
+#endif
 
 // Max string lengths for better error messages
 #define UNITY_MAX_DETAILS 256

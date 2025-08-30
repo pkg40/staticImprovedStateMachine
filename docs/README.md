@@ -53,28 +53,28 @@ enum MyEvents : EventId {
 };
 
 // Create state machine
-ImprovedStateMachine sm;
+improvedStateMachine sm;
 
 void setup() {
     // Enable safety validation
     sm.enableValidation(true);
     
     // Define states
-    sm.addState(StateDefinition(STATE_IDLE, "IDLE", "Idle State"));
-    sm.addState(StateDefinition(STATE_RUNNING, "RUN", "Running State"));
-    sm.addState(StateDefinition(STATE_ERROR, "ERR", "Error State"));
+    sm.addState(stateDefinition(STATE_IDLE, "IDLE", "Idle State"));
+    sm.addState(stateDefinition(STATE_RUNNING, "RUN", "Running State"));
+    sm.addState(stateDefinition(STATE_ERROR, "ERR", "Error State"));
     
     // Define transitions
-    sm.addTransition(StateTransition(STATE_IDLE, EVT_START, STATE_RUNNING));
-    sm.addTransition(StateTransition(STATE_RUNNING, EVT_STOP, STATE_IDLE));
-    sm.addTransition(StateTransition(DONT_CARE, EVT_ERROR, STATE_ERROR));
+    sm.addTransition(stateTransition(STATE_IDLE, EVT_START, STATE_RUNNING));
+    sm.addTransition(stateTransition(STATE_RUNNING, EVT_STOP, STATE_IDLE));
+    sm.addTransition(stateTransition(DONT_CARE, EVT_ERROR, STATE_ERROR));
     
     // Set initial state
     sm.setInitialState(STATE_IDLE);
     
     // Validate configuration
-    ValidationResult result = sm.validateConfiguration();
-    if (result != ValidationResult::VALID) {
+    validationResult result = sm.validateConfiguration();
+    if (result != validationResult::VALID) {
         Serial.printf("Configuration error: %d\n", static_cast<int>(result));
     }
 }
@@ -89,7 +89,7 @@ void loop() {
     StateId current = sm.getCurrentStateId();
     
     // Check statistics
-    StateMachineStats stats = sm.getStatistics();
+    stateMachineStats stats = sm.getStatistics();
     Serial.printf("Transitions: %lu, Failures: %lu\n", 
                   stats.totalTransitions, stats.failedTransitions);
 }
@@ -101,8 +101,8 @@ void loop() {
 
 ```cpp
 // Define a 2x2 menu with navigation
-sm.addMenu(MenuDefinition(
-    STATE_MAIN_MENU, MenuTemplate::TWO_X_TWO, "MAIN", "Main Menu",
+sm.addMenu(menuDefinition(
+    STATE_MAIN_MENU, menuTemplate::TWO_X_TWO, "MAIN", "Main Menu",
     {"Settings", "Calibrate", "Diagnostics", "Exit"}
 ));
 
@@ -134,7 +134,7 @@ void motorControlAction(StateId state, EventId event, void* context) {
 }
 
 // Use with transition
-sm.addTransition(StateTransition(STATE_IDLE, EVT_START, STATE_RUNNING, motorControlAction));
+sm.addTransition(stateTransition(STATE_IDLE, EVT_START, STATE_RUNNING, motorControlAction));
 ```
 
 ### Safety Validation
@@ -144,15 +144,15 @@ sm.addTransition(StateTransition(STATE_IDLE, EVT_START, STATE_RUNNING, motorCont
 sm.enableValidation(true);
 
 // Check for configuration issues
-ValidationResult result = sm.validateConfiguration();
+validationResult result = sm.validateConfiguration();
 switch (result) {
-    case ValidationResult::VALID:
+    case validationResult::VALID:
         Serial.println("Configuration is valid");
         break;
-    case ValidationResult::DANGLING_STATE:
+    case validationResult::DANGLING_STATE:
         Serial.println("ERROR: Found unreachable states");
         break;
-    case ValidationResult::CIRCULAR_DEPENDENCY:
+    case validationResult::CIRCULAR_DEPENDENCY:
         Serial.println("ERROR: Circular state dependencies detected");
         break;
     // ... handle other error cases
@@ -280,7 +280,7 @@ The library includes comprehensive test suites:
 #include "improvedStateMachine.hpp"
 
 void test_custom_functionality(void) {
-    ImprovedStateMachine sm;
+    improvedStateMachine sm;
     
     // Your test code here
     TEST_ASSERT_EQUAL(expected, actual);
@@ -317,24 +317,24 @@ void run_tests(void) {
 
 ### Core Classes
 
-#### `ImprovedStateMachine`
+#### `improvedStateMachine`
 Main state machine class with safety features and validation.
 
-#### `StateTransition`
+#### `stateTransition`
 Defines a state transition with optional action function.
 
-#### `StateDefinition`
+#### `stateDefinition`
 Defines a state with metadata and display information.
 
-#### `MenuDefinition`
+#### `menuDefinition`
 Defines a menu with template and button layout.
 
 ### Enums and Constants
 
-#### `ValidationResult`
+#### `validationResult`
 Result codes for validation operations.
 
-#### `MenuTemplate`
+#### `menuTemplate`
 Predefined menu layout templates.
 
 #### Constants
@@ -343,7 +343,7 @@ Predefined menu layout templates.
 
 ### Statistics and Monitoring
 
-#### `StateMachineStats`
+#### `stateMachineStats`
 Performance and usage statistics structure.
 
 ### Action Functions
@@ -383,7 +383,7 @@ The legacy state machine (in `archive/`) can be migrated to the improved version
    };
    
    // New
-   sm.addTransition(StateTransition(STATE1, EVENT1, STATE2, action1));
+   sm.addTransition(stateTransition(STATE1, EVENT1, STATE2, action1));
    ```
 
 4. **Update action functions**:

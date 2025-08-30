@@ -1,5 +1,5 @@
 {
-  "name": "ImprovedStateMachine",
+  "name": "improvedStateMachine",
   "version": "2.0.0",
   "description": "A robust, type-safe finite state machine library for embedded systems with extensive testing and safety features",
   "keywords": [

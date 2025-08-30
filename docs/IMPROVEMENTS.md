@@ -19,14 +19,8 @@ This document compares the new improved state machine design with your current i
 #endif
 ```
 
-**Improved Implementation:**
-```cpp
-// Simple constants for "don't care" values
-constexpr StateId DONT_CARE = 0xFF;
-constexpr EventId ANY_EVENT = 0xFF;
-
 // Clean transition matching
-bool matchesTransition(const StateTransition& trans, const CurrentState& state, EventId event) const {
+bool matchesTransition(const stateTransition& trans, const CurrentState& state, EventId event) const {
     if (trans.fromState != DONT_CARE && trans.fromState != state.state) return false;
     if (trans.fromPage != DONT_CARE && trans.fromPage != state.page) return false;
     // ... etc
@@ -79,7 +73,7 @@ union stateTable {
 **Improved Implementation:**
 ```cpp
 // Simple, readable structure
-struct StateTransition {
+struct stateTransition {
     StateId fromState;
     StateId fromPage;
     StateId fromButton;
@@ -91,8 +85,8 @@ struct StateTransition {
     uint8_t op1, op2, op3;
     
     // Multiple constructors for different use cases
-    StateTransition(StateId from, EventId evt, StateId to, ActionFunction act = nullptr);
-    StateTransition(StateId from, StateId page, StateId button, EventId evt, 
+    stateTransition(StateId from, EventId evt, StateId to, ActionFunction act = nullptr);
+    stateTransition(StateId from, StateId page, StateId button, EventId evt, 
                    StateId to, StateId toPage, StateId toButton, ActionFunction act = nullptr);
 };
 ```
@@ -130,8 +124,8 @@ typedef enum { ADJMENU, IDLEMENU, SETPMENU, /* ... */ } MENU_t;
 **Improved Implementation:**
 ```cpp
 // Unified menu definition with integrated metadata
-_stateMachine.addMenu(MenuDefinition(
-    MAIN_MENU, MenuTemplate::TWO_X_THREE, ";", "MAIN MENU",
+_stateMachine.addMenu(menuDefinition(
+    MAIN_MENU, menuTemplate::TWO_X_THREE, ";", "MAIN MENU",
     {"z", "r", "j", "\\", "Y", "m"}, 
     {eeIDLE, eeLAST, eeMAX, eeAUTO1, eeDUMMY, eeDUMMY}
 ));
@@ -211,8 +205,8 @@ const struct menuDesc PROGMEM menuDescription[] = {
 
 **Improved: 3 lines**
 ```cpp
-_stateMachine.addMenu(MenuDefinition(ADJ_MENU, MenuTemplate::ONE_X_ONE, "w", "ADJ MENU", {"w"}, {eeLAST}));
-_stateMachine.addMenu(MenuDefinition(IDLE_MENU, MenuTemplate::ONE_X_ONE, "z", "IDLE MENU", {"y"}, {eeLAST}));
+_stateMachine.addMenu(menuDefinition(ADJ_MENU, menuTemplate::ONE_X_ONE, "w", "ADJ MENU", {"w"}, {eeLAST}));
+_stateMachine.addmenu(menuDefinition(IDLE_MENU, menuTemplate::ONE_X_ONE, "z", "IDLE MENU", {"y"}, {eeLAST}));
 // ... etc
 ```
 

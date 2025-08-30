@@ -33,9 +33,9 @@ if (_recursionDepth >= STATEMACHINE_MAX_RECURSION_DEPTH) {
 - Validation pipeline for all inputs
 
 ```cpp
-ValidationResult validateTransition(const StateTransition& trans) const {
+validationResult validateTransition(const StateTransition& trans) const {
     if (trans.fromState != DONT_CARE && trans.fromState >= STATEMACHINE_MAX_STATES) {
-        return ValidationResult::INVALID_STATE_ID;
+        return validationResult::INVALID_STATE_ID;
     }
     // Additional checks...
 }
@@ -148,7 +148,7 @@ ValidationResult validateTransition(const StateTransition& trans) const {
        // Verify motor safety parameters
        if (!motor_safety_check()) {
            // Force emergency state
-           static_cast<ImprovedStateMachine*>(context)->forceState(STATE_EMERGENCY_STOP);
+           static_cast<improvedStateMachine*>(context)->forceState(STATE_EMERGENCY_STOP);
        }
    }
    ```
@@ -156,8 +156,8 @@ ValidationResult validateTransition(const StateTransition& trans) const {
 3. **Redundant Safety Checks**
    ```cpp
    // Add safety validation before critical operations
-   ValidationResult result = sm.validateConfiguration();
-   if (result != ValidationResult::VALID) {
+   validationResult result = sm.validateConfiguration();
+   if (result != validationResult::VALID) {
        enter_safe_mode();
        return;
    }
@@ -172,7 +172,7 @@ ValidationResult validateTransition(const StateTransition& trans) const {
    #define STATEMACHINE_MAX_STATES 32         // Minimize state space
    
    // Monitor timing
-   StateMachineStats stats = sm.getStatistics();
+   stateMachineStats stats = sm.getStatistics();
    if (stats.maxTransitionTime > MAX_ALLOWED_LATENCY_US) {
        // Trigger performance alarm
    }
@@ -201,8 +201,8 @@ ValidationResult validateTransition(const StateTransition& trans) const {
    sm.enableValidation(true);
    
    // Comprehensive configuration check
-   ValidationResult result = sm.validateConfiguration();
-   assert(result == ValidationResult::VALID);
+   validationResult result = sm.validateConfiguration();
+   assert(result == validationResult::VALID);
    #endif
    ```
 
@@ -212,7 +212,7 @@ ValidationResult validateTransition(const StateTransition& trans) const {
        uint16_t mask = sm.processEvent(event);
        
        // Check for safety violations
-       StateMachineStats stats = sm.getStatistics();
+       stateMachineStats stats = sm.getStatistics();
        if (stats.failedTransitions > MAX_ALLOWED_FAILURES) {
            // Enter safety mode
            sm.forceState(STATE_SAFE_MODE);
@@ -274,7 +274,7 @@ private:
     uint32_t _maxAllowedLatency;
     
 public:
-    bool checkSafety(const StateMachineStats& stats) {
+    bool checkSafety(const stateMachineStats& stats) {
         // Check failure rate
         if (stats.failedTransitions > _maxAllowedFailures) {
             return false;

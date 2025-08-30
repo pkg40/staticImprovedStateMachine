@@ -1,0 +1,51 @@
+Collected 9 tests (test_basic, test_comp_1, test_comp_2, test_comp_3, test_comp_4, test_comp_5, test_definitions, test_native, test_safety)
+
+Processing test_comp_1 in test_runner_embedded_unity environment
+--------------------------------------------------------------------------------
+
+Building & Uploading...
+Verbose mode can be enabled via `-v, --verbose` option
+CONFIGURATION: https://docs.platformio.org/page/boards/espressif32/seeed_xiao_esp32s3.html
+PLATFORM: Espressif 32 (6.11.0) > Seeed Studio XIAO ESP32S3
+HARDWARE: ESP32S3 240MHz, 320KB RAM, 8MB Flash
+DEBUG: Current (cmsis-dap) External (cmsis-dap, esp-bridge, esp-builtin, esp-prog, iot-bus-jtag, jlink, minimodule, olimex-arm-usb-ocd, olimex-arm-usb-ocd-h, olimex-arm-usb-tiny-h, olimex-jtag-tiny, tumpa)
+PACKAGES: 
+ - framework-arduinoespressif32 @ 3.20017.241212+sha.dcc1105b 
+ - tool-esptoolpy @ 1.40501.0 (4.5.1) 
+ - tool-mkfatfs @ 2.0.1 
+ - tool-mklittlefs @ 1.203.210628 (2.3) 
+ - tool-mkspiffs @ 2.230.0 (2.30) 
+ - toolchain-riscv32-esp @ 8.4.0+2021r2-patch5 
+ - toolchain-xtensa-esp32s3 @ 8.4.0+2021r2-patch5
+LDF: Library Dependency Finder -> https://bit.ly/configure-pio-ldf
+LDF Modes: Finder ~ deep+, Compatibility ~ soft
+Found 34 compatible libraries
+Scanning dependencies...
+Dependency Graph
+|-- Unity @ 2.6.0
+Building in test mode
+Retrieving maximum program size .pio\build\test_runner_embedded_unity\firmware.elf
+Checking size .pio\build\test_runner_embedded_unity\firmware.elf
+Advanced Memory Usage is available via "PlatformIO Home > Project Inspect"
+RAM:   [=         ]   5.7% (used 18556 bytes from 327680 bytes)
+Flash: [=         ]   8.6% (used 287829 bytes from 3342336 bytes)
+Configuring upload protocol...
+AVAILABLE: cmsis-dap, esp-bridge, esp-builtin, esp-prog, espota, esptool, iot-bus-jtag, jlink, minimodule, olimex-arm-usb-ocd, olimex-arm-usb-ocd-h, olimex-arm-usb-tiny-h, olimex-jtag-tiny, tumpa
+CURRENT: upload_protocol = esptool
+Looking for upload port...
+Using manually specified: COM6
+Uploading .pio\build\test_runner_embedded_unity\firmware.bin
+esptool.py v4.5.1
+Serial port COM6
+Connecting...
+Chip is ESP32-S3 (revision v0.2)
+Features: WiFi, BLE
+Crystal is 40MHz
+MAC: 8c:bf:ea:1d:12:b0
+Uploading stub...
+Running stub...
+Stub running...
+Changing baud rate to 460800
+
+A fatal error occurred: No serial data received.
+
