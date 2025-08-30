@@ -342,6 +342,7 @@ void test_023_scoreboard_functionality() {
   sm->updateScoreboard(2);
   TEST_ASSERT_TRUE(sm->getScoreboard(0) & (1UL << 1));
   TEST_ASSERT_TRUE(sm->getScoreboard(0) & (1UL << 2));
+  TEST_ASSERT_EQUAL_UINT8(6, sm->getScoreboard(0));
   testStats.passedTests++;
 }
 
@@ -351,8 +352,8 @@ void test_024_scoreboard_updates() {
   sm->addTransition(stateTransition(1, 0, 1, 2, 0, nullptr));
   sm->processEvent(1); // Should update scoreboard for state 2
   TEST_ASSERT_EQUAL_UINT8(2, sm->getPage());
-  TEST_ASSERT_EQUAL_UINT8(4, sm->getScoreboard(0));
   TEST_ASSERT_TRUE(sm->getScoreboard(0) & (1UL << 2));
+  TEST_ASSERT_EQUAL_UINT8(4, sm->getScoreboard(0));
   testStats.passedTests++;
   sm->setDebugMode(false);
 }

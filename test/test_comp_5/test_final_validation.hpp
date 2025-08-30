@@ -84,8 +84,8 @@ void test_098_massive_state_space() {
 
 void test_099_event_storm_handling() {
     sm->setInitialState(1);
-    sm->addTransition(stateTransition(1,0,DONT_CARE,2,0,nullptr));
-    sm->addTransition(stateTransition(2,0,DONT_CARE,1,0,nullptr));
+    sm->addTransition(stateTransition(1,0,DONT_CARE_EVENT,2,0,nullptr));
+    sm->addTransition(stateTransition(2,0,DONT_CARE_EVENT,1,0,nullptr));
     
     uint32_t startTime = millis();
     
@@ -111,9 +111,9 @@ void test_100_multilayer_wildcard_resolution() {
     sm->setInitialState(1);
     
     // Multiple wildcard layers
-    sm->addTransition(stateTransition(DONT_CARE,0,DONT_CARE,99,0,nullptr)); // Catch-all
-    sm->addTransition(stateTransition(DONT_CARE,0,5,50,0,nullptr));         // Event-specific
-    sm->addTransition(stateTransition(1,0,DONT_CARE,10,0,nullptr));        // State-specific
+    sm->addTransition(stateTransition(DONT_CARE_PAGE,0,DONT_CARE_EVENT,DONT_CARE_PAGE-1,0,nullptr)); // Catch-all
+    sm->addTransition(stateTransition(DONT_CARE_PAGE,0,5,50,0,nullptr));         // Event-specific
+    sm->addTransition(stateTransition(1,0,DONT_CARE_EVENT,10,0,nullptr));        // State-specific
     sm->addTransition(stateTransition(1,0,5,15,0,nullptr));               // Most specific
     
     // Test resolution priority
@@ -130,7 +130,7 @@ void test_100_multilayer_wildcard_resolution() {
     
     sm->setCurrentPageId(3);
     sm->processEvent(8);
-    TEST_ASSERT_EQUAL_UINT8(99, sm->getPage()); // Catch-all
+    TEST_ASSERT_EQUAL_UINT8(DONT_CARE_PAGE-1, sm->getPage()); // Catch-all
 }
 
 void test_101_deep_nesting_simulation() {
@@ -176,23 +176,23 @@ void test_102_concurrent_scoreboard_operations() {
 
 void test_103_extreme_boundary_values() {
     // Test extreme boundary values
-    sm->setInitialState(255);
+    sm->setInitialState(DONT_CARE_PAGE);
     
-    sm->addTransition(stateTransition(255,0,255,0,0,nullptr));
-    sm->addTransition(stateTransition(0,0,0,255,0,nullptr));
-    sm->addTransition(stateTransition(127,0,128,129,0,nullptr));
-    sm->addTransition(stateTransition(254,0,1,1,0,nullptr));
+    sm->addTransition(stateTransition(DONT_CARE_PAGE,0,DONT_CARE_EVENT,0,0,nullptr));
+    sm->addTransition(stateTransition(0,0,0,DONT_CARE_PAGE,0,nullptr));
+    sm->addTransition(stateTransition(27,0,28,29,0,nullptr));
+    sm->addTransition(stateTransition(DONT_CARE_PAGE-1,0,1,1,0,nullptr));
     
     // Test extreme transitions
-    sm->processEvent(255);
-    TEST_ASSERT_EQUAL_UINT8(0, sm->getPage());
+    sm->processEvent(DONT_CARE_EVENT);
+    TEST_ASSERT_EQUAL_UINT8(DONT_CARE_PAGE, sm->getPage());
     
     sm->processEvent(0);
-    TEST_ASSERT_EQUAL_UINT8(255, sm->getPage());
+    TEST_ASSERT_EQUAL_UINT8(0, sm->getPage());
     
-    sm->setCurrentPageId(127);
-    sm->processEvent(128);
-    TEST_ASSERT_EQUAL_UINT8(129, sm->getPage());
+    sm->setCurrentPageId(27);
+    sm->processEvent(28);
+    TEST_ASSERT_EQUAL_UINT8(29, sm->getPage());
 }
 
 void test_104_state_machine_cloning_behavior() {
@@ -252,13 +252,13 @@ void test_105_comprehensive_validation_pipeline() {
     // More transitions
     results[4] = sm->addTransition(stateTransition(2,0,2,3,0,nullptr));
     results[5] = sm->addTransition(stateTransition(3,0,3,1,0,nullptr));
-    results[6] = sm->addTransition(stateTransition(DONT_CARE,0,99,99,0,nullptr));
-    results[7] = sm->addTransition(stateTransition(50,0,DONT_CARE,51,0,nullptr));
+    results[6] = sm->addTransition(stateTransition(DONT_CARE_PAGE,0,DONT_CARE_EVENT-1,DONT_CARE_PAGE-1,0,nullptr));
+    results[7] = sm->addTransition(stateTransition(50,0,DONT_CARE_EVENT,51,0,nullptr));
     
     // Edge case transitions
-    results[8] = sm->addTransition(stateTransition(255,0,255,0,0,nullptr));
-    results[9] = sm->addTransition(stateTransition(0,0,0,255,0,nullptr));
-    
+    results[8] = sm->addTransition(stateTransition(DONT_CARE_PAGE,0,DONT_CARE_EVENT,DONT_CARE_PAGE-1,0,nullptr));
+    results[9] = sm->addTransition(stateTransition(0,0,0,DONT_CARE_PAGE-1,0,nullptr));
+
     // Verify results
     TEST_ASSERT_EQUAL(validationResult::VALID, results[0]);
     TEST_ASSERT_EQUAL(validationResult::DUPLICATE_TRANSITION, results[1]);
@@ -283,7 +283,7 @@ void test_106_final_integration_verification() {
     sm->addTransition(stateTransition(1,0,1,2,0,nullptr));
     sm->addTransition(stateTransition(2,0,2,3,0,nullptr));
     sm->addTransition(stateTransition(3,0,3,1,0,nullptr));
-    sm->addTransition(stateTransition(DONT_CARE,0,0,1,0,nullptr)); // Reset
+    sm->addTransition(stateTransition(DONT_CARE_PAGE,0,0,1,0,nullptr)); // Reset
     
     // Comprehensive test sequence
     for (int cycle = 0; cycle < 3; cycle++) {

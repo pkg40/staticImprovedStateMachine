@@ -13,6 +13,7 @@ unsigned long micros();
 #include <vector>
 #include <functional>
 #include <limits>
+#include <string>
 
 // Safety and validation macros
 #ifndef STATEMACHINE_MAX_TRANSITIONS
@@ -46,23 +47,43 @@ unsigned long micros();
 #define STATEMACHINE_SCOREBOARD_NUM_SEGMENTS 4
 #endif
 
-// Forward declarations
-class improvedStateMachine;
+// Redraw mask constants
+#ifndef REDRAW_MASK_PAGE
+#define REDRAW_MASK_PAGE 0x0001
+#endif
 
-// State identifiers - can be any type that supports comparison
-using pageID = uint8_t;
-using buttonID = uint8_t;
-using eventID = uint8_t;
+#ifndef REDRAW_MASK_BUTTON
+#define REDRAW_MASK_BUTTON 0x0002
+#endif
 
-// Action function type
-using ActionFunction = std::function<void(pageID, eventID, void*)>;
+#ifndef REDRAW_MASK_FULL
+#define REDRAW_MASK_FULL 0x0004
+#endif
 
-// Don't care constant - 255 reserved for wildcards, max valid values are 0-254
-//constexpr pageID DONT_CARE_PAGE = std::numeric_limits<pageID>::max(); // 255 - reserved
-//constexpr buttonID DONT_CARE_BUTTON = std::numeric_limits<buttonID>::max(); // 255 - reserved
-//constexpr eventID DONT_CARE_EVENT = std::numeric_limits<eventID>::max(); // 255 - reserved
+// Buffer size constants
+#ifndef PRINTF_BUFFER_SIZE
+#define PRINTF_BUFFER_SIZE 256
+#endif
 
-// Safety validation results
+#ifndef DESCRIPTION_BUFFER_SIZE
+#define DESCRIPTION_BUFFER_SIZE 12
+#endif
+
+// Enhanced validation modes
+#define VALIDATION_MODE_STRICT 0x01    // Reject all suspicious transitions
+#define VALIDATION_MODE_WARN 0x02      // Allow but log warnings
+#define VALIDATION_MODE_DEBUG 0x04     // Extra debug validation
+#define VALIDATION_MODE_ASSERT 0x08    // Use assertions for critical errors
+
+// Validation severity levels
+enum validationSeverity {
+    SEVERITY_INFO = 0,
+    SEVERITY_WARNING = 1,
+    SEVERITY_ERROR = 2,
+    SEVERITY_CRITICAL = 3
+};
+
+// Enhanced validation results with more specific error codes
 enum validationResult {
     VALID = 0,
     SUCCESS = 0,  // Alias for VALID
@@ -78,8 +99,34 @@ enum validationResult {
     CIRCULAR_DEPENDENCY,
     MAX_TRANSITIONS_EXCEEDED,
     TRANSITION_LIMIT_REACHED = MAX_TRANSITIONS_EXCEEDED,  // Alias for MAX_TRANSITIONS_EXCEEDED
-    MAX_PAGES_EXCEEDED
+    MAX_PAGES_EXCEEDED,
+    // New enhanced validation errors
+    WILDCARD_IN_DESTINATION,      // Wildcard used in destination field
+    SELF_LOOP_WITHOUT_CONDITION, // Self-loop without proper conditions
+    POTENTIAL_INFINITE_LOOP,     // Transition could cause infinite loop
+    MISSING_NULL_ACTION,         // Transition with nullptr action when required
+    INCONSISTENT_WILDCARD_USAGE, // Mixed wildcard usage patterns
+    TRANSITION_AMBIGUITY,        // Transition conflicts with existing ones
+    PAGE_NOT_DEFINED,           // Referenced state not in state definitions
+    ORPHANED_TRANSITION,         // Transition references undefined states
+    VALIDATION_MODE_VIOLATION    // Transition violates current validation mode
 };
+
+// Forward declarations
+class improvedStateMachine;
+
+// State identifiers - can be any type that supports comparison
+using pageID = uint8_t;
+using buttonID = uint8_t;
+using eventID = uint8_t;
+
+// Action function type
+using ActionFunction = std::function<void(pageID, eventID, void*)>;
+
+// Don't care constant - 255 reserved for wildcards, max valid values are 0-254
+//constexpr pageID DONT_CARE_PAGE = std::numeric_limits<pageID>::max(); // 255 - reserved
+//constexpr buttonID DONT_CARE_BUTTON = std::numeric_limits<buttonID>::max(); // 255 - reserved
+//constexpr eventID DONT_CARE_EVENT = std::numeric_limits<eventID>::max(); // 255 - reserved
 
 // State machine statistics for monitoring
 struct stateMachineStats {
@@ -198,8 +245,21 @@ private:
     void executeAction(const stateTransition& trans, eventID event, void* context);
     uint16_t calculateRedrawMask(const currentState& oldState, const currentState& newState) const;
     
+    // Enhanced validation properties
+    uint8_t _validationMode;           // Bitmask of validation modes
+    bool _strictWildcardChecking;      // Extra strict wildcard validation
+    bool _requireDefinedStates;        // Require states to be explicitly defined
+    bool _detectInfiniteLoops;         // Enable infinite loop detection
+    mutable std::vector<std::string> _validationWarnings; // Store validation warnings (mutable for const methods)
+    
+    // Enhanced validation helper methods
+    validationResult validateTransitionStrict(const stateTransition& trans) const;
+    validationResult validateTransitionWarnings(const stateTransition& trans) const;
+    bool isInfiniteLoopRisk(const stateTransition& trans) const;
+    bool isStateDefined(pageID id) const;
+    void logValidationWarning(const std::string& warning, validationSeverity severity = SEVERITY_WARNING) const;
+    
     // Safety and validation methods
-    validationResult validateTransition(const stateTransition& trans, bool verbose = false) const;
     validationResult validateStateMachine() const;
     
     // Enhanced state reachability analysis
@@ -215,6 +275,10 @@ private:
 public:
     improvedStateMachine();
     
+    // Copy constructor and assignment operator for safe copying
+    improvedStateMachine(const improvedStateMachine& other);
+    improvedStateMachine& operator=(const improvedStateMachine& other);
+    
     // Configuration methods
     validationResult addState(const stateDefinition& state);
     void addMenu(const menuDefinition& menu);
@@ -229,6 +293,18 @@ public:
     size_t getTransitionCount() const { return _transitions.size(); }
     stateMachineStats getStatistics() const { return _stats; }
     void resetStatistics() { _stats = stateMachineStats(); }
+    
+    // Enhanced validation configuration methods
+    void setValidationMode(uint8_t mode) { _validationMode = mode; }
+    uint8_t getValidationMode() const { return _validationMode; }
+    void enableStrictWildcardChecking(bool enabled = true) { _strictWildcardChecking = enabled; }
+    void requireDefinedStates(bool required = true) { _requireDefinedStates = required; }
+    void enableInfiniteLoopDetection(bool enabled = true) { _detectInfiniteLoops = enabled; }
+    
+    // Enhanced validation query methods
+    const std::vector<std::string>& getValidationWarnings() const { return _validationWarnings; }
+    size_t getValidationWarningCount() const { return _validationWarnings.size(); }
+    bool hasValidationWarnings() const { return !_validationWarnings.empty(); }
     
     // Enhanced statistics management for safety monitoring
     void resetStatisticsWithTimestamp() { 
@@ -248,20 +324,27 @@ public:
     // State management
     void setInitialState(pageID page = 0, buttonID button = 0);
     void setState(pageID page = 0, buttonID button = 0);
-    void setCurrentPageId(pageID page);  // Add the missing method
+    void setCurrentPageId(pageID page);
     void forceState(pageID page = 0, buttonID button = 0);
     
     // Event processing
     uint16_t processEvent(eventID event, void* context = nullptr);
     // State queries
+    // Legacy methods (kept for backward compatibility)
     pageID getPage() const { 
         if (_debugMode) Serial.printf("Current page: %d\n", _currentState.page);
         return _currentState.page; 
     }
-    pageID getCurrentPageId() const { return _currentState.page; }
-    pageID getLastPage() const { return _lastState.page; }
-    buttonID getButton() const { return _currentState.button; }
-    buttonID getLastButton() const { return _lastState.button; }
+    pageID getButton() const { return _currentState.button; }
+    
+    // Consistent camelCase methods (preferred for new code)
+    pageID getCurrentPageId() const { 
+        if (_debugMode) Serial.printf("Current page: %d\n", _currentState.page);
+        return _currentState.page; 
+    }
+    pageID getLastPageId() const { return _lastState.page; }
+    buttonID getCurrentButtonId() const { return _currentState.button; }
+    buttonID getLastButtonId() const { return _lastState.button; }
 
     // Menu queries
     const menuDefinition* getMenu(pageID id) const;
@@ -301,7 +384,12 @@ public:
                            const std::vector<pageID>& targetMenus = {});
     void addStandardMenuTransitions(pageID menuId, pageID parentMenu,
                                    const std::vector<pageID>& subMenus = {});
+    
+    // Public validation methods for testing
+    void clearValidationWarnings() const;
+    validationResult validateTransition(const stateTransition& trans, bool verbose = false) const;
 };
+
 
 // Convenience macros for common patterns
 #define ADD_BUTTON_NAV(menuId, numButtons) \

@@ -50,7 +50,7 @@ public:
   void printf(const char *format, ...) {
     va_list args;
     va_start(args, format);
-    char buffer[256];
+    char buffer[PRINTF_BUFFER_SIZE];
     vsnprintf(buffer, sizeof(buffer), format, args);
     va_end(args);
     std::cout << buffer;
@@ -79,6 +79,54 @@ improvedStateMachine::improvedStateMachine()
     _stateScoreboard[i] = 0;
   }
   _stats = stateMachineStats();
+}
+
+// Copy constructor - safely copy all state machine data
+improvedStateMachine::improvedStateMachine(const improvedStateMachine& other)
+    : _transitions(other._transitions),
+      _states(other._states),
+      _menus(other._menus),
+      _currentState(other._currentState),
+      _lastState(other._lastState),
+      _debugMode(other._debugMode),
+      _validationEnabled(other._validationEnabled),
+      _recursionDepth(0),  // Reset recursion depth for new instance
+      _stats(other._stats),
+      _validationMode(other._validationMode),
+      _strictWildcardChecking(other._strictWildcardChecking),
+      _requireDefinedStates(other._requireDefinedStates),
+      _detectInfiniteLoops(other._detectInfiniteLoops),
+      _validationWarnings(other._validationWarnings) {
+  // Copy scoreboard
+  for (int i = 0; i < 4; i++) {
+    _stateScoreboard[i] = other._stateScoreboard[i];
+  }
+}
+
+// Assignment operator - safely assign all state machine data
+improvedStateMachine& improvedStateMachine::operator=(const improvedStateMachine& other) {
+  if (this != &other) {
+    _transitions = other._transitions;
+    _states = other._states;
+    _menus = other._menus;
+    _currentState = other._currentState;
+    _lastState = other._lastState;
+    _debugMode = other._debugMode;
+    _validationEnabled = other._validationEnabled;
+    _recursionDepth = 0;  // Reset recursion depth
+    _stats = other._stats;
+    _validationMode = other._validationMode;
+    _strictWildcardChecking = other._strictWildcardChecking;
+    _requireDefinedStates = other._requireDefinedStates;
+    _detectInfiniteLoops = other._detectInfiniteLoops;
+    _validationWarnings = other._validationWarnings;
+    
+    // Copy scoreboard
+    for (int i = 0; i < 4; i++) {
+      _stateScoreboard[i] = other._stateScoreboard[i];
+    }
+  }
+  return *this;
 }
 
 // Configuration methods
@@ -323,17 +371,17 @@ improvedStateMachine::calculateRedrawMask(const currentState &oldState,
 
   // Check if page changed
   if (oldState.page != newState.page) {
-    mask |= 0x0001; // Page redraw
+    mask |= REDRAW_MASK_PAGE;
   }
 
   // Check if button changed
   if (oldState.button != newState.button) {
-    mask |= 0x0002; // Button redraw
+    mask |= REDRAW_MASK_BUTTON;
   }
 
   // If both changed, set full redraw flag
-  if ((mask & 0x0001) && (mask & 0x0002)) {
-    mask |= 0x0004; // Full redraw
+  if ((mask & REDRAW_MASK_PAGE) && (mask & REDRAW_MASK_BUTTON)) {
+    mask |= REDRAW_MASK_FULL;
   }
 
   return mask;
@@ -343,18 +391,12 @@ improvedStateMachine::calculateRedrawMask(const currentState &oldState,
 bool improvedStateMachine::matchesTransition(const stateTransition &trans,
                                              const currentState &state,
                                              eventID event) const {
-  // Reserved value 255 (DONT_CARE_EVENT) is only allowed as wildcard for fromPage,
-  // fromButton, event It is illegal for toPage, toButton, event in
-  // transitions/events
-  if (trans.toPage >= DONT_CARE_PAGE || trans.toButton >= DONT_CARE_BUTTON ||
-      trans.event > STATEMACHINE_MAX_EVENTS) {
-    if (_debugMode) {
-      Serial.printf("ERROR: Illegal value = DONT_CARE, toPage/toButton/event in transition!\n");
-    }
-    return false;
-  }
+  // Note: Validation for illegal transition values is handled during addTransition()
+  // No need for redundant checks here for performance reasons
+  
   if ((trans.fromPage == DONT_CARE_PAGE || trans.fromPage == state.page) &&
-      (trans.fromButton == DONT_CARE_BUTTON || trans.fromButton == state.button) &&
+      (trans.fromButton == DONT_CARE_BUTTON ||
+       trans.fromButton == state.button) &&
       (trans.event == DONT_CARE_EVENT || trans.event == event)) {
     return true;
   } else {
@@ -368,29 +410,23 @@ bool improvedStateMachine::transitionsConflict(
   // Two transitions conflict if they could match the same state/event
   // combination
 
-  // Check if states can overlap
-  bool statesOverlap =
-      (existing.fromPage == DONT_CARE_PAGE || newTrans.fromPage == DONT_CARE_PAGE ||
-       existing.fromPage == newTrans.fromPage);
+  // Check if pages can overlap (fromPage dimension)
+  bool pagesOverlap = (existing.fromPage == DONT_CARE_PAGE ||
+                       newTrans.fromPage == DONT_CARE_PAGE ||
+                       existing.fromPage == newTrans.fromPage);
 
-  // Check if pages can overlap
-  bool pagesOverlap =
-      (existing.fromPage == DONT_CARE_PAGE || newTrans.fromPage == DONT_CARE_PAGE ||
-       existing.fromPage == newTrans.fromPage);
+  // Check if buttons can overlap (fromButton dimension)
+  bool buttonsOverlap = (existing.fromButton == DONT_CARE_BUTTON ||
+                         newTrans.fromButton == DONT_CARE_BUTTON ||
+                         existing.fromButton == newTrans.fromButton);
 
-  // Check if buttons can overlap
-  bool buttonsOverlap =
-      (existing.fromButton == DONT_CARE_BUTTON || newTrans.fromButton == DONT_CARE_BUTTON ||
-       existing.fromButton == newTrans.fromButton);
-
-  // Check if events can overlap
+  // Check if events can overlap (event dimension)
   bool eventsOverlap =
-      (existing.event == DONT_CARE_EVENT ||
-       newTrans.event == DONT_CARE_EVENT ||
+      (existing.event == DONT_CARE_EVENT || newTrans.event == DONT_CARE_EVENT ||
        existing.event == newTrans.event);
 
   // Conflict exists if ALL dimensions overlap
-  return statesOverlap && pagesOverlap && buttonsOverlap && eventsOverlap;
+  return pagesOverlap && buttonsOverlap && eventsOverlap;
 }
 
 void improvedStateMachine::executeAction(const stateTransition &trans,
@@ -430,7 +466,7 @@ void improvedStateMachine::dumpStateTable() const {
     char fromName[9] = {0};
     char toName[9] = {0};
     char eventName[6] = {0};
-    char description[12] = {0};
+    char description[DESCRIPTION_BUFFER_SIZE] = {0};
 
     snprintf(fromName, sizeof(fromName), "%u", trans.fromPage);
     snprintf(toName, sizeof(toName), "%u", trans.toPage);
@@ -493,7 +529,7 @@ void improvedStateMachine::dumpStateTable() const {
     char fromName[9] = {0};
     char toName[9] = {0};
     char eventName[6] = {0};
-    char description[12] = {0};
+    char description[DESCRIPTION_BUFFER_SIZE] = {0};
 
     snprintf(fromName, sizeof(fromName), "%u", trans.fromPage);
     snprintf(toName, sizeof(toName), "%u", trans.toPage);
@@ -550,14 +586,14 @@ void improvedStateMachine::printAllTransitions() const {
 #ifdef ARDUINO
   Serial.println("\n--- TRANSITION TABLE ---");
   Serial.println("FromPage\tFromButton\tEvent\tToPage\tToButton\tAction");
-  for (const auto& t : _transitions) {
+  for (const auto &t : _transitions) {
     printTransition(t);
   }
   Serial.println("--- END TRANSITION TABLE ---\n");
 #else
   printf("\n--- TRANSITION TABLE ---\n");
   printf("FromPage\tFromButton\tEvent\tToPage\tToButton\tAction\n");
-  for (const auto& t : _transitions) {
+  for (const auto &t : _transitions) {
     printTransition(t);
   }
   printf("--- END TRANSITION TABLE ---\n");
@@ -575,13 +611,17 @@ void improvedStateMachine::updateScoreboard(pageID id) {
   } else if (id < STATEMACHINE_SCOREBOARD_SEGMENT_SIZE * 2) {
     _stateScoreboard[1] |= (1UL << (id - STATEMACHINE_SCOREBOARD_SEGMENT_SIZE));
   } else if (id < STATEMACHINE_SCOREBOARD_SEGMENT_SIZE * 3) {
-    _stateScoreboard[2] |= (1UL << (id - STATEMACHINE_SCOREBOARD_SEGMENT_SIZE * 2));
-  } else if (id < STATEMACHINE_SCOREBOARD_SEGMENT_SIZE * STATEMACHINE_SCOREBOARD_NUM_SEGMENTS) {
-    _stateScoreboard[3] |= (1UL << (id - STATEMACHINE_SCOREBOARD_SEGMENT_SIZE * 3));
+    _stateScoreboard[2] |=
+        (1UL << (id - STATEMACHINE_SCOREBOARD_SEGMENT_SIZE * 2));
+  } else if (id < STATEMACHINE_SCOREBOARD_SEGMENT_SIZE *
+                      STATEMACHINE_SCOREBOARD_NUM_SEGMENTS) {
+    _stateScoreboard[3] |=
+        (1UL << (id - STATEMACHINE_SCOREBOARD_SEGMENT_SIZE * 3));
   }
   if (_debugMode)
     Serial.printf("Scoreboard(%d): %u/%u/%u/%u\n", id, _stateScoreboard[0],
-                  _stateScoreboard[1], _stateScoreboard[2], _stateScoreboard[3]);
+                  _stateScoreboard[1], _stateScoreboard[2],
+                  _stateScoreboard[3]);
 }
 
 uint32_t improvedStateMachine::getScoreboard(uint8_t index) const {
@@ -706,26 +746,38 @@ validationResult
 improvedStateMachine::validateTransition(const stateTransition &trans,
                                          bool verbose) const {
   // Check for valid state IDs
-    if (trans.fromPage > STATEMACHINE_MAX_PAGES) {
-      if (_debugMode) { printf("validateTransition: INVALID_PAGE_ID, fromPage=%d\n", trans.fromPage); }
+  if (trans.fromPage > STATEMACHINE_MAX_PAGES) {
+    if (_debugMode) {
+      printf("validateTransition: INVALID_PAGE_ID, fromPage=%d\n",
+             trans.fromPage);
+    }
     return validationResult::INVALID_PAGE_ID;
   }
-  if (trans.fromButton > STATEMACHINE_MAX_BUTTONS)  {
-    if (_debugMode) { printf("validateTransition: INVALID_BUTTON_ID, fromButton=%d\n", trans.fromButton); }
+  if (trans.fromButton > STATEMACHINE_MAX_BUTTONS) {
+    if (_debugMode) {
+      printf("validateTransition: INVALID_BUTTON_ID, fromButton=%d\n",
+             trans.fromButton);
+    }
     return validationResult::INVALID_BUTTON_ID;
   }
 
   if (trans.toPage >= DONT_CARE_PAGE) {
-    if (_debugMode) { printf("validateTransition: INVALID_PAGE_ID, toPage=%d\n", trans.toPage); }
+    if (_debugMode) {
+      printf("validateTransition: INVALID_PAGE_ID, toPage=%d\n", trans.toPage);
+    }
     return validationResult::INVALID_PAGE_ID;
   }
   if (trans.toButton >= DONT_CARE_BUTTON) {
     if (_debugMode) {
+      printf("validateTransition: INVALID_BUTTON_ID, toButton=%d\n",
+             trans.toButton);
     }
     return validationResult::INVALID_BUTTON_ID;
   }
-  if (trans.event > DONT_CARE_EVENT) {
-    if (_debugMode) { printf("validateTransition: INVALID_EVENT_ID, event=%d\n", trans.event); }
+  if (trans.event > STATEMACHINE_MAX_EVENTS) {
+    if (_debugMode) {
+      printf("validateTransition: INVALID_EVENT_ID, event=%d\n", trans.event);
+    }
     return validationResult::INVALID_EVENT_ID;
   }
   // DONT_CARE_EVENT is legal as an input field
@@ -814,101 +866,68 @@ bool improvedStateMachine::hasCircularDependencies() const {
   return false; // More sophisticated cycle detection could be added
 }
 
-std::vector<pageID> improvedStateMachine::getUnreachablePages() const {
-  std::vector<pageID> unreachable;
+bool improvedStateMachine::isInfiniteLoopRisk(const stateTransition &trans) const {
+  // Check for self-loops that could cause infinite recursion
+  if (trans.fromPage == trans.toPage && trans.fromButton == trans.toButton) {
+    // Allow self-loops only if they have different events or actions
+    if (trans.event == 0 && trans.action == nullptr) {
+      return true; // High risk of infinite loop
+    }
+  }
 
+  // Check for cycles in transition graph (simplified check)
+  for (const auto &existing : _transitions) {
+    if (existing.toPage == trans.fromPage && existing.fromPage == trans.toPage) {
+      // Potential cycle detected
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool improvedStateMachine::isStateDefined(pageID id) const {
   for (const auto &state : _states) {
-    if (!isPageReachable(state.id)) {
-      unreachable.push_back(state.id);
+    if (state.id == id) {
+      return true;
     }
   }
-
-  return unreachable;
+  return false;
 }
 
-std::vector<pageID> improvedStateMachine::getDanglingPages() const {
-  std::vector<pageID> dangling;
+void improvedStateMachine::logValidationWarning(const std::string &warning, validationSeverity severity) const {
+  std::string fullWarning = "VALIDATION ";
+  switch (severity) {
+    case SEVERITY_INFO: fullWarning += "INFO: "; break;
+    case SEVERITY_WARNING: fullWarning += "WARNING: "; break;
+    case SEVERITY_ERROR: fullWarning += "ERROR: "; break;
+    case SEVERITY_CRITICAL: fullWarning += "CRITICAL: "; break;
+  }
+  fullWarning += warning;
+  _validationWarnings.push_back(fullWarning);
 
-  // Find states with no outgoing transitions
-  for (const auto &state : _states) {
-    bool hasOutgoingTransition = false;
-    for (const auto &trans : _transitions) {
-      if (trans.fromPage == state.id) {
-        hasOutgoingTransition = true;
-        break;
-      }
-    }
-    if (!hasOutgoingTransition) {
-      dangling.push_back(state.id);
-    }
+  if (_debugMode) {
+    printf("%s\n", fullWarning.c_str());
+  }
+}
+
+validationResult improvedStateMachine::validateTransitionWarnings(const stateTransition &trans) const {
+  // Check for self-loops without conditions
+  if (trans.fromPage == trans.toPage && trans.fromButton == trans.toButton &&
+      trans.event == 0 && trans.action == nullptr) {
+    logValidationWarning("Self-loop without condition or action", SEVERITY_WARNING);
+    return validationResult::SELF_LOOP_WITHOUT_CONDITION;
   }
 
-  return dangling;
-}
-
-std::vector<pageID> improvedStateMachine::getDeadlockPages() const {
-  std::vector<pageID> deadlocks;
-
-  // Find states that can only transition to themselves
-  for (const auto &state : _states) {
-    bool canEscape = false;
-    for (const auto &trans : _transitions) {
-      if (trans.fromPage == state.id && trans.toPage != state.id) {
-        canEscape = true;
-        break;
-      }
-    }
-    if (!canEscape) {
-      deadlocks.push_back(state.id);
-    }
+  // Check for missing actions on complex transitions
+  if (trans.action == nullptr && (trans.op1 != 0 || trans.op2 != 0 || trans.op3 != 0)) {
+    logValidationWarning("Transition with operation parameters but no action", SEVERITY_WARNING);
+    return validationResult::MISSING_NULL_ACTION;
   }
 
-  return deadlocks;
+  return validationResult::VALID;
 }
 
-bool improvedStateMachine::isStateMachineComplete() const {
-  // Check if state machine is well-formed:
-  // 1. No unreachable states (except possibly the initial state)
-  // 2. No dangling states (unless they're terminal states by design)
-  // 3. No deadlock states
-  // 4. All states have valid transitions or are intentionally terminal
-
-  std::vector<pageID> unreachable = getUnreachablePages();
-  std::vector<pageID> dangling = getDanglingPages();
-  std::vector<pageID> deadlocks = getDeadlockPages();
-
-  // Allow initial state to be "unreachable" as entry point
-  if (unreachable.size() > 1) {
-    return false;
-  }
-  if (unreachable.size() == 1 && unreachable[0] != _currentState.page) {
-    return false;
-  }
-
-  // Terminal pages are acceptable, but deadlocks are not
-  return deadlocks.empty();
+void improvedStateMachine::clearValidationWarnings() const {
+  _validationWarnings.clear();
 }
-
-void improvedStateMachine::updateStatistics(uint32_t transitionTime,
-                                            bool success) {
-  if (transitionTime > _stats.maxTransitionTime) {
-    _stats.maxTransitionTime = transitionTime;
-  }
-
-  // Update last transition time
-  _stats.lastTransitionTime = transitionTime;
-
-  // Update running average (simple moving average)
-  _stats.averageTransitionTime =
-      ((_stats.averageTransitionTime * _stats.totalTransitions) +
-       transitionTime) /
-      (_stats.totalTransitions + 1);
-}
-
-validationResult improvedStateMachine::validateConfiguration() const {
-  return validateStateMachine();
-}
-
-#ifndef BUILDING_TEST_RUNNER_BUNDLE
-// Setup and loop functions removed - provided by test runners with weak linkage
-#endif
