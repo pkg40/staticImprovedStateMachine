@@ -958,6 +958,42 @@ void improvedStateMachine::clearValidationWarnings() const {
   _validationWarnings.clear();
 }
 
+// Validate the overall state machine configuration
+validationResult improvedStateMachine::validateConfiguration() const {
+  // Check for basic structural issues
+  if (_states.empty()) {
+    logValidationWarning("State machine has no states defined", SEVERITY_ERROR);
+    return validationResult::MAX_PAGES_EXCEEDED;  // Using closest available error
+  }
+  
+  if (_transitions.empty()) {
+    logValidationWarning("State machine has no transitions defined", SEVERITY_ERROR);
+    return validationResult::MAX_TRANSITIONS_EXCEEDED;  // Using closest available error
+  }
+  
+  // Check for unreachable states
+  if (hasDanglingStates()) {
+    logValidationWarning("State machine has unreachable states", SEVERITY_WARNING);
+    return validationResult::DANGLING_PAGE;
+  }
+  
+  // Check for circular dependencies
+  if (hasCircularDependencies()) {
+    logValidationWarning("State machine has circular dependencies", SEVERITY_ERROR);
+    return validationResult::CIRCULAR_DEPENDENCY;
+  }
+  
+  // Check for infinite loop risks
+  for (const auto& trans : _transitions) {
+    if (isInfiniteLoopRisk(trans)) {
+      logValidationWarning("Potential infinite loop detected", SEVERITY_WARNING);
+      return validationResult::POTENTIAL_INFINITE_LOOP;
+    }
+  }
+  
+  return validationResult::VALID;
+}
+
 // Update statistics with transition timing and success/failure information
 void improvedStateMachine::updateStatistics(uint32_t transitionTime, bool success) {
   // Update timing statistics

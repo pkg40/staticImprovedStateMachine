@@ -2,18 +2,21 @@
 
 #ifdef ARDUINO
 #include <Arduino.h>
-#else
+#endif
+
 #include <cstdint>
 #include <cstddef>
 #include <algorithm>
-// Forward declarations for mock functions
-unsigned long millis();
-unsigned long micros();
-#endif
 #include <vector>
 #include <functional>
 #include <limits>
 #include <string>
+
+#ifndef ARDUINO
+// Forward declarations for mock functions
+unsigned long millis();
+unsigned long micros();
+#endif
 
 // Safety and validation macros
 #ifndef STATEMACHINE_MAX_TRANSITIONS
