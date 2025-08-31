@@ -275,7 +275,8 @@ uint16_t improvedStateMachine::processEvent(eventID event, void *context) {
   // Find first matching transition (deterministic: first match wins)
   const stateTransition *matchingTransition = nullptr;
   int matchCount = 0;
-  for (const auto &trans : _transitions) {
+  for (auto it = std::begin(_transitions); it != std::end(_transitions); ++it) {
+    const auto& trans = *it;
     if (matchesTransition(trans, _currentState, event)) {
       matchingTransition = &trans;
       if (!_debugMode) {
@@ -305,9 +306,6 @@ uint16_t improvedStateMachine::processEvent(eventID event, void *context) {
       printTransition(trans);
     }
 
-    // Update scoreboard for the current state (before transition)
-    updateScoreboard(_currentState.page);
-
     // Execute action with exception safety
     try {
       executeAction(trans, event, context);
@@ -334,6 +332,9 @@ uint16_t improvedStateMachine::processEvent(eventID event, void *context) {
     // Update current state
     _currentState = newState;
     _stats.stateChanges++;
+
+    // Update scoreboard for the new state (after transition)
+    updateScoreboard(_currentState.page);
 
     // Calculate redraw mask
     uint16_t mask = calculateRedrawMask(_lastState, _currentState);
@@ -404,29 +405,46 @@ bool improvedStateMachine::matchesTransition(const stateTransition &trans,
   }
 }
 
-// TODO - This needs to be fixed. It doen't make any sense
+// Check for conflicting transitions (exact duplicates and overlapping wildcards)
 bool improvedStateMachine::transitionsConflict(
     const stateTransition &existing, const stateTransition &newTrans) const {
-  // Two transitions conflict if they could match the same state/event
-  // combination
+  // First check for exact duplicates - these are always conflicts
+  if (existing.fromPage == newTrans.fromPage &&
+      existing.fromButton == newTrans.fromButton &&
+      existing.event == newTrans.event &&
+      existing.toPage == newTrans.toPage &&
+      existing.toButton == newTrans.toButton) {
+    return true; // Exact duplicate
+  }
 
-  // Check if pages can overlap (fromPage dimension)
+  // Check if transitions could match the same state/event combination
+  // Two transitions conflict if they could both match the same concrete input
+
+  // Check if pages could overlap (fromPage dimension)
   bool pagesOverlap = (existing.fromPage == DONT_CARE_PAGE ||
                        newTrans.fromPage == DONT_CARE_PAGE ||
                        existing.fromPage == newTrans.fromPage);
 
-  // Check if buttons can overlap (fromButton dimension)
+  // Check if buttons could overlap (fromButton dimension)
   bool buttonsOverlap = (existing.fromButton == DONT_CARE_BUTTON ||
                          newTrans.fromButton == DONT_CARE_BUTTON ||
                          existing.fromButton == newTrans.fromButton);
 
-  // Check if events can overlap (event dimension)
-  bool eventsOverlap =
-      (existing.event == DONT_CARE_EVENT || newTrans.event == DONT_CARE_EVENT ||
-       existing.event == newTrans.event);
+  // Check if events could overlap (event dimension)
+  bool eventsOverlap = (existing.event == DONT_CARE_EVENT ||
+                        newTrans.event == DONT_CARE_EVENT ||
+                        existing.event == newTrans.event);
 
-  // Conflict exists if ALL dimensions overlap
-  return pagesOverlap && buttonsOverlap && eventsOverlap;
+  // Transitions conflict if they could match the same concrete state/event
+  // AND they have different destination states (creating ambiguity)
+  if (pagesOverlap && buttonsOverlap && eventsOverlap) {
+    // If they have different destinations, this creates ambiguity
+    if (existing.toPage != newTrans.toPage || existing.toButton != newTrans.toButton) {
+      return true; // Conflicting transitions with different destinations
+    }
+  }
+
+  return false; // No conflict
 }
 
 void improvedStateMachine::executeAction(const stateTransition &trans,
@@ -461,7 +479,8 @@ void improvedStateMachine::dumpStateTable() const {
   Serial.println("From     Button Event To       ToBtn Description");
   Serial.println("-------- ------ ----- -------- ----- -----------");
 
-  for (const auto &trans : _transitions) {
+  for (auto it = std::begin(_transitions); it != std::end(_transitions); ++it) {
+    const auto& trans = *it;
     // Get menu names for better readability
     char fromName[9] = {0};
     char toName[9] = {0};
@@ -525,7 +544,8 @@ void improvedStateMachine::dumpStateTable() const {
   printf("From     Button Event To       ToBtn Description\n");
   printf("-------- ------ ----- -------- ----- -----------\n");
 
-  for (const auto &trans : _transitions) {
+  for (auto it = std::begin(_transitions); it != std::end(_transitions); ++it) {
+    const auto& trans = *it;
     char fromName[9] = {0};
     char toName[9] = {0};
     char eventName[6] = {0};
@@ -586,15 +606,15 @@ void improvedStateMachine::printAllTransitions() const {
 #ifdef ARDUINO
   Serial.println("\n--- TRANSITION TABLE ---");
   Serial.println("FromPage\tFromButton\tEvent\tToPage\tToButton\tAction");
-  for (const auto &t : _transitions) {
-    printTransition(t);
+  for (auto it = std::begin(_transitions); it != std::end(_transitions); ++it) {
+    printTransition(*it);
   }
   Serial.println("--- END TRANSITION TABLE ---\n");
 #else
   printf("\n--- TRANSITION TABLE ---\n");
   printf("FromPage\tFromButton\tEvent\tToPage\tToButton\tAction\n");
-  for (const auto &t : _transitions) {
-    printTransition(t);
+  for (auto it = std::begin(_transitions); it != std::end(_transitions); ++it) {
+    printTransition(*it);
   }
   printf("--- END TRANSITION TABLE ---\n");
 #endif
@@ -784,7 +804,8 @@ improvedStateMachine::validateTransition(const stateTransition &trans,
 
   // Check for conflicting transitions (exact duplicates and overlapping
   // wildcards)
-  for (const auto &existing : _transitions) {
+  for (auto it = std::begin(_transitions); it != std::end(_transitions); ++it) {
+    const auto& existing = *it;
     if (transitionsConflict(existing, trans)) {
       return validationResult::DUPLICATE_TRANSITION; // Reusing this error
                                                      // code for any conflict
@@ -814,7 +835,8 @@ validationResult improvedStateMachine::validateStateMachine() const {
 
 bool improvedStateMachine::isPageReachable(pageID id) const {
   // Simple reachability check - can be improved with graph algorithms
-  for (const auto &trans : _transitions) {
+  for (auto it = std::begin(_transitions); it != std::end(_transitions); ++it) {
+    const auto& trans = *it;
     if (trans.toPage == id) {
       return true;
     }
@@ -826,7 +848,8 @@ bool improvedStateMachine::hasDanglingStates() const {
   // Check if any states have no outgoing transitions
   std::vector<pageID> statesWithTransitions;
 
-  for (const auto &trans : _transitions) {
+  for (auto it = std::begin(_transitions); it != std::end(_transitions); ++it) {
+    const auto& trans = *it;
     bool found = false;
     for (pageID id : statesWithTransitions) {
       if (id == trans.fromPage) {
@@ -839,7 +862,8 @@ bool improvedStateMachine::hasDanglingStates() const {
     }
   }
 
-  for (const auto &state : _states) {
+  for (auto it = std::begin(_states); it != std::end(_states); ++it) {
+    const auto& state = *it;
     bool hasTransition = false;
     for (pageID id : statesWithTransitions) {
       if (id == state.id) {
@@ -857,7 +881,8 @@ bool improvedStateMachine::hasDanglingStates() const {
 
 bool improvedStateMachine::hasCircularDependencies() const {
   // Simple cycle detection - can be improved with DFS
-  for (const auto &trans : _transitions) {
+  for (auto it = std::begin(_transitions); it != std::end(_transitions); ++it) {
+    const auto& trans = *it;
     if (trans.fromPage == trans.toPage && trans.fromPage != DONT_CARE_PAGE) {
       // Self-loop found
       continue; // Self-loops are allowed
@@ -876,7 +901,8 @@ bool improvedStateMachine::isInfiniteLoopRisk(const stateTransition &trans) cons
   }
 
   // Check for cycles in transition graph (simplified check)
-  for (const auto &existing : _transitions) {
+  for (auto it = std::begin(_transitions); it != std::end(_transitions); ++it) {
+    const auto& existing = *it;
     if (existing.toPage == trans.fromPage && existing.fromPage == trans.toPage) {
       // Potential cycle detected
       return true;
@@ -930,4 +956,24 @@ validationResult improvedStateMachine::validateTransitionWarnings(const stateTra
 
 void improvedStateMachine::clearValidationWarnings() const {
   _validationWarnings.clear();
+}
+
+// Update statistics with transition timing and success/failure information
+void improvedStateMachine::updateStatistics(uint32_t transitionTime, bool success) {
+  // Update timing statistics
+  _stats.lastTransitionTime = transitionTime;
+  
+  if (transitionTime > _stats.maxTransitionTime) {
+    _stats.maxTransitionTime = transitionTime;
+  }
+  
+  // Update average transition time (simple moving average)
+  if (_stats.totalTransitions > 0) {
+    _stats.averageTransitionTime = (_stats.averageTransitionTime + transitionTime) / 2;
+  } else {
+    _stats.averageTransitionTime = transitionTime;
+  }
+  
+  // Note: Counter increments (stateChanges, actionExecutions, failedTransitions) 
+  // are now handled directly in processEvent to avoid double-counting
 }

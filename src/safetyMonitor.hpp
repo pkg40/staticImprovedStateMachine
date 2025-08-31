@@ -26,7 +26,7 @@
  * }
  * @endcode
  */
-class SafetyMonitor {
+class safetyMonitor {
 public:
     /**
      * @brief Safety violation severity levels

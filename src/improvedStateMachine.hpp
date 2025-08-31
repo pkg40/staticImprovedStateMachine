@@ -142,16 +142,14 @@ struct stateMachineStats {
     stateMachineStats() : totalTransitions(0), failedTransitions(0), stateChanges(0),
                          actionExecutions(0), validationErrors(0), maxTransitionTime(0), 
                          averageTransitionTime(0), lastTransitionTime(0) {}
-};
-
-// Compact state transition definition
+};// Compact state transition definition
 struct stateTransition {
-    uint8_t fromPage;
-    uint8_t fromButton;
-    uint8_t event;
-    uint8_t toPage;
-    uint8_t toButton;
-    std::function<void(uint8_t, uint8_t, void*)> action;
+    pageID fromPage;
+    pageID fromButton;
+    eventID event;
+    pageID toPage;
+    pageID toButton;
+    std::function<void(pageID, eventID, void*)> action;
     uint8_t op1;
     uint8_t op2;
     uint8_t op3;

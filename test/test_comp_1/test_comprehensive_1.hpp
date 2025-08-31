@@ -155,12 +155,14 @@ void test_009_multiple_events_same_state() {
 
 void test_010_overlapping_transitions() {
   sm->setInitialState(1);
-  sm->addTransition(stateTransition(1, 0, 1, 2, 0, nullptr));
-  sm->addTransition(stateTransition(1, 0, 1, 3, 0,
-                                    nullptr)); // Overlapping - first should win
+  validationResult result1 = sm->addTransition(stateTransition(1, 0, 1, 2, 0, nullptr));
+  validationResult result2 = sm->addTransition(stateTransition(1, 0, 1, 3, 0, nullptr)); // Conflicting transition
+
+  TEST_ASSERT_EQUAL_UINT8(static_cast<uint8_t>(validationResult::VALID), static_cast<uint8_t>(result1));
+  TEST_ASSERT_NOT_EQUAL(static_cast<uint8_t>(validationResult::VALID), static_cast<uint8_t>(result2)); // Should be rejected
 
   sm->processEvent(1);
-  TEST_ASSERT_EQUAL_UINT8(2, sm->getPage()); // First transition wins
+  TEST_ASSERT_EQUAL_UINT8(2, sm->getPage()); // Only first transition exists
   testStats.passedTests++;
 }
 

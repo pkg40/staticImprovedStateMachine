@@ -240,7 +240,7 @@ void safetyActionTemplate(pageID fromPage, eventID event, void* context) {
  * Provides standardized emergency response patterns that can be easily
  * integrated into existing state machine applications.
  */
-class EmergencyResponse {
+class emergencyResponse {
 public:
     /**
      * @brief Emergency response severity levels
@@ -262,7 +262,7 @@ public:
      * 
      * @param stateMachine State machine to control
      */
-    explicit EmergencyResponse(improvedStateMachine* stateMachine)
+    explicit emergencyResponse(improvedStateMachine* stateMachine)
         : _stateMachine(stateMachine) {}
 
     /**
@@ -396,7 +396,7 @@ public:
         #endif
 
         // Add standard emergency transitions
-        EmergencyResponse::addEmergencyTransitions(this);
+        emergencyResponse::addEmergencyTransitions(this);
     }
 
     /**
