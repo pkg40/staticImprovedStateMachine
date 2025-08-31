@@ -4,7 +4,7 @@
 #include <unity.h>
 #include "../src/improvedStateMachine.hpp"
 
-extern ImprovedStateMachine* sm;
+extern improvedStateMachine* sm;
 
 // setUp/tearDown provided by shared header when compiled together with runner
 
@@ -29,20 +29,19 @@ void printTransitionStep(int step, uint8_t event, uint8_t fromState, uint8_t toS
 
 // Helper function to print current state details
 void printCurrentStateDetails() {
-    CurrentState current = sm->getCurrentState();
-    const stateDefinition* stateDef = sm->getState(current.state);
-    const menuDefinition* menuDef = sm->getMenu(current.state);
+    uint8_t currentPage = sm->getPage();
+    uint8_t currentButton = sm->getButton();
+    const stateDefinition* stateDef = sm->getState(currentPage);
+    const menuDefinition* menuDef = sm->getMenu(currentPage);
     
 #ifdef ARDUINO
     Serial.println("=== Current State Details ===");
     Serial.print("State ID: ");
-    Serial.println(current.state);
+    Serial.println(currentPage);
     Serial.print("Page: ");
-    Serial.println(current.page);
+    Serial.println(currentPage);
     Serial.print("Button: ");
-    Serial.println(current.button);
-    Serial.print("Substate: ");
-    Serial.println(current.substate);
+    Serial.println(currentButton);
     
     if (stateDef) {
         Serial.print("State Name: ");
@@ -62,10 +61,9 @@ void printCurrentStateDetails() {
     Serial.println("=============================");
 #else
     printf("=== Current State Details ===\n");
-    printf("State ID: %d\n", current.state);
-    printf("Page: %d\n", current.page);
-    printf("Button: %d\n", current.button);
-    printf("Substate: %d\n", current.substate);
+    printf("State ID: %d\n", currentPage);
+    printf("Page: %d\n", currentPage);
+    printf("Button: %d\n", currentButton);
     
     if (stateDef) {
         printf("State Name: %s\n", stateDef->name);

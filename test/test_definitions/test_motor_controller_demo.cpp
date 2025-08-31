@@ -5,8 +5,9 @@
 #include "../src/improvedStateMachine.hpp"
 #include "../example/motorControllerMenuConfig_fixed.hpp"
 
+
 // Use shared ImprovedStateMachine from runner
-extern ImprovedStateMachine* sm;
+extern improvedStateMachine* sm;
 
 // Note: setUp/tearDown provided by test_common.hpp when compiled into the shared TU.
 
@@ -18,7 +19,7 @@ void test_motor_controller_visualization() {
 #endif
 
     // Load the comprehensive motor controller configuration
-    configureMotorControllerMenu(sm);
+    MotorControllerMenuConfig::configureMotorControllerMenu(sm);
     
     // Display the complete structure
     sm->dumpStateTable();

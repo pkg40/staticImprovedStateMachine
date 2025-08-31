@@ -163,6 +163,15 @@ const stateDefinition *improvedStateMachine::getState(pageID id) const {
   return nullptr;
 }
 
+const menuDefinition *improvedStateMachine::getMenu(pageID id) const {
+  for (const auto &menu : _menus) {
+    if (menu.id == id) {
+      return &menu;
+    }
+  }
+  return nullptr;
+}
+
 void improvedStateMachine::addMenu(const menuDefinition &menu) {
   _menus.push_back(menu);
 }
