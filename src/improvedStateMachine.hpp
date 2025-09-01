@@ -7,10 +7,9 @@
 #include <cstdint>
 #include <cstddef>
 #include <algorithm>
-#include <vector>
+#include <array>
 #include <functional>
 #include <limits>
-#include <string>
 
 #ifndef ARDUINO
 // Forward declarations for mock functions
@@ -18,36 +17,44 @@ unsigned long millis();
 unsigned long micros();
 #endif
 
-// Safety and validation macros
-#ifndef STATEMACHINE_MAX_TRANSITIONS
-    #define STATEMACHINE_MAX_TRANSITIONS 256
+// Static storage configuration - compile-time capacity limits
+#ifndef STATIC_STATEMACHINE_MAX_TRANSITIONS
+    #define STATIC_STATEMACHINE_MAX_TRANSITIONS 64
 #endif
 
-#ifndef STATEMACHINE_MAX_PAGES
-    #define STATEMACHINE_MAX_PAGES 127  // Allow pages 0-126 (127 reserved for DONT_CARE_PAGE)
-    #define DONT_CARE_PAGE STATEMACHINE_MAX_PAGES  // Allow pages 0-126 (127 reserved for DONT_CARE_PAGE)
+#ifndef STATIC_STATEMACHINE_MAX_PAGES
+    #define STATIC_STATEMACHINE_MAX_PAGES 32
+    #define STATIC_DONT_CARE_PAGE STATIC_STATEMACHINE_MAX_PAGES
 #endif
 
-#ifndef STATEMACHINE_MAX_BUTTONS
-    #define STATEMACHINE_MAX_BUTTONS 15  // Allow buttons 0-14 (15 reserved for DONT_CARE_BUTTONS)
-    #define DONT_CARE_BUTTON STATEMACHINE_MAX_BUTTONS  // Allow buttons 0-14 (15 reserved for DONT_CARE_BUTTONS)
+#ifndef STATIC_STATEMACHINE_MAX_BUTTONS
+    #define STATIC_STATEMACHINE_MAX_BUTTONS 15
+    #define STATIC_DONT_CARE_BUTTON STATIC_STATEMACHINE_MAX_BUTTONS
 #endif
 
-#ifndef STATEMACHINE_MAX_EVENTS
-    #define STATEMACHINE_MAX_EVENTS 63  // Allow events 0-63 (64 reserved for DONT_CARE_EVENT)
-    #define DONT_CARE_EVENT STATEMACHINE_MAX_EVENTS  // Allow events 0-63 (64 reserved for DONT_CARE_EVENT)
+#ifndef STATIC_STATEMACHINE_MAX_EVENTS
+    #define STATIC_STATEMACHINE_MAX_EVENTS 63
+    #define STATIC_DONT_CARE_EVENT STATIC_STATEMACHINE_MAX_EVENTS
 #endif
 
-#ifndef STATEMACHINE_MAX_RECURSION_DEPTH
-    #define STATEMACHINE_MAX_RECURSION_DEPTH 10
+#ifndef STATIC_STATEMACHINE_MAX_RECURSION_DEPTH
+    #define STATIC_STATEMACHINE_MAX_RECURSION_DEPTH 10
 #endif
 
-#ifndef STATEMACHINE_SCOREBOARD_SEGMENT_SIZE
-    #define STATEMACHINE_SCOREBOARD_SEGMENT_SIZE 32
+#ifndef STATIC_STATEMACHINE_SCOREBOARD_SEGMENT_SIZE
+    #define STATIC_STATEMACHINE_SCOREBOARD_SEGMENT_SIZE 32
 #endif
 
-#ifndef STATEMACHINE_SCOREBOARD_NUM_SEGMENTS
-    #define STATEMACHINE_SCOREBOARD_NUM_SEGMENTS 4
+#ifndef STATIC_STATEMACHINE_SCOREBOARD_NUM_SEGMENTS
+    #define STATIC_STATEMACHINE_SCOREBOARD_NUM_SEGMENTS 4
+#endif
+
+#ifndef STATIC_STATEMACHINE_MAX_MENU_LABELS
+    #define STATIC_STATEMACHINE_MAX_MENU_LABELS 8
+#endif
+
+#ifndef STATIC_STATEMACHINE_MAX_KEY_LENGTH
+    #define STATIC_STATEMACHINE_MAX_KEY_LENGTH 12
 #endif
 
 // Redraw mask constants
@@ -72,277 +79,270 @@ unsigned long micros();
     #define DESCRIPTION_BUFFER_SIZE 12
 #endif
 
-// TODO - decide whether to keep - It isn't clear that all of the tests we want to do are error severity.
-// Enhanced validation modes
-#define VALIDATION_MODE_STRICT 0x01    // Reject all suspicious transitions
-#define VALIDATION_MODE_WARN 0x02      // Allow but log warnings
-#define VALIDATION_MODE_DEBUG 0x04     // Extra debug validation
-#define VALIDATION_MODE_ASSERT 0x08    // Use assertions for critical errors
-
-// Validation severity levels
-enum validationSeverity {
-    SEVERITY_INFO = 0,
-    SEVERITY_WARNING = 1,
-    SEVERITY_ERROR = 2,
-    SEVERITY_CRITICAL = 3
+// Validation results
+enum staticValidationResult {
+    STATIC_VALID = 0,
+    STATIC_SUCCESS = STATIC_VALID,
+    STATIC_INVALID_PAGE_ID,
+    STATIC_INVALID_BUTTON_ID,
+    STATIC_INVALID_EVENT_ID,
+    STATIC_INVALID_TRANSITION,
+    STATIC_DUPLICATE_TRANSITION,
+    STATIC_DUPLICATE_PAGE,
+    STATIC_UNREACHABLE_PAGE,
+    STATIC_DANGLING_PAGE,
+    STATIC_CIRCULAR_DEPENDENCY,
+    STATIC_MAX_TRANSITIONS_EXCEEDED,
+    STATIC_MAX_PAGES_EXCEEDED,
+    STATIC_MAX_MENUS_EXCEEDED
 };
 
-// Enhanced validation results with more specific error codes
-enum validationResult {
-    VALID = 0,
-    SUCCESS = VALID, // alias for VALID
-    INVALID_PAGE_ID,
-    INVALID_BUTTON_ID,
-    INVALID_EVENT_ID,
-    INVALID_TRANSITION,
-    DUPLICATE_TRANSITION,
-    DUPLICATE_PAGE,
-    UNREACHABLE_PAGE,
-    DANGLING_PAGE,
-    WARNING_DANGLING_PAGES = DANGLING_PAGE,  // Alias for DANGLING_PAGE
-    CIRCULAR_DEPENDENCY,
-    MAX_TRANSITIONS_EXCEEDED,
-    TRANSITION_LIMIT_REACHED = MAX_TRANSITIONS_EXCEEDED,  // Alias for MAX_TRANSITIONS_EXCEEDED
-    MAX_PAGES_EXCEEDED,
-    // New enhanced validation errors
-    WILDCARD_IN_DESTINATION,      // Wildcard used in destination field
-    SELF_LOOP_WITHOUT_CONDITION, // Self-loop without proper conditions
-    POTENTIAL_INFINITE_LOOP,     // Transition could cause infinite loop
-    MISSING_NULL_ACTION,         // Transition with nullptr action when required
-    INCONSISTENT_WILDCARD_USAGE, // Mixed wildcard usage patterns
-    TRANSITION_AMBIGUITY,        // Transition conflicts with existing ones
-    PAGE_NOT_DEFINED,           // Referenced state not in state definitions
-    ORPHANED_TRANSITION,         // Transition references undefined states
-    VALIDATION_MODE_VIOLATION    // Transition violates current validation mode
+// Menu template types: the value can be used as identifier and mod divisor for rotating button selection
+enum class staticMenuTemplate : uint8_t {
+    STATIC_ONE_X_ONE = 1,
+    STATIC_ONE_X_TWO = 2,
+    STATIC_ONE_X_THREE = 3,
+    STATIC_TWO_X_TWO = 4,
+    STATIC_TWO_X_THREE = 6
+};
+
+// EEPROM key structure with fixed-size strings
+struct staticEepromKeys {
+    char primaryKey[STATIC_STATEMACHINE_MAX_KEY_LENGTH];
+    char secondaryKey[STATIC_STATEMACHINE_MAX_KEY_LENGTH];
+    
+    staticEepromKeys(const char* primary, const char* secondary) {
+        strncpy(primaryKey, primary ? primary : "", sizeof(primaryKey) - 1);
+        primaryKey[sizeof(primaryKey) - 1] = '\0';
+        strncpy(secondaryKey, secondary ? secondary : "", sizeof(secondaryKey) - 1);
+        secondaryKey[sizeof(secondaryKey) - 1] = '\0';
+    }
+    
+    staticEepromKeys() {
+        primaryKey[0] = '\0';
+        secondaryKey[0] = '\0';
+    }
 };
 
 // Forward declarations
-class improvedStateMachine;
+class staticImprovedStateMachine;
 
-// State identifiers - can be any type that supports comparison
-using pageID = uint8_t;
-using buttonID = uint8_t;
-using eventID = uint8_t;
+// State identifiers
+using staticPageID = uint8_t;
+using staticButtonID = uint8_t;
+using staticEventID = uint8_t;
 
 // Action function type
-using actionFunction = std::function<void(pageID, eventID, void*)>;
+using staticActionFunction = std::function<void(staticPageID, staticEventID, void*)>;
 
 // State machine statistics for monitoring
-struct stateMachineStats {
+struct staticStateMachineStats {
     uint32_t totalTransitions;
     uint32_t failedTransitions;
     uint32_t stateChanges;
     uint32_t actionExecutions;
     uint32_t validationErrors;
-    uint32_t maxTransitionTime;  // microseconds
-    uint32_t averageTransitionTime;  // microseconds - original field name
-    uint32_t lastTransitionTime;  // microseconds - missing field
+    uint32_t maxTransitionTime;
+    uint32_t averageTransitionTime;
+    uint32_t lastTransitionTime;
     
-    stateMachineStats() : totalTransitions(0), failedTransitions(0), stateChanges(0),
-                         actionExecutions(0), validationErrors(0), maxTransitionTime(0), 
-                         averageTransitionTime(0), lastTransitionTime(0) {}
-};  // Compact state transition definition
-struct stateTransition {
-    pageID fromPage;
-    pageID fromButton;
-    eventID event;
-    pageID toPage;
-    pageID toButton;
-    std::function<void(pageID, eventID, void*)> action;
+    staticStateMachineStats() : totalTransitions(0), failedTransitions(0), stateChanges(0),
+                               actionExecutions(0), validationErrors(0), maxTransitionTime(0), 
+                               averageTransitionTime(0), lastTransitionTime(0) {}
+};
+
+// Static storage state transition definition
+struct staticStateTransition {
+    staticPageID fromPage;
+    staticButtonID fromButton;
+    staticEventID event;
+    staticPageID toPage;
+    staticButtonID toButton;
+    staticActionFunction action;
     uint8_t op1;
     uint8_t op2;
     uint8_t op3;
 
     // Constructor for simple transitions
-    stateTransition(pageID fromP, buttonID fromB, eventID evt, pageID toP, buttonID toB, actionFunction act = nullptr)
+    staticStateTransition(staticPageID fromP, staticButtonID fromB, staticEventID evt, 
+                         staticPageID toP, staticButtonID toB, staticActionFunction act = nullptr)
         : fromPage(fromP), fromButton(fromB), event(evt),
           toPage(toP), toButton(toB), action(act),
           op1(0), op2(0), op3(0) {}
     
+    // Default constructor for array initialization
+    staticStateTransition() : fromPage(0), fromButton(0), event(0), toPage(0), toButton(0), 
+                             action(nullptr), op1(0), op2(0), op3(0) {}
 };
 
-// State definition with metadata
-struct stateDefinition {
-    pageID id;
-    const char* name;
-    const char* displayName;
-    std::vector<const char*> buttonLabels;
-    std::vector<uint16_t> eepromAddresses;
+// Static storage menu definition (without pageID since it's embedded in page)
+struct staticMenuDefinition {
+    staticMenuTemplate templateType;
+    char shortName[16];
+    char longName[32];
+    char buttonLabels[STATIC_STATEMACHINE_MAX_MENU_LABELS][16];
+    staticEepromKeys eepromKeys[STATIC_STATEMACHINE_MAX_MENU_LABELS];
+
+    staticMenuDefinition(staticMenuTemplate templ, const char* shortNm, const char* longNm)
+        : templateType(templ) {
+        strncpy(shortName, shortNm ? shortNm : "", sizeof(shortName) - 1);
+        shortName[sizeof(shortName) - 1] = '\0';
+        strncpy(longName, longNm ? longNm : "", sizeof(longName) - 1);
+        longName[sizeof(longName) - 1] = '\0';
+        
+        // Initialize button labels and EEPROM keys
+        for (size_t i = 0; i < STATIC_STATEMACHINE_MAX_MENU_LABELS; i++) {
+            buttonLabels[i][0] = '\0';
+            eepromKeys[i] = staticEepromKeys();
+        }
+    }
     
-    // Modern constructor with full functionality
-    stateDefinition(pageID pID, const char* pageName, const char* display, 
-        std::vector<const char*> labels = {}, std::vector<uint16_t> addresses = {})
-        : id(pID), name(pageName), displayName(display), 
-          buttonLabels(labels), eepromAddresses(addresses) {}
-          
-    // Backward compatibility constructor for existing tests (4 parameters with nullptr)
-    stateDefinition(pageID pID, const char* pageName, std::nullptr_t, std::nullptr_t)
-        : id(pID), name(pageName), displayName(pageName), 
-          buttonLabels({}), eepromAddresses({}) {}
-          
-    // Backward compatibility constructor for simple 2-parameter format
-    stateDefinition(pageID pID, const char* stateName)
-        : id(pID), name(stateName), displayName(stateName), 
-          buttonLabels({}), eepromAddresses({}) {}
-};
-
-// Menu template types: the value can be used as identifier and mod divisor for rotating button selection
-enum class menuTemplate : uint8_t {
-    ONE_X_ONE = 1,
-    ONE_X_TWO = 2,
-    ONE_X_THREE = 3,
-    TWO_X_TWO = 4,
-    TWO_X_THREE = 6
-};
-
-// Menu definition
-struct menuDefinition {
-    pageID id;
-    menuTemplate templateType;
-    const char* shortName;
-    const char* longName;
-    std::vector<const char*> buttonLabels;
-    std::vector<uint16_t> eepromAddresses;
-
-    menuDefinition(pageID pID, menuTemplate templ, const char* shortNm, const char* longNm,
-                  std::vector<const char*> labels = {}, std::vector<uint16_t> addresses = {})
-        : id(pID), templateType(templ), shortName(shortNm), longName(longNm),
-          buttonLabels(labels), eepromAddresses(addresses) {}
-};
-
-// Current state structure
-struct currentState {
-    pageID page;
-    buttonID button;
-
-    currentState() : page(0), button(0) {}
-
-    bool operator==(const currentState& other) const {
-        return page == other.page && button == other.button ;
+    staticMenuDefinition() : templateType(staticMenuTemplate::STATIC_ONE_X_ONE) {
+        shortName[0] = '\0';
+        longName[0] = '\0';
+        
+        // Initialize button labels and EEPROM keys
+        for (size_t i = 0; i < STATIC_STATEMACHINE_MAX_MENU_LABELS; i++) {
+            buttonLabels[i][0] = '\0';
+            eepromKeys[i] = staticEepromKeys();
+        }
     }
 };
 
-// Improved State Machine Class with Safety Features
-class improvedStateMachine {
+// Static storage page definition with embedded menu
+struct staticPageDefinition {
+    staticPageID id;
+    char name[16];          // Fixed-size name storage
+    char displayName[16];   // Fixed-size display name storage
+    staticMenuDefinition menu;  // Embedded menu definition
+    
+    // Constructor
+    staticPageDefinition(staticPageID pID, const char* pageName, const char* display)
+        : id(pID), menu() {
+        strncpy(name, pageName ? pageName : "", sizeof(name) - 1);
+        name[sizeof(name) - 1] = '\0';
+        strncpy(displayName, display ? display : pageName ? pageName : "", sizeof(displayName) - 1);
+        displayName[sizeof(displayName) - 1] = '\0';
+    }
+    
+    // Constructor with menu
+    staticPageDefinition(staticPageID pID, const char* pageName, const char* display, 
+                        const staticMenuDefinition& menuDef)
+        : id(pID), menu(menuDef) {
+        strncpy(name, pageName ? pageName : "", sizeof(name) - 1);
+        name[sizeof(name) - 1] = '\0';
+        strncpy(displayName, display ? display : pageName ? pageName : "", sizeof(displayName) - 1);
+        displayName[sizeof(displayName) - 1] = '\0';
+    }
+    
+    // Default constructor
+    staticPageDefinition() : id(0), menu() {
+        name[0] = '\0';
+        displayName[0] = '\0';
+    }
+};
+
+// Alias for backward compatibility
+using staticStateDefinition = staticPageDefinition;
+
+// Current state structure
+struct staticCurrentState {
+    staticPageID page;
+    staticButtonID button;
+
+    staticCurrentState() : page(0), button(0) {}
+
+    bool operator==(const staticCurrentState& other) const {
+        return page == other.page && button == other.button;
+    }
+};
+
+// Static Improved State Machine Class
+class staticImprovedStateMachine {
 private:
-    std::vector<stateTransition> _transitions;
-    std::vector<stateDefinition> _states;
-    std::vector<menuDefinition> _menus;
-    currentState _currentState;
-    currentState _lastState;
-    uint32_t _stateScoreboard[4];
+    // Static storage arrays with counters
+    std::array<staticStateTransition, STATIC_STATEMACHINE_MAX_TRANSITIONS> _transitions;
+    std::array<staticPageDefinition, STATIC_STATEMACHINE_MAX_PAGES> _states;
+    size_t _transitionCount;
+    size_t _stateCount;
+    
+    staticCurrentState _currentState;
+    staticCurrentState _lastState;
+    uint32_t _stateScoreboard[STATIC_STATEMACHINE_SCOREBOARD_NUM_SEGMENTS];
     bool _debugMode;
     bool _validationEnabled;
     uint8_t _recursionDepth;
-    stateMachineStats _stats;
+    staticStateMachineStats _stats;
     
     // Helper methods
-    bool matchesTransition(const stateTransition& trans, const currentState& state, eventID event) const;
-    bool transitionsConflict(const stateTransition& existing, const stateTransition& newTrans) const;
-    void executeAction(const stateTransition& trans, eventID event, void* context);
-    uint16_t calculateRedrawMask(const currentState& oldState, const currentState& newState) const;
-    
-    // Enhanced validation properties
-    uint8_t _validationMode;           // Bitmask of validation modes
-    bool _strictWildcardChecking;      // Extra strict wildcard validation
-    bool _requireDefinedStates;        // Require states to be explicitly defined
-    bool _detectInfiniteLoops;         // Enable infinite loop detection
-    mutable std::vector<std::string> _validationWarnings; // Store validation warnings (mutable for const methods)
-    
-    // Enhanced validation helper methods
-    validationResult validateTransitionStrict(const stateTransition& trans) const;
-    validationResult validateTransitionWarnings(const stateTransition& trans) const;
-    bool isInfiniteLoopRisk(const stateTransition& trans) const;
-    bool isPageDefined(pageID id) const;
-    void logValidationWarning(const std::string& warning, validationSeverity severity = SEVERITY_WARNING) const;
+    bool matchesTransition(const staticStateTransition& trans, const staticCurrentState& state, staticEventID event) const;
+    bool transitionsConflict(const staticStateTransition& existing, const staticStateTransition& newTrans) const;
+    void executeAction(const staticStateTransition& trans, staticEventID event, void* context);
+    uint16_t calculateRedrawMask(const staticCurrentState& oldState, const staticCurrentState& newState) const;
     
     // Safety and validation methods
-    validationResult validateStateMachine() const;
-    
-    // Enhanced state reachability analysis
-    bool isPageReachable(pageID id) const;
+    staticValidationResult validateStateMachine() const;
+    bool isPageReachable(staticPageID id) const;
     bool hasDanglingStates() const;
     bool hasCircularDependencies() const;
-    std::vector<pageID> getUnreachablePages() const;
-    std::vector<pageID> getDanglingPages() const;
-    std::vector<pageID> getDeadlockPages() const;
-    bool isStateMachineComplete() const;
     void updateStatistics(uint32_t transitionTime, bool success);
     
 public:
-    improvedStateMachine();
+    staticImprovedStateMachine();
     
-    // Copy constructor and assignment operator for safe copying
-    improvedStateMachine(const improvedStateMachine& other);
-    improvedStateMachine& operator=(const improvedStateMachine& other);
+    // Copy constructor and assignment operator
+    staticImprovedStateMachine(const staticImprovedStateMachine& other);
+    staticImprovedStateMachine& operator=(const staticImprovedStateMachine& other);
     
     // Configuration methods
-    validationResult addState(const stateDefinition& state);
-    void addMenu(const menuDefinition& menu);
-    validationResult addTransition(const stateTransition& transition);
-    validationResult addTransitions(const std::vector<stateTransition>& transitions);
+    staticValidationResult addState(const staticStateDefinition& state);
+    staticValidationResult addTransition(const staticStateTransition& transition);
+    
+    // Clear methods for reuse
+    void clearConfiguration();
+    void clearTransitions();
+    void resetAllRuntime();
+    
+    // Capacity queries
+    size_t getMaxTransitions() const { return STATIC_STATEMACHINE_MAX_TRANSITIONS; }
+    size_t getMaxStates() const { return STATIC_STATEMACHINE_MAX_PAGES; }
+    size_t getTransitionCount() const { return _transitionCount; }
+    size_t getStateCount() const { return _stateCount; }
+    size_t getAvailableTransitions() const { return STATIC_STATEMACHINE_MAX_TRANSITIONS - _transitionCount; }
+    size_t getAvailableStates() const { return STATIC_STATEMACHINE_MAX_PAGES - _stateCount; }
     
     // Safety methods
     void enableValidation(bool enabled = true) { _validationEnabled = enabled; }
     void setValidationEnabled(bool enabled) { _validationEnabled = enabled; }
     bool isValidationEnabled() const { return _validationEnabled; }
-    validationResult validateConfiguration() const;
-    size_t getTransitionCount() const { return _transitions.size(); }
-    stateMachineStats getStatistics() const { return _stats; }
-    void resetStatistics() { _stats = stateMachineStats(); }
-    
-    // Enhanced validation configuration methods
-    void setValidationMode(uint8_t mode) { _validationMode = mode; }
-    uint8_t getValidationMode() const { return _validationMode; }
-    void enableStrictWildcardChecking(bool enabled = true) { _strictWildcardChecking = enabled; }
-    void requireDefinedStates(bool required = true) { _requireDefinedStates = required; }
-    void enableInfiniteLoopDetection(bool enabled = true) { _detectInfiniteLoops = enabled; }
-    
-    // Enhanced validation query methods
-    const std::vector<std::string>& getValidationWarnings() const { return _validationWarnings; }
-    size_t getValidationWarningCount() const { return _validationWarnings.size(); }
-    bool hasValidationWarnings() const { return !_validationWarnings.empty(); }
-    
-    // Enhanced statistics management for safety monitoring
-    void resetStatisticsWithTimestamp() { 
-        _stats = stateMachineStats(); 
-        _stats.lastTransitionTime = micros(); 
-    }
-    void resetPerformanceCounters() {
-        _stats.maxTransitionTime = 0;
-        _stats.averageTransitionTime = 0;
-    }
-    void resetErrorCounters() {
-        _stats.failedTransitions = 0;
-        _stats.validationErrors = 0;
-    }
-    uint32_t getStatisticsTimestamp() const { return _stats.lastTransitionTime; }
+    staticValidationResult validateConfiguration() const;
+    staticStateMachineStats getStatistics() const { return _stats; }
+    void resetStatistics() { _stats = staticStateMachineStats(); }
     
     // State management
-    void initializeState(pageID page = 0, buttonID button = 0);
-    void setState(pageID page = 0, buttonID button = 0);
-    void setCurrentPage(pageID page);
-    void forceState(pageID page = 0, buttonID button = 0);
+    void initializeState(staticPageID page = 0, staticButtonID button = 0);
+    void setState(staticPageID page = 0, staticButtonID button = 0);
+    void setCurrentPage(staticPageID page);
+    void forceState(staticPageID page = 0, staticButtonID button = 0);
     
     // Event processing
-    uint16_t processEvent(eventID event, void* context = nullptr);
+    uint16_t processEvent(staticEventID event, void* context = nullptr);
+    
     // State queries
-    // Legacy methods (kept for backward compatibility)
-    pageID getCurrentPage() const { 
+    staticPageID getCurrentPage() const { 
         if (_debugMode) Serial.printf("Current page: %d\n", _currentState.page);
         return _currentState.page; 
     }
-    pageID getPage() const { return getCurrentPage(); }
+    staticPageID getPage() const { return getCurrentPage(); }
 
-    pageID getCurrentButton() const { return _currentState.button; }
-    pageID getButton() const { return getCurrentButton(); }
+    staticButtonID getCurrentButton() const { return _currentState.button; }
+    staticButtonID getButton() const { return getCurrentButton(); }
 
-    pageID getLastPage() const { return _lastState.page; }
-    buttonID getLastButton() const { return _lastState.button; }
+    staticPageID getLastPage() const { return _lastState.page; }
+    staticButtonID getLastButton() const { return _lastState.button; }
 
-    // Menu queries
-    const menuDefinition* getMenu(pageID id) const;
-    const stateDefinition* getState(pageID id) const;
+    // State lookup
+    const staticPageDefinition* getState(staticPageID id) const;
 
     // Debug and utilities
     void setDebugMode(bool enabled) { _debugMode = enabled; }
@@ -350,37 +350,20 @@ public:
 
     void dumpStateTable() const;
     void printCurrentState() const;
-    void printTransition(const stateTransition& trans) const;
+    void printTransition(const staticStateTransition& trans) const;
     void printAllTransitions() const;
 
-    // Dumps all transitions in the state machine for debugging
-    void dumpTransitionTable() const {
-        Serial.println("\n--- TRANSITION TABLE ---");
-        Serial.println("FromState Event ToState");
-        Serial.println("------------------------");
-        for (const auto& trans : _transitions) {
-            Serial.printf("%3u   %3u   %3u   %3u   %3u\n",
-                trans.fromPage,
-                trans.fromButton,
-                trans.event,
-                trans.toPage,
-                trans.toButton);
-        }
-        Serial.println("------------------------\n");
-    }
-
     // Scoreboard functionality
-    void updateScoreboard( pageID id);
+    void updateScoreboard(staticPageID id);
     uint32_t getScoreboard(uint8_t index) const;
     void setScoreboard(uint32_t value, uint8_t index);
     
-    // Compact transition helpers
-    void addButtonNavigation(pageID menuId, uint8_t numButtons,
-                           const std::vector<pageID>& targetMenus = {});
-    void addStandardMenuTransitions(pageID menuId, pageID parentMenu,
-                                   const std::vector<pageID>& subMenus = {});
+    // Menu helper methods
+    void addButtonNavigation(staticPageID menuId, uint8_t numButtons,
+                           const std::array<staticPageID, STATIC_STATEMACHINE_MAX_MENU_LABELS>& targetMenus = {});
+    void addStandardMenuTransitions(staticPageID menuId, staticPageID parentMenu,
+                                   const std::array<staticPageID, STATIC_STATEMACHINE_MAX_MENU_LABELS>& subMenus = {});
     
     // Public validation methods for testing
-    void clearValidationWarnings() const;
-    validationResult validateTransition(const stateTransition& trans, bool verbose = false) const;
+    staticValidationResult validateTransition(const staticStateTransition& trans, bool verbose = false) const;
 };
