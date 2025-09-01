@@ -34,7 +34,7 @@ void test_076_random_state_transitions() {
     uint8_t numStates = RANDOM_TEST_MIN_STATES + (getRandomNumber() % RANDOM_TEST_STATE_RANGE); // 5-12 states
     uint8_t numEvents = RANDOM_TEST_MIN_EVENTS + (getRandomNumber() % RANDOM_TEST_EVENT_RANGE);  // 3-8 events
     
-    sm->setInitialState(1);
+    sm->initializeState(1);
     
     // Add random transitions
     for (int i = 0; i < RANDOM_TEST_SETUP_ITERATIONS; i++) {
@@ -48,9 +48,9 @@ void test_076_random_state_transitions() {
     // Process random events
     for (int i = 0; i < RANDOM_TEST_PROCESS_ITERATIONS; i++) {
         uint8_t event = getRandomNumber() % numEvents;
-        uint8_t beforeState = sm->getPage();
+        uint8_t beforeState = sm->getCurrentPage();
         sm->processEvent(event);
-        uint8_t afterState = sm->getPage();
+        uint8_t afterState = sm->getCurrentPage();
         
         // State should be valid
         TEST_ASSERT_TRUE(afterState >= 1 && afterState <= numStates + 1);
@@ -58,7 +58,7 @@ void test_076_random_state_transitions() {
 }
 
 void test_077_random_event_sequences() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     
     // Set up a small predictable state machine
     sm->addTransition(stateTransition(1,0,1,2,0,nullptr));
@@ -75,14 +75,14 @@ void test_077_random_event_sequences() {
             sm->processEvent(event);
             
             // Verify state is always valid
-            uint8_t state = sm->getPage();
+            uint8_t state = sm->getCurrentPage();
             TEST_ASSERT_TRUE(state >= 1 && state <= 3);
         }
     }
 }
 
 void test_078_random_scoreboard_operations() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     
     // Random scoreboard operations
     for (int i = 0; i < RANDOM_TEST_EXTENDED_ITERATIONS; i++) {
@@ -111,17 +111,17 @@ void test_079_random_state_definitions() {
 
 void test_080_fuzz_event_processing() {
     sm->setDebugMode(true);
-    sm->setInitialState(1);
+    sm->initializeState(1);
     sm->addTransition(stateTransition(1,0,DONT_CARE_EVENT,2,0,nullptr));  // Use specific event DONT_CARE_EVENT-1
     sm->addTransition(stateTransition(2,0,DONT_CARE_EVENT,1,0,nullptr));  // Use specific event DONT_CARE_EVENT-1
 
     // Fuzz with the specific event that should trigger transitions
     uint8_t event = 0;
     for (int i = 0; i < RANDOM_TEST_FUZZ_ITERATIONS; i++) {
-        uint8_t beforePage = sm->getPage();
+        uint8_t beforePage = sm->getCurrentPage();
         event = getRandomNumber() % (DONT_CARE_EVENT-1);
         sm->processEvent(event);
-        uint8_t afterPage = sm->getPage();
+        uint8_t afterPage = sm->getCurrentPage();
         
         // State should toggle between 1 and 2
         if (sm->getDebugMode()) printf("Fuzzing event: %d, before: %d, after: %d\n", event, beforePage, afterPage);
@@ -132,7 +132,7 @@ void test_080_fuzz_event_processing() {
 }
 
 void test_081_random_boundary_testing() {
-    sm->setInitialState(getRandomPage());
+    sm->initializeState(getRandomPage());
     
     // Test random boundary values
     uint8_t randomPages[] = {0, 1, DONT_CARE_PAGE, DONT_CARE_PAGE+1, DONT_CARE_PAGE-1, 0};
@@ -149,13 +149,13 @@ void test_081_random_boundary_testing() {
         uint8_t event = randomEvents[getRandomNumber() % 6];
         sm->processEvent(event);
         
-        uint8_t currentState = sm->getPage();
+        uint8_t currentState = sm->getCurrentPage();
         TEST_ASSERT_TRUE(currentState < 255); // Should be valid
     }
 }
 
 void test_082_random_complex_graphs() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     
     // Create random complex state graph
     uint8_t numNodes = 5 + (getRandomNumber() % 10); // 5-14 nodes
@@ -170,16 +170,16 @@ void test_082_random_complex_graphs() {
     // Random walk through the graph
     for (int i = 0; i < RANDOM_TEST_EXTENDED_ITERATIONS; i++) {
         uint8_t event = 1 + (getRandomNumber() % 3);
-        uint8_t beforeState = sm->getPage();
+        uint8_t beforeState = sm->getCurrentPage();
         sm->processEvent(event);
-        uint8_t afterState = sm->getPage();
+        uint8_t afterState = sm->getCurrentPage();
         
         TEST_ASSERT_TRUE(afterState >= 1 && afterState <= numNodes);
     }
 }
 
 void test_083_random_stress_testing() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     
     // Set up rapid-fire transitions
     sm->addTransition(stateTransition(1,0,1,2,0,nullptr));
@@ -191,7 +191,7 @@ void test_083_random_stress_testing() {
     
     // Stress test with random rapid events
     for (int i = 0; i < 500; i++) {
-        uint8_t currentState = sm->getPage();
+        uint8_t currentState = sm->getCurrentPage();
         uint8_t event = currentState; // Appropriate event for current state
         
         // Add some randomness
@@ -202,7 +202,7 @@ void test_083_random_stress_testing() {
         sm->processEvent(event);
         
         // Verify we're still in valid state
-        uint8_t newState = sm->getPage();
+        uint8_t newState = sm->getCurrentPage();
         TEST_ASSERT_TRUE(newState >= 1 && newState <= 4);
     }
     
@@ -211,7 +211,7 @@ void test_083_random_stress_testing() {
 }
 
 void test_084_random_validation_scenarios() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     
     // Add random transitions and check validation
     for (int i = 0; i < 25; i++) {
@@ -229,7 +229,7 @@ void test_084_random_validation_scenarios() {
 }
 
 void test_085_random_scoreboard_stress() {
-    sm->setInitialState(0);
+    sm->initializeState(0);
     
     // Random scoreboard stress test
     for (int i = 0; i < 200; i++) {
@@ -247,7 +247,7 @@ void test_085_random_scoreboard_stress() {
 }
 
 void test_086_random_mixed_operations() {
-    sm->setInitialState(getRandomPage());
+    sm->initializeState(getRandomPage());
     
     // Mixed random operations
     for (int i = 0; i < 100; i++) {
@@ -272,7 +272,7 @@ void test_086_random_mixed_operations() {
         }
         
         // Verify state machine is still consistent
-        uint8_t currentState = sm->getPage();
+        uint8_t currentState = sm->getCurrentPage();
         TEST_ASSERT_TRUE(currentState < 255);
     }
 }
@@ -284,7 +284,7 @@ void test_087_random_edge_cases() {
         sm = new improvedStateMachine();
         
         uint8_t initialState = getRandomPage();
-        sm->setInitialState(initialState);
+        sm->initializeState(initialState);
         
         // Add edge case transitions
     sm->addTransition(stateTransition(DONT_CARE_PAGE, 0, DONT_CARE_EVENT, getRandomPage(), 0, nullptr));
@@ -296,13 +296,13 @@ void test_087_random_edge_cases() {
         sm->processEvent(255);
         sm->processEvent(getRandomEvent());
         
-        uint8_t finalState = sm->getPage();
+        uint8_t finalState = sm->getCurrentPage();
         TEST_ASSERT_TRUE(finalState < 255);
     }
 }
 
 void test_088_random_performance_validation() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     
     // Build random state machine
     for (int i = 0; i < 30; i++) {
@@ -323,7 +323,7 @@ void test_088_random_performance_validation() {
 }
 
 void test_089_random_statistics_validation() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     sm->addTransition(stateTransition(1,0,1,2,0,nullptr));
     sm->addTransition(stateTransition(2,0,2,1,0,nullptr));
     
@@ -354,7 +354,7 @@ void test_090_random_comprehensive_coverage() {
         sm = new improvedStateMachine();
         
         uint8_t initialState = getRandomPage();
-        sm->setInitialState(initialState);
+        sm->initializeState(initialState);
         
         // Random state definitions
         for (int i = 0; i < 10; i++) {
@@ -377,7 +377,7 @@ void test_090_random_comprehensive_coverage() {
         }
         
         // Verify final state is valid
-        uint8_t finalState = sm->getPage();
+        uint8_t finalState = sm->getCurrentPage();
         TEST_ASSERT_TRUE(finalState < 255);
         
         // Verify statistics are reasonable
@@ -393,20 +393,20 @@ void test_091_random_memory_safety() {
         delete sm;
         sm = new improvedStateMachine();
         
-        sm->setInitialState(getRandomPage());
+        sm->initializeState(getRandomPage());
         
         // Random operations that could cause memory issues
     sm->addTransition(stateTransition(getRandomPage(), 0, getRandomEvent(), getRandomPage(), 0, nullptr));
         
         sm->processEvent(getRandomEvent());
         
-        uint8_t state = sm->getPage();
+        uint8_t state = sm->getCurrentPage();
         TEST_ASSERT_TRUE(state < 255);
     }
 }
 
 void test_092_random_concurrency_simulation() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     
     // Set up transitions for concurrency simulation
     sm->addTransition(stateTransition(1,0,1,2,0,nullptr));
@@ -426,28 +426,28 @@ void test_092_random_concurrency_simulation() {
                 sm->setScoreboard(getRandomNumber() % 100, getRandomNumber() % 4);
                 break;
             case 2:
-                sm->getPage(); // State query
+                sm->getCurrentPage(); // State query
                 break;
         }
         
         // Verify consistency
-        uint8_t state = sm->getPage();
+        uint8_t state = sm->getCurrentPage();
         TEST_ASSERT_TRUE(state >= 1 && state <= 3);
     }
 }
 
 void test_093_random_error_injection() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     sm->addTransition(stateTransition(1,0,1,2,0,nullptr));
     
     // Inject random errors and verify recovery
     for (int i = 0; i < 30; i++) {
         uint8_t event = getRandomEvent();
-        uint8_t beforeState = sm->getPage();
+        uint8_t beforeState = sm->getCurrentPage();
         
         sm->processEvent(event);
         
-        uint8_t afterState = sm->getPage();
+        uint8_t afterState = sm->getCurrentPage();
         
         // Verify state machine remains consistent
         TEST_ASSERT_TRUE(afterState == 1 || afterState == 2);
@@ -460,7 +460,7 @@ void test_093_random_error_injection() {
 }
 
 void test_094_random_pattern_detection() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     
     // Set up pattern-based transitions
     sm->addTransition(stateTransition(1,0,1,2,0,nullptr));
@@ -474,16 +474,16 @@ void test_094_random_pattern_detection() {
         
         if (pattern == 1) {
             // Should advance state
-            uint8_t before = sm->getPage();
+            uint8_t before = sm->getCurrentPage();
             sm->processEvent(1);
-            uint8_t after = sm->getPage();
+            uint8_t after = sm->getCurrentPage();
             
             TEST_ASSERT_NOT_EQUAL(before, after);
         } else {
             // Should stay in same state
-            uint8_t before = sm->getPage();
+            uint8_t before = sm->getCurrentPage();
             sm->processEvent(pattern);
-            uint8_t after = sm->getPage();
+            uint8_t after = sm->getCurrentPage();
             
             TEST_ASSERT_EQUAL_UINT8(before, after);
         }
@@ -500,7 +500,7 @@ void test_095_random_robustness_verification() {
         uint8_t numPages = 5 + (getRandomNumber() % 15);
         uint8_t numTransitions = 10 + (getRandomNumber() % 30);
         
-        sm->setInitialState(getRandomNumber() % numPages);
+        sm->initializeState(getRandomNumber() % numPages);
 
         // Random page definitions
         for (int i = 0; i < numPages; i++) {
@@ -527,13 +527,13 @@ void test_095_random_robustness_verification() {
                     sm->getStatistics();
                     break;
                 case 3:
-                    sm->getPage();
+                    sm->getCurrentPage();
                     break;
             }
         }
         
         // Final validation
-        uint8_t finalState = sm->getPage();
+        uint8_t finalState = sm->getCurrentPage();
         TEST_ASSERT_TRUE(finalState < numPages + 10);
         
         stateMachineStats stats = sm->getStatistics();

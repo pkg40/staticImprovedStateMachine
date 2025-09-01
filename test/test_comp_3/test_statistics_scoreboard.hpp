@@ -9,7 +9,7 @@
 // All test functions use extern improvedStateMachine* sm from test_common.hpp
 
 void test_051_statistics_tracking() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     sm->addTransition(stateTransition(1,0,1,2,0,nullptr));
     stateMachineStats initialStats = sm->getStatistics();
     sm->processEvent(1);
@@ -19,7 +19,7 @@ void test_051_statistics_tracking() {
 }
 
 void test_052_failed_transition_statistics() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     sm->addTransition(stateTransition(1,0,1,2,0,nullptr));
     stateMachineStats initialStats = sm->getStatistics();
     sm->processEvent(99);
@@ -28,7 +28,7 @@ void test_052_failed_transition_statistics() {
 }
 
 void test_053_action_execution_stats() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     stateTransition t(1, 0, 1, 2, 0, nullptr);
     sm->addTransition(t);
     stateMachineStats before = sm->getStatistics();
@@ -38,7 +38,7 @@ void test_053_action_execution_stats() {
 }
 
 void test_054_statistics_accumulation() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     sm->addTransition(stateTransition(1,0,1,2,0,nullptr));
     sm->addTransition(stateTransition(2,0,2,1,0,nullptr));
     stateMachineStats initial = sm->getStatistics();
@@ -55,7 +55,7 @@ void test_054_statistics_accumulation() {
 }
 
 void test_055_scoreboard_functionality() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     sm->setScoreboard(100, 1);
     sm->setScoreboard(200, 2);
     TEST_ASSERT_EQUAL_UINT32(100, sm->getScoreboard(1));
@@ -63,7 +63,7 @@ void test_055_scoreboard_functionality() {
 }
 
 void test_056_scoreboard_updates() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     sm->addTransition(stateTransition(1,0,1,2,0,nullptr));
     uint32_t initialScore = sm->getScoreboard(0);
     sm->processEvent(1);
@@ -79,7 +79,7 @@ void test_057_scoreboard_boundaries() {
 }
 
 void test_058_multi_state_scoreboard() {
-    sm->setInitialState(0);
+    sm->initializeState(0);
     for (uint8_t i = 0; i < STATEMACHINE_SCOREBOARD_NUM_SEGMENTS; i++) {
         sm->setScoreboard(i * 10, i);
     }
@@ -90,7 +90,7 @@ void test_058_multi_state_scoreboard() {
 
 void test_059_scoreboard_overflow_protection() {
     sm->setScoreboard(0xFFFFFFFE, 0);
-    sm->setInitialState(0);
+    sm->initializeState(0);
     sm->addTransition(stateTransition(0,0,1,1,0,nullptr));
     sm->processEvent(1);
     uint32_t score = sm->getScoreboard(0);
@@ -98,7 +98,7 @@ void test_059_scoreboard_overflow_protection() {
 }
 
 void test_060_performance_timing() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     sm->addTransition(stateTransition(1,0,1,2,0,nullptr));
     sm->addTransition(stateTransition(2,0,2,1,0,nullptr));
     uint32_t start = micros();
@@ -114,7 +114,7 @@ void test_060_performance_timing() {
 }
 
 void test_061_statistics_consistency() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     sm->addTransition(stateTransition(1,0,1,2,0,nullptr));
     sm->addTransition(stateTransition(2,0,2,1,0,nullptr));
     for (int i = 0; i < 20; i++) {
@@ -130,7 +130,7 @@ void test_061_statistics_consistency() {
 }
 
 void test_062_scoreboard_state_correlation() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     sm->addTransition(stateTransition(1,0,1,2,0,nullptr));
     sm->addTransition(stateTransition(2,0,2,3,0,nullptr));
     sm->addTransition(stateTransition(3,0,3,1,0,nullptr));
@@ -149,7 +149,7 @@ void test_062_scoreboard_state_correlation() {
 }
 
 void test_063_statistics_error_tracking() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     sm->addTransition(stateTransition(1,0,1,2,0,nullptr));
     stateMachineStats before = sm->getStatistics();
     sm->processEvent(1);
@@ -163,7 +163,7 @@ void test_063_statistics_error_tracking() {
 }
 
 void test_064_scoreboard_persistence() {
-    sm->setInitialState(32);
+    sm->initializeState(32);
     sm->setScoreboard(1000, 1);
     sm->setScoreboard(2000, 2);
     sm->addTransition(stateTransition(32,0,1,64,0,nullptr));
@@ -175,7 +175,7 @@ void test_064_scoreboard_persistence() {
 }
 
 void test_065_performance_stress() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     sm->addTransition(stateTransition(1,0,1,2,0,nullptr));
     sm->addTransition(stateTransition(2,0,2,1,0,nullptr));
     uint32_t startTime = millis();
@@ -193,16 +193,16 @@ void test_065_performance_stress() {
 }
 
 void test_066_scoreboard_concurrent_updates() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     sm->addTransition(stateTransition(1,0,1,2,0,nullptr));
     sm->addTransition(stateTransition(1,0,2,3,0,nullptr));
     sm->addTransition(stateTransition(1,0,3,4,0,nullptr));
     for (int i = 0; i < 10; i++) {
-        sm->setInitialState(1);
+        sm->initializeState(1);
         sm->processEvent(1);
-        sm->setInitialState(1);
+        sm->initializeState(1);
         sm->processEvent(2);
-        sm->setInitialState(1);
+        sm->initializeState(1);
         sm->processEvent(3);
     }
     uint32_t finalScore = sm->getScoreboard(0);
@@ -210,7 +210,7 @@ void test_066_scoreboard_concurrent_updates() {
 }
 
 void test_067_statistics_boundary_values() {
-    sm->setInitialState(0);
+    sm->initializeState(0);
     sm->addTransition(stateTransition(0,0,0,1,0,nullptr));
     sm->addTransition(stateTransition(1,0,62,2,0,nullptr));
     sm->addTransition(stateTransition(2,0,61,3,0,nullptr));
@@ -232,7 +232,7 @@ void test_068_scoreboard_array_bounds() {
 }
 
 void test_069_statistics_timing_accuracy() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     sm->addTransition(stateTransition(1,0,1,2,0,nullptr));
     stateMachineStats before = sm->getStatistics();
     uint32_t startTime = micros();
@@ -244,11 +244,11 @@ void test_069_statistics_timing_accuracy() {
 }
 
 void test_070_scoreboard_incremental_updates() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     sm->addTransition(stateTransition(1,0,1,2,0,nullptr));
     uint32_t initialScore = sm->getScoreboard(0);
     for (int i = 0; i < 5; i++) {
-        sm->setInitialState(1);
+        sm->initializeState(1);
         sm->processEvent(1);
     }
     uint32_t finalScore = sm->getScoreboard(0);
@@ -256,7 +256,7 @@ void test_070_scoreboard_incremental_updates() {
 }
 
 void test_071_statistics_overflow_protection() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     sm->addTransition(stateTransition(1,0,1,2,0,nullptr));
     sm->addTransition(stateTransition(2,0,2,1,0,nullptr));
     for (int i = 0; i < 10000; i++) {
@@ -273,7 +273,7 @@ void test_071_statistics_overflow_protection() {
 }
 
 void test_072_scoreboard_reset_behavior() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     sm->setScoreboard(500, 1);
     sm->setScoreboard(600, 2);
     TEST_ASSERT_EQUAL_UINT32(500, sm->getScoreboard(1));
@@ -285,7 +285,7 @@ void test_072_scoreboard_reset_behavior() {
 }
 
 void test_073_comprehensive_statistics_validation() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     sm->addTransition(stateTransition(1,0,1,2,0,nullptr));
     sm->addTransition(stateTransition(2,0,2,3,0,nullptr));
     sm->addTransition(stateTransition(3,0,3,1,0,nullptr));
@@ -311,7 +311,7 @@ void test_074_scoreboard_multi_instance() {
 }
 
 void test_075_statistics_and_scoreboard_integration() {
-    sm->setInitialState(32);
+    sm->initializeState(32);
     sm->addTransition(stateTransition(32,0,1,64,0,nullptr));
     sm->addTransition(stateTransition(64,0,2,32,0,nullptr));
     sm->setScoreboard(1000, 1);

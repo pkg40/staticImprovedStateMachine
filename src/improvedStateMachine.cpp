@@ -216,7 +216,7 @@ validationResult improvedStateMachine::addTransitions(
 }
 
 // State management
-void improvedStateMachine::setInitialState(pageID page, buttonID button) {
+void improvedStateMachine::initializeState(pageID page, buttonID button) {
   _currentState.page = page;
   _currentState.button = button;
   _lastState = _currentState;
@@ -236,7 +236,7 @@ void improvedStateMachine::setState(pageID page, buttonID button) {
   }
 }
 
-void improvedStateMachine::setCurrentPageId(pageID page) {
+void improvedStateMachine::setCurrentPage(pageID page) {
   _lastState = _currentState;
   _currentState.page = page;
 
@@ -249,6 +249,7 @@ void improvedStateMachine::forceState(pageID page, buttonID button) {
   setState(page, button);
 }
 
+//TODO - remove recursion tests as there in no stateMachine recursion
 // Event processing with safety checks
 uint16_t improvedStateMachine::processEvent(eventID event, void *context) {
   // Check for maximum recursion depth to prevent stack overflow
@@ -666,6 +667,8 @@ void improvedStateMachine::setScoreboard(uint32_t value, uint8_t index) {
   }
 }
 
+//TODO - Decide whether to keep. Probably okay but misses out on the optimized transition
+/* 
 void improvedStateMachine::addButtonNavigation(
     pageID menuId, uint8_t numButtons, const std::vector<pageID> &targetMenus) {
   for (uint8_t i = 0; i < numButtons; i++) {
@@ -686,7 +689,9 @@ void improvedStateMachine::addButtonNavigation(
     }
   }
 }
+*/
 
+// TODO - Decide whether to keep
 void improvedStateMachine::addStandardMenuTransitions(
     pageID menuId, pageID parentMenu, const std::vector<pageID> &subMenus) {
   // Determine number of buttons for this menu
@@ -709,66 +714,6 @@ void improvedStateMachine::addStandardMenuTransitions(
                                   nullptr)); // eventLEFT = 2
   }
 }
-namespace StateActions {
-void noAction(pageID state, eventID event, void *context) {
-  // Do nothing
-}
-
-void loadState(pageID state, eventID event, void *context) {
-  // Load state from EEPROM
-  if (context) {
-    // Implementation would depend on your EEPROM interface
-    Serial.printf("Loading state %d\n", state);
-  }
-}
-
-void storeState(pageID state, eventID event, void *context) {
-  // Store state to EEPROM
-  if (context) {
-    Serial.printf("Storing state %d\n", state);
-  }
-}
-
-void setPoint(pageID state, eventID event, void *context) {
-  // Handle setpoint adjustment
-  Serial.printf("Setpoint action for state %d, event %d\n", state, event);
-}
-
-void loadAuto(pageID state, eventID event, void *context) {
-  // Load auto mode settings
-  Serial.printf("Loading auto settings for state %d\n", state);
-}
-
-void storeAuto(pageID state, eventID event, void *context) {
-  // Store auto mode settings
-  Serial.printf("Storing auto settings for state %d\n", state);
-}
-
-void changeValue(pageID state, eventID event, void *context) {
-  // Change value based on event
-  Serial.printf("Changing value for state %d, event %d\n", state, event);
-}
-
-void resetState(pageID state, eventID event, void *context) {
-  // Reset to default state
-  Serial.printf("Resetting state %d\n", state);
-}
-
-void powerAction(pageID state, eventID event, void *context) {
-  // Handle power-related actions
-  Serial.printf("Power action for state %d\n", state);
-}
-
-void displayAction(pageID state, eventID event, void *context) {
-  // Handle display-related actions
-  Serial.printf("Display action for state %d\n", state);
-}
-
-void motorAction(pageID state, eventID event, void *context) {
-  // Handle motor-related actions
-  Serial.printf("Motor action for state %d, event %d\n", state, event);
-}
-} // namespace StateActions
 
 // Safety and validation method implementations
 validationResult
@@ -809,7 +754,6 @@ improvedStateMachine::validateTransition(const stateTransition &trans,
     }
     return validationResult::INVALID_EVENT_ID;
   }
-  // DONT_CARE_EVENT is legal as an input field
 
   // Check for conflicting transitions (exact duplicates and overlapping
   // wildcards)
@@ -921,7 +865,7 @@ bool improvedStateMachine::isInfiniteLoopRisk(const stateTransition &trans) cons
   return false;
 }
 
-bool improvedStateMachine::isStateDefined(pageID id) const {
+bool improvedStateMachine::isPageDefined(pageID id) const {
   for (const auto &state : _states) {
     if (state.id == id) {
       return true;

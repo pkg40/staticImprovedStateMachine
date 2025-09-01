@@ -58,25 +58,25 @@ struct TestStats {
 // =============================================================================
 
 void test_002_initial_state_setting() {
-  sm->setInitialState(TEST_STATE_A);
-  TEST_ASSERT_EQUAL_UINT8(TEST_STATE_A, sm->getPage());
+  sm->initializeState(TEST_STATE_A);
+  TEST_ASSERT_EQUAL_UINT8(TEST_STATE_A, sm->getCurrentPage());
   testStats.passedTests++;
 }
 
 void test_003_multiple_state_settings() {
   for (uint8_t i = 0; i < SMALL_TEST_LIMIT; i++) {
-    sm->setInitialState(i);
-    TEST_ASSERT_EQUAL_UINT8(i, sm->getPage());
+    sm->initializeState(i);
+    TEST_ASSERT_EQUAL_UINT8(i, sm->getCurrentPage());
   }
   testStats.passedTests++;
 }
 
 void test_004_state_boundaries() {
-  sm->setInitialState(TEST_STATE_A);
+  sm->initializeState(TEST_STATE_A);
   sm->addTransition(stateTransition(TEST_STATE_A, 0, 1, TEST_STATE_B, 0, nullptr));
-  uint8_t savedState = sm->getPage();
+  uint8_t savedState = sm->getCurrentPage();
   sm->processEvent(1);
-  uint8_t newState = sm->getPage();
+  uint8_t newState = sm->getCurrentPage();
   TEST_ASSERT_EQUAL_UINT8(TEST_STATE_A, savedState);
   TEST_ASSERT_EQUAL_UINT8(TEST_STATE_B, newState);
   testStats.passedTests++;
@@ -84,7 +84,7 @@ void test_004_state_boundaries() {
 
 void test_005_basic_transition() {
   sm->setDebugMode(false);
-  sm->setInitialState(1);
+  sm->initializeState(1);
 
   stateTransition t(1, 0, 1, 2, 0, nullptr);
   validationResult result = sm->addTransition(t);
@@ -93,9 +93,9 @@ void test_005_basic_transition() {
   TEST_ASSERT_EQUAL_UINT8(static_cast<uint8_t>(validationResult::VALID),
                           static_cast<uint8_t>(result));
 
-  uint8_t oldState = sm->getPage();
+  uint8_t oldState = sm->getCurrentPage();
   sm->processEvent(1);
-  uint8_t newState = sm->getPage();
+  uint8_t newState = sm->getCurrentPage();
 
   TEST_ASSERT_EQUAL_UINT8(2, newState);
   TEST_ASSERT_NOT_EQUAL(oldState, newState);
@@ -104,57 +104,57 @@ void test_005_basic_transition() {
 }
 
 void test_006_no_matching_transition() {
-  sm->setInitialState(1);
+  sm->initializeState(1);
   stateTransition t(1, 0, 1, 2, 0, nullptr);
   sm->addTransition(t);
 
-  uint8_t oldState = sm->getPage();
+  uint8_t oldState = sm->getCurrentPage();
   sm->processEvent(TEST_INVALID_EVENT); // Non-matching event
-  uint8_t newState = sm->getPage();
+  uint8_t newState = sm->getCurrentPage();
 
   TEST_ASSERT_EQUAL_UINT8(oldState, newState); // Should stay same
   testStats.passedTests++;
 }
 
 void test_007_circular_transitions() {
-  sm->setInitialState(1);
+  sm->initializeState(1);
   sm->addTransition(stateTransition(1, 0, 1, 2, 0, nullptr));
   sm->addTransition(stateTransition(2, 0, 2, 3, 0, nullptr));
   sm->addTransition(stateTransition(3, 0, 3, 1, 0, nullptr));
 
   sm->processEvent(1); // 1->2
-  TEST_ASSERT_EQUAL_UINT8(2, sm->getPage());
+  TEST_ASSERT_EQUAL_UINT8(2, sm->getCurrentPage());
 
   sm->processEvent(2); // 2->3
-  TEST_ASSERT_EQUAL_UINT8(3, sm->getPage());
+  TEST_ASSERT_EQUAL_UINT8(3, sm->getCurrentPage());
 
   sm->processEvent(3); // 3->1
-  TEST_ASSERT_EQUAL_UINT8(1, sm->getPage());
+  TEST_ASSERT_EQUAL_UINT8(1, sm->getCurrentPage());
   testStats.passedTests++;
 }
 
 void test_008_self_transitions() {
-  sm->setInitialState(5);
+  sm->initializeState(5);
   sm->addTransition(stateTransition(5, 0, 1, 5, 0, nullptr)); // Self-transition
 
   sm->processEvent(1);
-  TEST_ASSERT_EQUAL_UINT8(5, sm->getPage());
+  TEST_ASSERT_EQUAL_UINT8(5, sm->getCurrentPage());
   testStats.passedTests++;
 }
 
 void test_009_multiple_events_same_state() {
-  sm->setInitialState(1);
+  sm->initializeState(1);
   sm->addTransition(stateTransition(1, 0, 1, 2, 0, nullptr));
   sm->addTransition(stateTransition(1, 0, 2, 3, 0, nullptr));
   sm->addTransition(stateTransition(1, 0, 3, 4, 0, nullptr));
 
   sm->processEvent(2); // Should go to state 3
-  TEST_ASSERT_EQUAL_UINT8(3, sm->getPage());
+  TEST_ASSERT_EQUAL_UINT8(3, sm->getCurrentPage());
   testStats.passedTests++;
 }
 
 void test_010_overlapping_transitions() {
-  sm->setInitialState(1);
+  sm->initializeState(1);
   validationResult result1 = sm->addTransition(stateTransition(1, 0, 1, 2, 0, nullptr));
   validationResult result2 = sm->addTransition(stateTransition(1, 0, 1, 3, 0, nullptr)); // Conflicting transition
 
@@ -162,7 +162,7 @@ void test_010_overlapping_transitions() {
   TEST_ASSERT_NOT_EQUAL(static_cast<uint8_t>(validationResult::VALID), static_cast<uint8_t>(result2)); // Should be rejected
 
   sm->processEvent(1);
-  TEST_ASSERT_EQUAL_UINT8(2, sm->getPage()); // Only first transition exists
+  TEST_ASSERT_EQUAL_UINT8(2, sm->getCurrentPage()); // Only first transition exists
   testStats.passedTests++;
 }
 
@@ -171,7 +171,7 @@ void test_010_overlapping_transitions() {
 // =============================================================================
 
 void test_011_duplicate_transition_validation() {
-  sm->setInitialState(1);
+  sm->initializeState(1);
   stateTransition t(1, 0, 1, 2, 0, nullptr);
 
   validationResult result1 = sm->addTransition(t);
@@ -185,40 +185,40 @@ void test_011_duplicate_transition_validation() {
 }
 
 void test_012_invalid_state_transitions() {
-  sm->setInitialState(1);
+  sm->initializeState(1);
 
   // Try to add transition from non-existent state pattern
   stateTransition t(99, 0, 1, 2, 0, nullptr);
   sm->addTransition(t);
 
   sm->processEvent(1); // Should not transition
-  TEST_ASSERT_EQUAL_UINT8(1, sm->getPage());
+  TEST_ASSERT_EQUAL_UINT8(1, sm->getCurrentPage());
   testStats.passedTests++;
 }
 
 void test_013_wildcard_transitions() {
-  sm->setInitialState(1);
+  sm->initializeState(1);
   sm->addTransition(stateTransition(DONT_CARE_PAGE, 0, 5, 10, 0,
                                     nullptr)); // Any state, event 5 -> state 10
 
   sm->processEvent(5);
-  TEST_ASSERT_EQUAL_UINT8(10, sm->getPage());
+  TEST_ASSERT_EQUAL_UINT8(10, sm->getCurrentPage());
   testStats.passedTests++;
 }
 
 void test_014_dont_care_event() {
-  sm->setInitialState(1);
+  sm->initializeState(1);
   sm->addTransition(stateTransition(1, 0, DONT_CARE_EVENT, 5, 0,
                                     nullptr)); // State 1, any event -> state 5
 
   sm->processEvent(DONT_CARE_EVENT - 1); // Any event should work
-  TEST_ASSERT_EQUAL_UINT8(5, sm->getPage());
+  TEST_ASSERT_EQUAL_UINT8(5, sm->getCurrentPage());
   testStats.passedTests++;
 }
 
 void test_015_transition_priority() {
   /*
-  sm->setInitialState(1);
+  sm->initializeState(1);
   sm->addTransition(stateTransition(1, 0, DONT_CARE, 5, 0, nullptr)); //
   Wildcard sm->addTransition(stateTransition(1, 0, 3, 7, 0, nullptr)); //
   Specific
@@ -234,36 +234,36 @@ void test_015_transition_priority() {
 }
 
 void test_016_boundary_state_values() {
-  sm->setInitialState(0);
+  sm->initializeState(0);
   sm->addTransition(stateTransition(0, 0, 1, DONT_CARE_PAGE, 0, nullptr));
 
   sm->processEvent(1);
-  TEST_ASSERT_EQUAL_UINT8(0, sm->getPage());
+  TEST_ASSERT_EQUAL_UINT8(0, sm->getCurrentPage());
   testStats.boundaryTests++;
   testStats.passedTests++;
 }
 
 void test_017_boundary_event_values() {
-  sm->setInitialState(1);
+  sm->initializeState(1);
   //    sm->addTransition(stateTransition(1, 0, 0, 2, 0, nullptr));
   sm->addTransition(stateTransition(1, 0, DONT_CARE_EVENT, 3, 0, nullptr));
 
   sm->processEvent(0);
-  TEST_ASSERT_EQUAL_UINT8(3, sm->getPage());
+  TEST_ASSERT_EQUAL_UINT8(3, sm->getCurrentPage());
 
-  sm->setInitialState(1);
+  sm->initializeState(1);
   sm->processEvent(DONT_CARE_EVENT);
-  TEST_ASSERT_EQUAL_UINT8(1, sm->getPage());
+  TEST_ASSERT_EQUAL_UINT8(1, sm->getCurrentPage());
 
-  sm->setInitialState(1);
+  sm->initializeState(1);
   sm->processEvent(DONT_CARE_EVENT - 1);
-  TEST_ASSERT_EQUAL_UINT8(3, sm->getPage());
+  TEST_ASSERT_EQUAL_UINT8(3, sm->getCurrentPage());
   testStats.boundaryTests++;
   testStats.passedTests++;
 }
 
 void test_018_maximum_transitions() {
-  sm->setInitialState(0);
+  sm->initializeState(0);
 
   // Add many transitions to test capacity
   for (uint8_t i = 0; i < TEST_MAX_TRANSITIONS_TO_ADD; i++) {
@@ -308,15 +308,15 @@ void test_020_duplicate_state_validation() {
 
 void test_021_statistics_tracking() {
   sm->setDebugMode(false);
-  sm->setInitialState(1);
+  sm->initializeState(1);
   sm->addTransition(stateTransition(1, 0, 0, 2, 2, nullptr));
 
   stateMachineStats initialStats = sm->getStatistics();
   sm->processEvent(0);
   stateMachineStats afterStats = sm->getStatistics();
 
-  TEST_ASSERT_EQUAL_UINT8(2, sm->getPage());
-  TEST_ASSERT_EQUAL_UINT8(2, sm->getButton());
+  TEST_ASSERT_EQUAL_UINT8(2, sm->getCurrentPage());
+  TEST_ASSERT_EQUAL_UINT8(2, sm->getCurrentButton());
   TEST_ASSERT_EQUAL_UINT32(initialStats.totalTransitions + 1,
                            afterStats.totalTransitions);
   TEST_ASSERT_EQUAL_UINT32(initialStats.stateChanges + 1,
@@ -326,7 +326,7 @@ void test_021_statistics_tracking() {
 }
 
 void test_022_failed_transition_statistics() {
-  sm->setInitialState(1);
+  sm->initializeState(1);
   sm->addTransition(stateTransition(1, 0, 1, 2, 0, nullptr));
 
   stateMachineStats initialStats = sm->getStatistics();
@@ -339,7 +339,7 @@ void test_022_failed_transition_statistics() {
 }
 
 void test_023_scoreboard_functionality() {
-  sm->setInitialState(1);
+  sm->initializeState(1);
   sm->updateScoreboard(1);
   sm->updateScoreboard(2);
   TEST_ASSERT_TRUE(sm->getScoreboard(0) & (1UL << 1));
@@ -350,10 +350,10 @@ void test_023_scoreboard_functionality() {
 
 void test_024_scoreboard_updates() {
   sm->setDebugMode(false);
-  sm->setInitialState(1);
+  sm->initializeState(1);
   sm->addTransition(stateTransition(1, 0, 1, 2, 0, nullptr));
   sm->processEvent(1); // Should update scoreboard for state 2
-  TEST_ASSERT_EQUAL_UINT8(2, sm->getPage());
+  TEST_ASSERT_EQUAL_UINT8(2, sm->getCurrentPage());
   TEST_ASSERT_TRUE(sm->getScoreboard(0) & (1UL << 2));
   TEST_ASSERT_EQUAL_UINT8(4, sm->getScoreboard(0));
   testStats.passedTests++;
@@ -361,7 +361,7 @@ void test_024_scoreboard_updates() {
 }
 
 void test_025_scoreboard_boundaries() {
-  sm->setInitialState(0);
+  sm->initializeState(0);
   for (uint8_t i = 0; i < 32; i++) {
     sm->updateScoreboard(i);
   }
@@ -371,12 +371,12 @@ void test_025_scoreboard_boundaries() {
 }
 
 void test_026_performance_timing() {
-  sm->setInitialState(1);
+  sm->initializeState(1);
   sm->addTransition(stateTransition(1, 0, 1, 2, 0, nullptr));
 
   uint32_t start = micros();
   for (int i = 0; i < 100; i++) {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     sm->processEvent(1);
   }
   uint32_t elapsed = micros() - start;
@@ -387,7 +387,7 @@ void test_026_performance_timing() {
 }
 
 void test_027_statistics_reset() {
-  sm->setInitialState(1);
+  sm->initializeState(1);
   sm->addTransition(stateTransition(1, 0, 1, 2, 0, nullptr));
   sm->processEvent(1);
 
@@ -398,7 +398,7 @@ void test_027_statistics_reset() {
 }
 
 void test_028_action_execution_stats() {
-  sm->setInitialState(1);
+  sm->initializeState(1);
   stateTransition t(1, 0, 1, 2, 0, nullptr);
   sm->addTransition(t);
 
@@ -412,7 +412,7 @@ void test_028_action_execution_stats() {
 
 void test_029_multi_state_scoreboard() {
   sm->setDebugMode(false);
-  sm->setInitialState(0);
+  sm->initializeState(0);
   for (uint8_t i = 0; i < 4; i++) {
     for (uint8_t j = 0; j < 4; j++) {
       sm->updateScoreboard(i * 32 + j);
@@ -426,7 +426,7 @@ void test_029_multi_state_scoreboard() {
 }
 
 void test_030_scoreboard_overflow_protection() {
-  sm->setInitialState(0);
+  sm->initializeState(0);
   for (uint8_t i = 0; i < 32; i++) {
     sm->updateScoreboard(i);
   }
@@ -440,7 +440,7 @@ void test_030_scoreboard_overflow_protection() {
 // =============================================================================
 
 void test_031_complex_state_graph() {
-  sm->setInitialState(1);
+  sm->initializeState(1);
 
   // Create a complex state graph
   sm->addTransition(stateTransition(1, 0, 1, 2, 0, nullptr)); // 1->2
@@ -453,26 +453,26 @@ void test_031_complex_state_graph() {
 
   // Test complex navigation
   sm->processEvent(1); // 1->2
-  TEST_ASSERT_EQUAL_UINT8(2, sm->getPage());
+  TEST_ASSERT_EQUAL_UINT8(2, sm->getCurrentPage());
 
   sm->processEvent(1); // 2->4
-  TEST_ASSERT_EQUAL_UINT8(4, sm->getPage());
+  TEST_ASSERT_EQUAL_UINT8(4, sm->getCurrentPage());
 
   sm->processEvent(1); // 4->1
-  TEST_ASSERT_EQUAL_UINT8(1, sm->getPage());
+  TEST_ASSERT_EQUAL_UINT8(1, sm->getCurrentPage());
   testStats.passedTests++;
 }
 
 void test_032_state_machine_persistence() {
-  sm->setInitialState(5);
+  sm->initializeState(5);
   sm->addTransition(stateTransition(5, 0, 1, 10, 10, nullptr));
-  uint8_t savedState = sm->getPage();
+  uint8_t savedState = sm->getCurrentPage();
   TEST_ASSERT_EQUAL_UINT8(5, savedState);
-  TEST_ASSERT_EQUAL_UINT8(0, sm->getButton());
+  TEST_ASSERT_EQUAL_UINT8(0, sm->getCurrentButton());
   sm->processEvent(1);
-  uint8_t newState = sm->getPage();
+  uint8_t newState = sm->getCurrentPage();
   TEST_ASSERT_EQUAL_UINT8(10, newState);
-  TEST_ASSERT_EQUAL_UINT8(10, sm->getButton());
+  TEST_ASSERT_EQUAL_UINT8(10, sm->getCurrentButton());
   testStats.passedTests++;
 }
 
@@ -485,7 +485,7 @@ void test_033_concurrent_event_processing() {
 }
 
 void test_034_deep_state_nesting() {
-  sm->setInitialState(1);
+  sm->initializeState(1);
 
   // Create a deep chain of states
   for (uint8_t i = 1; i < 15; i++) {
@@ -497,12 +497,12 @@ void test_034_deep_state_nesting() {
     sm->processEvent(1);
   }
 
-  TEST_ASSERT_EQUAL_UINT8(11, sm->getPage());
+  TEST_ASSERT_EQUAL_UINT8(11, sm->getCurrentPage());
   testStats.passedTests++;
 }
 
 void test_035_event_filtering() {
-  sm->setInitialState(1);
+  sm->initializeState(1);
   sm->addTransition(
       stateTransition(1, 0, 5, 2, 0, nullptr)); // Only event 5 triggers
   sm->addTransition(
@@ -512,28 +512,28 @@ void test_035_event_filtering() {
   sm->processEvent(1);
   sm->processEvent(2);
   sm->processEvent(3);
-  TEST_ASSERT_EQUAL_UINT8(1, sm->getPage()); // Should stay
+  TEST_ASSERT_EQUAL_UINT8(1, sm->getCurrentPage()); // Should stay
 
   // Try matching event
   sm->processEvent(5);
-  TEST_ASSERT_EQUAL_UINT8(2, sm->getPage());
+  TEST_ASSERT_EQUAL_UINT8(2, sm->getCurrentPage());
   testStats.passedTests++;
 }
 
 void test_036_state_machine_reset() {
-  sm->setInitialState(5);
+  sm->initializeState(5);
   sm->addTransition(stateTransition(5, 0, 1, 10, 0, nullptr));
   sm->processEvent(1);
-  TEST_ASSERT_EQUAL_UINT8(10, sm->getPage());
+  TEST_ASSERT_EQUAL_UINT8(10, sm->getCurrentPage());
 
   // Reset to initial state
-  sm->setInitialState(5);
-  TEST_ASSERT_EQUAL_UINT8(5, sm->getPage());
+  sm->initializeState(5);
+  TEST_ASSERT_EQUAL_UINT8(5, sm->getCurrentPage());
   testStats.passedTests++;
 }
 
 void test_037_multi_path_navigation() {
-  sm->setInitialState(1);
+  sm->initializeState(1);
 
   // Create multiple paths from state 1
   sm->addTransition(stateTransition(1, 0, 1, 2, 0, nullptr)); // Path A
@@ -542,7 +542,7 @@ void test_037_multi_path_navigation() {
 
   // Test each path
   sm->processEvent(2); // Should go to state 3
-  TEST_ASSERT_EQUAL_UINT8(3, sm->getPage());
+  TEST_ASSERT_EQUAL_UINT8(3, sm->getCurrentPage());
   testStats.passedTests++;
 }
 
@@ -568,7 +568,7 @@ void test_038_state_validation_comprehensive() {
 }
 
 void test_039_edge_case_transitions() {
-  sm->setInitialState(0);
+  sm->initializeState(0);
 
   // Test edge cases
   sm->addTransition(
@@ -577,18 +577,18 @@ void test_039_edge_case_transitions() {
       0, 0, DONT_CARE_EVENT - 1, DONT_CARE_PAGE - 1, 0, nullptr)); // Max values
 
   sm->processEvent(0);
-  TEST_ASSERT_EQUAL_UINT8(0, sm->getPage());
+  TEST_ASSERT_EQUAL_UINT8(0, sm->getCurrentPage());
 
   sm->processEvent(DONT_CARE_EVENT);
-  TEST_ASSERT_EQUAL_UINT8(0, sm->getPage());
+  TEST_ASSERT_EQUAL_UINT8(0, sm->getCurrentPage());
   sm->processEvent(DONT_CARE_EVENT - 1);
-  TEST_ASSERT_EQUAL_UINT8(DONT_CARE_PAGE - 1, sm->getPage());
+  TEST_ASSERT_EQUAL_UINT8(DONT_CARE_PAGE - 1, sm->getCurrentPage());
   testStats.edgeCaseTests++;
   testStats.passedTests++;
 }
 
 void test_040_performance_stress() {
-  sm->setInitialState(1);
+  sm->initializeState(1);
   sm->addTransition(stateTransition(1, 0, 0, 1, 2, nullptr));
   sm->addTransition(stateTransition(2, 0, 0, 2, 1, nullptr));
 
@@ -596,7 +596,7 @@ void test_040_performance_stress() {
 
   // Stress test with many transitions
   for (int i = 0; i < 1000; i++) {
-    if (sm->getPage() == 1) {
+    if (sm->getCurrentPage() == 1) {
       sm->processEvent(1);
     } else {
       sm->processEvent(2);
@@ -619,7 +619,7 @@ void test_041_random_state_transitions() {
   uint8_t numPages = STATEMACHINE_MAX_PAGES-1;
   uint8_t numEvents = DONT_CARE_EVENT;
   uint8_t numButtons = DONT_CARE_BUTTON-1;
-  sm->setInitialState(0);
+  sm->initializeState(0);
   struct Transition {
     uint8_t fromPage, fromButton, event, toPage, toButton;
   } transitions[50];
@@ -649,8 +649,8 @@ void test_041_random_state_transitions() {
       printf("Processing event %d: %d\n", i, eventSequence[i]);
     }
     sm->processEvent(eventSequence[i]);
-    TEST_ASSERT_EQUAL_UINT8(expectedPage[i], sm->getPage());
-    TEST_ASSERT_EQUAL_UINT8(expectedButton[i], sm->getButton());
+    TEST_ASSERT_EQUAL_UINT8(expectedPage[i], sm->getCurrentPage());
+    TEST_ASSERT_EQUAL_UINT8(expectedButton[i], sm->getCurrentButton());
   }
   sm->setDebugMode(false);
 
@@ -659,7 +659,7 @@ void test_041_random_state_transitions() {
 }
 
 void test_042_random_event_sequences() {
-  sm->setInitialState(1);
+  sm->initializeState(1);
 
   // Set up a small predictable state machine
   sm->addTransition(stateTransition(1, 0, 0, 1, 2, nullptr));
@@ -676,7 +676,7 @@ void test_042_random_event_sequences() {
       sm->processEvent(event);
 
       // Verify state is always valid
-      uint8_t state = sm->getPage();
+      uint8_t state = sm->getCurrentPage();
       TEST_ASSERT_TRUE(state >= 1 && state <= 3);
     }
   }
@@ -686,7 +686,7 @@ void test_042_random_event_sequences() {
 }
 
 void test_043_random_scoreboard_operations() {
-  sm->setInitialState(1);
+  sm->initializeState(1);
   for (int i = 0; i < 100; i++) {
     uint8_t state = getRandomNumber() % (DONT_CARE_PAGE - 1); // Use valid page range 0-126
     sm->updateScoreboard(state);
@@ -713,15 +713,15 @@ void test_044_random_state_definitions() {
 }
 
 void test_045_fuzz_event_processing() {
-  sm->setInitialState(1);
+  sm->initializeState(1);
   sm->addTransition(stateTransition(1, 0, 0, 2, 0, nullptr));
   sm->addTransition(stateTransition(2, 0, 1, 1, 0, nullptr));
   // Fuzz with alternating events 0 and 1
   for (int i = 0; i < 200; i++) {
     uint8_t event = i % 2; // Alternate between 0 and 1
-    uint8_t beforeState = sm->getPage();
+    uint8_t beforeState = sm->getCurrentPage();
     sm->processEvent(event);
-    uint8_t afterState = sm->getPage();
+    uint8_t afterState = sm->getCurrentPage();
     TEST_ASSERT_TRUE(afterState == 1 || afterState == 2);
     TEST_ASSERT_NOT_EQUAL(beforeState, afterState);
   }
@@ -798,7 +798,7 @@ void test_state_event_id_validation() {
 void generateRandomTests() {
   for (int testNum = 46; testNum <= 100; testNum++) {
     // Each random test follows a similar pattern but with different parameters
-    sm->setInitialState(getRandomPage() % 10);
+    sm->initializeState(getRandomPage() % 10);
 
     // Add random transitions
     int numTransitions = 5 + (getRandomNumber() % 15);
@@ -812,9 +812,9 @@ void generateRandomTests() {
     // Process random events and verify consistency
     for (int i = 0; i < 50; i++) {
       uint8_t event = getRandomEvent() % 10;
-      uint8_t afterState = sm->getPage();
+      uint8_t afterState = sm->getCurrentPage();
       sm->processEvent(event);
-      afterState = sm->getPage();
+      afterState = sm->getCurrentPage();
 
       // Basic sanity checks
       TEST_ASSERT_TRUE(afterState < 20); // Reasonable state range
@@ -844,7 +844,7 @@ void test_comprehensive_coverage() {
   const uint8_t NUM_TEST_EVENTS = COMPREHENSIVE_TEST_EVENTS;
   const uint8_t NUM_TEST_TRANSITIONS = COMPREHENSIVE_TEST_TRANSITIONS;
 
-  sm->setInitialState(0);
+  sm->initializeState(0);
 
   // Create predictable state machine with multiple paths
   for (int i = 0; i < NUM_TEST_TRANSITIONS; i++) {
@@ -864,14 +864,14 @@ void test_comprehensive_coverage() {
 
   // Test comprehensive event coverage
   for (int seq = 0; seq < MEDIUM_TEST_ITERATIONS; seq++) {
-    uint8_t currentState = sm->getPage();
+    uint8_t currentState = sm->getCurrentPage();
 
     // Process each event type
     for (uint8_t event = 0; event < NUM_TEST_EVENTS; event++) {
       sm->processEvent(event);
 
       // Verify state transition occurred
-      TEST_ASSERT_TRUE(sm->getPage() != currentState);
+      TEST_ASSERT_TRUE(sm->getCurrentPage() != currentState);
 
       // Random scoreboard operations for coverage
       if (getRandomNumber() % SMALL_TEST_LIMIT == 0) {
@@ -897,7 +897,7 @@ void test_stress_testing() {
                 STRESS_TEST_ITERATIONS);
 #endif
 
-  sm->setInitialState(1);
+  sm->initializeState(1);
   sm->addTransition(stateTransition(1, 0, 0, 1, 2));
   sm->addTransition(stateTransition(2, 0, 0, 2, 3));
   sm->addTransition(stateTransition(3, 0, 0, 3, 4));
@@ -906,7 +906,7 @@ void test_stress_testing() {
   uint32_t startTime = millis();
 
   for (int i = 0; i < STRESS_TEST_ITERATIONS; i++) {
-    uint8_t currentState = sm->getPage();
+    uint8_t currentState = sm->getCurrentPage();
     sm->processEvent(currentState); // Appropriate event for current state
 
     // Occasional scoreboard updates
@@ -915,7 +915,7 @@ void test_stress_testing() {
     }
 
     // Verify we're still in valid state
-    uint8_t newState = sm->getPage();
+    uint8_t newState = sm->getCurrentPage();
     TEST_ASSERT_TRUE(newState >= 1 && newState <= 4);
   }
 

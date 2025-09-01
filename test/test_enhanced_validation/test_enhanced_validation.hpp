@@ -35,7 +35,7 @@ void test_enhanced_validation_strict_mode(void) {
     TEST_ASSERT_EQUAL(validationResult::VALID, result2);
 
     // Test 3: Infinite loop risk should be detected
-    sm->setInitialState(0);
+    sm->initializeState(0);
     stateTransition loopTrans(0, 0, 0, 0, 0, nullptr); // Self-loop with no conditions
     validationResult result3 = sm->addTransition(loopTrans);
     printf("Test 3 result: %d (expected %d)\n", static_cast<int>(result3), static_cast<int>(validationResult::VALID));

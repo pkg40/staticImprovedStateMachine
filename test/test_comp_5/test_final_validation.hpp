@@ -30,7 +30,7 @@
 // =============================================================================
 
 void test_096_circular_dependency_detection() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     
     // Create circular dependencies
     sm->addTransition(stateTransition(1,0,1,2,0,nullptr));
@@ -42,12 +42,12 @@ void test_096_circular_dependency_detection() {
     for (int i = 0; i < FINAL_TEST_CIRCULAR_ITERATIONS; i++) {
         uint8_t expectedState = 1 + ((i + 1) % 4);
         sm->processEvent(1);
-        TEST_ASSERT_EQUAL_UINT8(expectedState, sm->getPage());
+        TEST_ASSERT_EQUAL_UINT8(expectedState, sm->getCurrentPage());
     }
 }
 
 void test_097_self_referencing_states() {
-    sm->setInitialState(FINAL_TEST_SELF_REF_STATE);
+    sm->initializeState(FINAL_TEST_SELF_REF_STATE);
     
     // Self-referencing state (stays in same state)
     sm->addTransition(stateTransition(FINAL_TEST_SELF_REF_STATE,0,FINAL_TEST_SELF_REF_EVENT_A,FINAL_TEST_SELF_REF_STATE,0,nullptr));
@@ -56,16 +56,16 @@ void test_097_self_referencing_states() {
     // Test self-reference
     for (int i = 0; i < FINAL_TEST_SELF_REF_ITERATIONS; i++) {
         sm->processEvent(FINAL_TEST_SELF_REF_EVENT_A);
-        TEST_ASSERT_EQUAL_UINT8(FINAL_TEST_SELF_REF_STATE, sm->getPage());
+        TEST_ASSERT_EQUAL_UINT8(FINAL_TEST_SELF_REF_STATE, sm->getCurrentPage());
     }
     
     // Test exit from self-reference
     sm->processEvent(FINAL_TEST_SELF_REF_EVENT_B);
-    TEST_ASSERT_EQUAL_UINT8(FINAL_TEST_SELF_REF_STATE_B, sm->getPage());
+    TEST_ASSERT_EQUAL_UINT8(FINAL_TEST_SELF_REF_STATE_B, sm->getCurrentPage());
 }
 
 void test_098_massive_state_space() {
-    sm->setInitialState(FINAL_TEST_WRAPAROUND_START);
+    sm->initializeState(FINAL_TEST_WRAPAROUND_START);
     
     // Create transitions across large state space
     for (int i = FINAL_TEST_WRAPAROUND_START; i < FINAL_TEST_WRAPAROUND_END; i++) {
@@ -78,12 +78,12 @@ void test_098_massive_state_space() {
     for (int i = 0; i < FINAL_TEST_WRAPAROUND_ITERATIONS; i++) {
         sm->processEvent(1);
         currentState = (currentState == FINAL_TEST_WRAPAROUND_LAST) ? FINAL_TEST_WRAPAROUND_START : currentState + 1;
-        TEST_ASSERT_EQUAL_UINT8(currentState, sm->getPage());
+        TEST_ASSERT_EQUAL_UINT8(currentState, sm->getCurrentPage());
     }
 }
 
 void test_099_event_storm_handling() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     sm->addTransition(stateTransition(1,0,DONT_CARE_EVENT,2,0,nullptr));
     sm->addTransition(stateTransition(2,0,DONT_CARE_EVENT,1,0,nullptr));
     
@@ -94,7 +94,7 @@ void test_099_event_storm_handling() {
         sm->processEvent(i % FINAL_TEST_EVENT_RANGE);
         
         // Should always be in valid state during storm
-        uint8_t state = sm->getPage();
+        uint8_t state = sm->getCurrentPage();
         TEST_ASSERT_TRUE(state == 1 || state == 2);
     }
     
@@ -108,7 +108,7 @@ void test_099_event_storm_handling() {
 }
 
 void test_100_multilayer_wildcard_resolution() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     
     // Multiple wildcard layers
     sm->addTransition(stateTransition(DONT_CARE_PAGE,0,DONT_CARE_EVENT,DONT_CARE_PAGE-1,0,nullptr)); // Catch-all
@@ -118,23 +118,23 @@ void test_100_multilayer_wildcard_resolution() {
     
     // Test resolution priority
     sm->processEvent(5);
-    TEST_ASSERT_EQUAL_UINT8(15, sm->getPage()); // Most specific wins
+    TEST_ASSERT_EQUAL_UINT8(15, sm->getCurrentPage()); // Most specific wins
     
-    sm->setCurrentPageId(2);
+    sm->setCurrentPage(2);
     sm->processEvent(5);
-    TEST_ASSERT_EQUAL_UINT8(50, sm->getPage()); // Event-specific
+    TEST_ASSERT_EQUAL_UINT8(50, sm->getCurrentPage()); // Event-specific
     
-    sm->setCurrentPageId(1);
+    sm->setCurrentPage(1);
     sm->processEvent(7);
-    TEST_ASSERT_EQUAL_UINT8(10, sm->getPage()); // State-specific
+    TEST_ASSERT_EQUAL_UINT8(10, sm->getCurrentPage()); // State-specific
     
-    sm->setCurrentPageId(3);
+    sm->setCurrentPage(3);
     sm->processEvent(8);
-    TEST_ASSERT_EQUAL_UINT8(DONT_CARE_PAGE-1, sm->getPage()); // Catch-all
+    TEST_ASSERT_EQUAL_UINT8(DONT_CARE_PAGE-1, sm->getCurrentPage()); // Catch-all
 }
 
 void test_101_deep_nesting_simulation() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     
     // Simulate deep nesting with sequential states
     for (int i = 1; i <= 50; i++) {
@@ -145,18 +145,18 @@ void test_101_deep_nesting_simulation() {
     // Deep descent
     for (int i = 0; i < 25; i++) {
         sm->processEvent(1);
-        TEST_ASSERT_EQUAL_UINT8(i + 2, sm->getPage());
+        TEST_ASSERT_EQUAL_UINT8(i + 2, sm->getCurrentPage());
     }
     
     // Deep ascent
     for (int i = 0; i < 25; i++) {
         sm->processEvent(2);
-        TEST_ASSERT_EQUAL_UINT8(25 - i, sm->getPage());
+        TEST_ASSERT_EQUAL_UINT8(25 - i, sm->getCurrentPage());
     }
 }
 
 void test_102_concurrent_scoreboard_operations() {
-    sm->setInitialState(0);
+    sm->initializeState(0);
     
     // Simulate concurrent scoreboard access
     for (int round = 0; round < 10; round++) {
@@ -176,7 +176,7 @@ void test_102_concurrent_scoreboard_operations() {
 
 void test_103_extreme_boundary_values() {
     // Test extreme boundary values
-    sm->setInitialState(DONT_CARE_PAGE);
+    sm->initializeState(DONT_CARE_PAGE);
     
     validationResult r1 = sm->addTransition(stateTransition(DONT_CARE_PAGE,0,DONT_CARE_EVENT,0,0,nullptr));
     validationResult r2 = sm->addTransition(stateTransition(0,0,0,DONT_CARE_PAGE-1,0,nullptr));  // Use 126 instead of 127
@@ -192,18 +192,18 @@ void test_103_extreme_boundary_values() {
     sm->dumpTransitionTable();
     // Test extreme transitions
     sm->processEvent(DONT_CARE_EVENT);
-    TEST_ASSERT_EQUAL_UINT8(DONT_CARE_PAGE, sm->getPage());  // Should go to page DONT_CARE_PAGE
+    TEST_ASSERT_EQUAL_UINT8(DONT_CARE_PAGE, sm->getCurrentPage());  // Should go to page DONT_CARE_PAGE
     
     sm->processEvent(0);
-    TEST_ASSERT_EQUAL_UINT8(0, sm->getPage());  // Should go to page 0
+    TEST_ASSERT_EQUAL_UINT8(0, sm->getCurrentPage());  // Should go to page 0
 
-    sm->setCurrentPageId(27);
+    sm->setCurrentPage(27);
     sm->processEvent(28);
-    TEST_ASSERT_EQUAL_UINT8(0, sm->getPage());
+    TEST_ASSERT_EQUAL_UINT8(0, sm->getCurrentPage());
 }
 
 void test_104_state_machine_cloning_behavior() {
-    sm->setInitialState(42);
+    sm->initializeState(42);
     
     // Set up original state machine
     sm->addTransition(stateTransition(42,0,1,43,0,nullptr));
@@ -216,13 +216,13 @@ void test_104_state_machine_cloning_behavior() {
     sm->processEvent(2);
     
     stateMachineStats originalStats = sm->getStatistics();
-    uint8_t originalState = sm->getPage();
+    uint8_t originalState = sm->getCurrentPage();
     uint32_t originalScore0 = sm->getScoreboard(0);
     uint32_t originalScore1 = sm->getScoreboard(1);
     
     // Create "clone" by setting up identical state machine
     improvedStateMachine* clone = new improvedStateMachine();
-    clone->setInitialState(42);
+    clone->initializeState(42);
     clone->addTransition(stateTransition(42,0,1,43,0,nullptr));
     clone->addTransition(stateTransition(43,0,2,44,0,nullptr));
     clone->setScoreboard(12345, 0);
@@ -231,7 +231,7 @@ void test_104_state_machine_cloning_behavior() {
     clone->processEvent(2);
     
     // Verify clone matches original
-    TEST_ASSERT_EQUAL_UINT8(originalState, clone->getPage());
+    TEST_ASSERT_EQUAL_UINT8(originalState, clone->getCurrentPage());
     TEST_ASSERT_EQUAL_UINT32(originalScore0, clone->getScoreboard(0));
     TEST_ASSERT_EQUAL_UINT32(originalScore1, clone->getScoreboard(1));
     
@@ -239,7 +239,7 @@ void test_104_state_machine_cloning_behavior() {
 }
 
 void test_105_comprehensive_validation_pipeline() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     
     // Test comprehensive validation scenarios
     validationResult results[10];
@@ -280,7 +280,7 @@ void test_105_comprehensive_validation_pipeline() {
 
 void test_106_final_integration_verification() {
     // Final comprehensive integration test
-    sm->setInitialState(1);
+    sm->initializeState(1);
     
     // Set up comprehensive state machine
     sm->addState(stateDefinition(1, "StartState", nullptr, nullptr));
@@ -296,17 +296,17 @@ void test_106_final_integration_verification() {
     for (int cycle = 0; cycle < 3; cycle++) {
         // Reset
         sm->processEvent(0);
-        TEST_ASSERT_EQUAL_UINT8(1, sm->getPage());
+        TEST_ASSERT_EQUAL_UINT8(1, sm->getCurrentPage());
         
         // Full cycle
         sm->processEvent(1);
-        TEST_ASSERT_EQUAL_UINT8(2, sm->getPage());
+        TEST_ASSERT_EQUAL_UINT8(2, sm->getCurrentPage());
         
         sm->processEvent(2);
-        TEST_ASSERT_EQUAL_UINT8(3, sm->getPage());
+        TEST_ASSERT_EQUAL_UINT8(3, sm->getCurrentPage());
         
         sm->processEvent(3);
-        TEST_ASSERT_EQUAL_UINT8(1, sm->getPage());
+        TEST_ASSERT_EQUAL_UINT8(1, sm->getCurrentPage());
         
         // Update scoreboards
         sm->setScoreboard(cycle * 1000, cycle % 4);
@@ -316,7 +316,7 @@ void test_106_final_integration_verification() {
     stateMachineStats finalStats = sm->getStatistics();
     TEST_ASSERT_TRUE(finalStats.totalTransitions >= 12); // 4 events * 3 cycles
     TEST_ASSERT_TRUE(finalStats.stateChanges >= 12);
-    TEST_ASSERT_EQUAL_UINT8(1, sm->getPage());
+    TEST_ASSERT_EQUAL_UINT8(1, sm->getCurrentPage());
     
     // Verify scoreboards were set
     TEST_ASSERT_EQUAL_UINT32(14, sm->getScoreboard(0)); // Bits for pages 1,2,3 set

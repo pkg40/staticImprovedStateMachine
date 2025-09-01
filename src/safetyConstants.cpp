@@ -265,7 +265,7 @@ bool postActionSafetyCheck(pageID fromPage, eventID event, void* context) {
     }
     
     // 2. Check if state machine is still in valid state
-    pageID currentState = sm->getPage();
+    pageID currentState = sm->getCurrentPage();
     if (currentState >= STATEMACHINE_MAX_PAGES) {
         return false; // Invalid state detected
     }

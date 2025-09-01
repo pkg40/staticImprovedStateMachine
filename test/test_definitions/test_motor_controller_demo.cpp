@@ -62,7 +62,7 @@ void test_motor_controller_visualization() {
     
     // Execute the navigation sequence
     for (int step = 0; step < sequenceLength; step++) {
-    uint8_t beforeState = sm->getPage();
+    uint8_t beforeState = sm->getCurrentPage();
         
 #ifdef ARDUINO
         Serial.print("Step ");
@@ -77,7 +77,7 @@ void test_motor_controller_visualization() {
 #endif
         
         uint16_t result = sm->processEvent(sequence[step].event);
-    uint8_t afterState = sm->getPage();
+    uint8_t afterState = sm->getCurrentPage();
         
         // Validate the transition
         bool success = (afterState == sequence[step].expectedState);
@@ -136,7 +136,7 @@ void test_motor_controller_visualization() {
 #endif
     
     // Validate we're back at main menu
-    TEST_ASSERT_EQUAL_UINT8(MotorControllerMenuConfig::MENU_MAIN, sm->getPage());
+    TEST_ASSERT_EQUAL_UINT8(MotorControllerMenuConfig::MENU_MAIN, sm->getCurrentPage());
     
 #ifdef ARDUINO
     Serial.println("\n=== MOTOR CONTROLLER VISUALIZATION COMPLETE ===\n");
@@ -184,7 +184,7 @@ void test_menu_breadth_exploration() {
     int explorationLength = sizeof(exploration) / sizeof(ExplorationStep);
     
     for (int step = 0; step < explorationLength; step++) {
-    uint8_t beforeState = sm->getPage();
+    uint8_t beforeState = sm->getCurrentPage();
         
         if (exploration[step].menuButton > 0) {
             // Navigate to submenu
@@ -222,7 +222,7 @@ void test_menu_breadth_exploration() {
     }
     
     // Should be back at main menu
-    TEST_ASSERT_EQUAL_UINT8(MotorControllerMenuConfig::MENU_MAIN, sm->getPage());
+    TEST_ASSERT_EQUAL_UINT8(MotorControllerMenuConfig::MENU_MAIN, sm->getCurrentPage());
     
 #ifdef ARDUINO
     Serial.println("=== BREADTH EXPLORATION COMPLETE ===\n");

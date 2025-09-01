@@ -15,21 +15,21 @@ void test_001_basic_instantiation() {
 }
 
 void test_002_initial_state_setting() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     TEST_ASSERT_EQUAL_UINT8(1, sm->getPage());
-    sm->setInitialState(42);
+    sm->initializeState(42);
     TEST_ASSERT_EQUAL_UINT8(42, sm->getPage());
 }
 
 void test_003_simple_transitions() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     sm->addTransition(stateTransition(1,0,5,2,0,nullptr));
     sm->processEvent(5);
     TEST_ASSERT_EQUAL_UINT8(2, sm->getPage());
 }
 
 void test_004_multiple_transitions() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     sm->addTransition(stateTransition(1,0,1,2,0,nullptr));
     sm->addTransition(stateTransition(2,0,2,3,0,nullptr));
     sm->addTransition(stateTransition(3,0,3,1,0,nullptr));
@@ -42,7 +42,7 @@ void test_004_multiple_transitions() {
 }
 
 void test_005_wildcard_transitions() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     sm->addState(stateDefinition(1, "State1", "State 1"));
     sm->addState(stateDefinition(42, "State42", "State 42"));
     sm->addState(stateDefinition(100, "State100", "State 100"));
@@ -56,9 +56,9 @@ void test_005_wildcard_transitions() {
 
 void test_006_boundary_states() {
     sm->setDebugMode(true);
-    sm->setInitialState(0);
+    sm->initializeState(0);
     TEST_ASSERT_EQUAL_UINT8(0, sm->getPage());
-    sm->setInitialState(DONT_CARE_PAGE);
+    sm->initializeState(DONT_CARE_PAGE);
     TEST_ASSERT_EQUAL_UINT8(DONT_CARE_PAGE, sm->getPage());
     sm->addTransition(stateTransition(DONT_CARE_PAGE,0,1,0,0,nullptr));
     sm->processEvent(1);
@@ -67,7 +67,7 @@ void test_006_boundary_states() {
 }
 
 void test_007_invalid_events() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     sm->addTransition(stateTransition(1,0,5,2,0,nullptr));
     sm->processEvent(5+1);
     TEST_ASSERT_EQUAL_UINT8(1, sm->getPage());
@@ -76,7 +76,7 @@ void test_007_invalid_events() {
 }
 
 void test_008_state_definitions() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     stateDefinition state1(1, "Menu", "Main Menu");
     stateDefinition state2(2, "Settings", "Settings Page");
     sm->addState(state1);
@@ -85,7 +85,7 @@ void test_008_state_definitions() {
 }
 
 void test_009_scoreboard_operations() {
-    sm->setInitialState(0);
+    sm->initializeState(0);
     sm->setScoreboard(100, 0);
     sm->setScoreboard(200, 1);
     sm->setScoreboard(300, 2);
@@ -97,7 +97,7 @@ void test_009_scoreboard_operations() {
 }
 
 void test_010_statistics_tracking() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     sm->addTransition(stateTransition(1,0,1,2,0,nullptr));
     stateMachineStats before = sm->getStatistics();
     sm->processEvent(1);
@@ -108,7 +108,7 @@ void test_010_statistics_tracking() {
 }
 
 void test_011_random_stress() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     sm->addTransition(stateTransition(1,0,1,2,0,nullptr));
     sm->addTransition(stateTransition(2,0,2,1,0,nullptr));
     for (int i = 0; i < 100; i++) {
@@ -121,7 +121,7 @@ void test_011_random_stress() {
 }
 
 void test_012_circular_states() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     sm->addTransition(stateTransition(1,0,1,2,0,nullptr));
     sm->addTransition(stateTransition(2,0,1,3,0,nullptr));
     sm->addTransition(stateTransition(3,0,1,4,0,nullptr));
@@ -139,7 +139,7 @@ void test_012_circular_states() {
 }
 
 void test_013_performance_validation() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     for (int i = 1; i <= 20; i++) {
         sm->addTransition(stateTransition(i,0,1,(i % 20) + 1,0,nullptr));
     }
@@ -155,7 +155,7 @@ void test_014_memory_safety() {
     for (int i = 0; i < 10; i++) {
         delete sm;
         sm = new improvedStateMachine();
-        sm->setInitialState(i % 10);
+        sm->initializeState(i % 10);
         sm->addTransition(stateTransition(i % 10,0,1,(i + 1) % 10,0,nullptr));
         sm->processEvent(1);
         TEST_ASSERT_TRUE(sm->getPage() < 10);
@@ -163,7 +163,7 @@ void test_014_memory_safety() {
 }
 
 void test_015_comprehensive_integration() {
-    sm->setInitialState(1);
+    sm->initializeState(1);
     sm->addState(stateDefinition(1, "Start", "Start State"));
     sm->addState(stateDefinition(2, "Process", "Processing"));
     sm->addState(stateDefinition(3, "End", "End State"));

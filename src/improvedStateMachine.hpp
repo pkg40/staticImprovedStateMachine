@@ -20,58 +20,59 @@ unsigned long micros();
 
 // Safety and validation macros
 #ifndef STATEMACHINE_MAX_TRANSITIONS
-#define STATEMACHINE_MAX_TRANSITIONS 256
+    #define STATEMACHINE_MAX_TRANSITIONS 256
 #endif
 
 #ifndef STATEMACHINE_MAX_PAGES
-#define STATEMACHINE_MAX_PAGES 127  // Allow pages 0-126 (127 reserved for DONT_CARE_PAGE)
-#define DONT_CARE_PAGE STATEMACHINE_MAX_PAGES  // Allow pages 0-126 (127 reserved for DONT_CARE_PAGE)
+    #define STATEMACHINE_MAX_PAGES 127  // Allow pages 0-126 (127 reserved for DONT_CARE_PAGE)
+    #define DONT_CARE_PAGE STATEMACHINE_MAX_PAGES  // Allow pages 0-126 (127 reserved for DONT_CARE_PAGE)
 #endif
 
 #ifndef STATEMACHINE_MAX_BUTTONS
-#define STATEMACHINE_MAX_BUTTONS 15  // Allow buttons 0-14 (15 reserved for DONT_CARE_BUTTONS)
-#define DONT_CARE_BUTTON STATEMACHINE_MAX_BUTTONS  // Allow buttons 0-14 (15 reserved for DONT_CARE_BUTTONS)
+    #define STATEMACHINE_MAX_BUTTONS 15  // Allow buttons 0-14 (15 reserved for DONT_CARE_BUTTONS)
+    #define DONT_CARE_BUTTON STATEMACHINE_MAX_BUTTONS  // Allow buttons 0-14 (15 reserved for DONT_CARE_BUTTONS)
 #endif
 
 #ifndef STATEMACHINE_MAX_EVENTS
-#define STATEMACHINE_MAX_EVENTS 63  // Allow events 0-63 (64 reserved for DONT_CARE_EVENT)
-#define DONT_CARE_EVENT STATEMACHINE_MAX_EVENTS  // Allow events 0-63 (64 reserved for DONT_CARE_EVENT)
+    #define STATEMACHINE_MAX_EVENTS 63  // Allow events 0-63 (64 reserved for DONT_CARE_EVENT)
+    #define DONT_CARE_EVENT STATEMACHINE_MAX_EVENTS  // Allow events 0-63 (64 reserved for DONT_CARE_EVENT)
 #endif
 
 #ifndef STATEMACHINE_MAX_RECURSION_DEPTH
-#define STATEMACHINE_MAX_RECURSION_DEPTH 10
+    #define STATEMACHINE_MAX_RECURSION_DEPTH 10
 #endif
 
 #ifndef STATEMACHINE_SCOREBOARD_SEGMENT_SIZE
-#define STATEMACHINE_SCOREBOARD_SEGMENT_SIZE 32
+    #define STATEMACHINE_SCOREBOARD_SEGMENT_SIZE 32
 #endif
 
 #ifndef STATEMACHINE_SCOREBOARD_NUM_SEGMENTS
-#define STATEMACHINE_SCOREBOARD_NUM_SEGMENTS 4
+    #define STATEMACHINE_SCOREBOARD_NUM_SEGMENTS 4
 #endif
 
 // Redraw mask constants
 #ifndef REDRAW_MASK_PAGE
-#define REDRAW_MASK_PAGE 0x0001
+    #define REDRAW_MASK_PAGE 0x0001
 #endif
 
 #ifndef REDRAW_MASK_BUTTON
-#define REDRAW_MASK_BUTTON 0x0002
+    #define REDRAW_MASK_BUTTON 0x0002
 #endif
 
 #ifndef REDRAW_MASK_FULL
-#define REDRAW_MASK_FULL 0x0004
+    #define REDRAW_MASK_FULL 0x0004
 #endif
 
 // Buffer size constants
 #ifndef PRINTF_BUFFER_SIZE
-#define PRINTF_BUFFER_SIZE 256
+    #define PRINTF_BUFFER_SIZE 256
 #endif
 
 #ifndef DESCRIPTION_BUFFER_SIZE
-#define DESCRIPTION_BUFFER_SIZE 12
+    #define DESCRIPTION_BUFFER_SIZE 12
 #endif
 
+// TODO - decide whether to keep - It isn't clear that all of the tests we want to do are error severity.
 // Enhanced validation modes
 #define VALIDATION_MODE_STRICT 0x01    // Reject all suspicious transitions
 #define VALIDATION_MODE_WARN 0x02      // Allow but log warnings
@@ -89,7 +90,7 @@ enum validationSeverity {
 // Enhanced validation results with more specific error codes
 enum validationResult {
     VALID = 0,
-    SUCCESS = 0,  // Alias for VALID
+    SUCCESS = VALID, // alias for VALID
     INVALID_PAGE_ID,
     INVALID_BUTTON_ID,
     INVALID_EVENT_ID,
@@ -124,12 +125,7 @@ using buttonID = uint8_t;
 using eventID = uint8_t;
 
 // Action function type
-using ActionFunction = std::function<void(pageID, eventID, void*)>;
-
-// Don't care constant - 255 reserved for wildcards, max valid values are 0-254
-//constexpr pageID DONT_CARE_PAGE = std::numeric_limits<pageID>::max(); // 255 - reserved
-//constexpr buttonID DONT_CARE_BUTTON = std::numeric_limits<buttonID>::max(); // 255 - reserved
-//constexpr eventID DONT_CARE_EVENT = std::numeric_limits<eventID>::max(); // 255 - reserved
+using actionFunction = std::function<void(pageID, eventID, void*)>;
 
 // State machine statistics for monitoring
 struct stateMachineStats {
@@ -145,7 +141,7 @@ struct stateMachineStats {
     stateMachineStats() : totalTransitions(0), failedTransitions(0), stateChanges(0),
                          actionExecutions(0), validationErrors(0), maxTransitionTime(0), 
                          averageTransitionTime(0), lastTransitionTime(0) {}
-};// Compact state transition definition
+};  // Compact state transition definition
 struct stateTransition {
     pageID fromPage;
     pageID fromButton;
@@ -158,7 +154,7 @@ struct stateTransition {
     uint8_t op3;
 
     // Constructor for simple transitions
-    stateTransition(pageID fromP, buttonID fromB, eventID evt, pageID toP, buttonID toB, ActionFunction act = nullptr)
+    stateTransition(pageID fromP, buttonID fromB, eventID evt, pageID toP, buttonID toB, actionFunction act = nullptr)
         : fromPage(fromP), fromButton(fromB), event(evt),
           toPage(toP), toButton(toB), action(act),
           op1(0), op2(0), op3(0) {}
@@ -257,7 +253,7 @@ private:
     validationResult validateTransitionStrict(const stateTransition& trans) const;
     validationResult validateTransitionWarnings(const stateTransition& trans) const;
     bool isInfiniteLoopRisk(const stateTransition& trans) const;
-    bool isStateDefined(pageID id) const;
+    bool isPageDefined(pageID id) const;
     void logValidationWarning(const std::string& warning, validationSeverity severity = SEVERITY_WARNING) const;
     
     // Safety and validation methods
@@ -323,29 +319,26 @@ public:
     uint32_t getStatisticsTimestamp() const { return _stats.lastTransitionTime; }
     
     // State management
-    void setInitialState(pageID page = 0, buttonID button = 0);
+    void initializeState(pageID page = 0, buttonID button = 0);
     void setState(pageID page = 0, buttonID button = 0);
-    void setCurrentPageId(pageID page);
+    void setCurrentPage(pageID page);
     void forceState(pageID page = 0, buttonID button = 0);
     
     // Event processing
     uint16_t processEvent(eventID event, void* context = nullptr);
     // State queries
     // Legacy methods (kept for backward compatibility)
-    pageID getPage() const { 
+    pageID getCurrentPage() const { 
         if (_debugMode) Serial.printf("Current page: %d\n", _currentState.page);
         return _currentState.page; 
     }
-    pageID getButton() const { return _currentState.button; }
-    
-    // Consistent camelCase methods (preferred for new code)
-    pageID getCurrentPageId() const { 
-        if (_debugMode) Serial.printf("Current page: %d\n", _currentState.page);
-        return _currentState.page; 
-    }
-    pageID getLastPageId() const { return _lastState.page; }
-    buttonID getCurrentButtonId() const { return _currentState.button; }
-    buttonID getLastButtonId() const { return _lastState.button; }
+    pageID getPage() const { return getCurrentPage(); }
+
+    pageID getCurrentButton() const { return _currentState.button; }
+    pageID getButton() const { return getCurrentButton(); }
+
+    pageID getLastPage() const { return _lastState.page; }
+    buttonID getLastButton() const { return _lastState.button; }
 
     // Menu queries
     const menuDefinition* getMenu(pageID id) const;
@@ -354,6 +347,7 @@ public:
     // Debug and utilities
     void setDebugMode(bool enabled) { _debugMode = enabled; }
     bool getDebugMode() const { return _debugMode; }
+
     void dumpStateTable() const;
     void printCurrentState() const;
     void printTransition(const stateTransition& trans) const;
@@ -390,35 +384,3 @@ public:
     void clearValidationWarnings() const;
     validationResult validateTransition(const stateTransition& trans, bool verbose = false) const;
 };
-
-
-// Convenience macros for common patterns
-#define ADD_BUTTON_NAV(menuId, numButtons) \
-    addButtonNavigation(menuId, numButtons)
-
-#define ADD_MENU_TRANSITIONS(menuId, parentMenu) \
-    addStandardMenuTransitions(menuId, parentMenu)
-
-#define TRANSITION(from, event, to) \
-    stateTransition(from, event, to)
-
-#define TRANSITION_WITH_ACTION(from, event, to, action) \
-    stateTransition(from, event, to, action)
-
-#define PAGE_TRANSITION(from, page, button, event, to, toPage, toButton) \
-    stateTransition(from, page, button, event, to, toPage, toButton)
-
-// Common action functions
-namespace stateActions {
-    void noAction(pageID state, eventID event, void* context);
-    void loadState(pageID state, eventID event, void* context);
-    void storeState(pageID state, eventID event, void* context);
-    void setPoint(pageID state, eventID event, void* context);
-    void loadAuto(pageID state, eventID event, void* context);
-    void storeAuto(pageID state, eventID event, void* context);
-    void changeValue(pageID state, eventID event, void* context);
-    void resetState(pageID state, eventID event, void* context);
-    void powerAction(pageID state, eventID event, void* context);
-    void displayAction(pageID state, eventID event, void* context);
-    void motorAction(pageID state, eventID event, void* context);
-}
