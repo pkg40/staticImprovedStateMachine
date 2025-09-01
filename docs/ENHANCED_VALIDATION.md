@@ -15,7 +15,7 @@ The enhanced validation system provides multiple layers of protection against in
 
 ### VALIDATION_MODE_STRICT (0x01)
 Enables strict validation that rejects transitions with:
-- Wildcards in destination fields (toPage, toButton)
+- Wildcards in destination fields (toPage, toButton) are rejected
 - Undefined states (when requireDefinedStates is enabled)
 - Potential infinite loops
 - Invalid ID ranges
@@ -35,17 +35,13 @@ Causes assertion failures for critical validation errors (strict mode violations
 ## Configuration Methods
 
 ```cpp
-// Set validation mode (can combine multiple modes)
-sm->setValidationMode(VALIDATION_MODE_STRICT | VALIDATION_MODE_WARN);
+// Set validation mode (bitmask)
+sm.setValidationMode(VALIDATION_MODE_STRICT | VALIDATION_MODE_WARN);
 
-// Enable strict wildcard checking
-sm->enableStrictWildcardChecking(true);
-
-// Require all states to be explicitly defined
-sm->requireDefinedStates(true);
-
-// Enable infinite loop detection
-sm->enableInfiniteLoopDetection(true);
+// Enable strict checks
+sm.enableStrictWildcardChecking(true);
+sm.requireDefinedStates(true);
+sm.enableInfiniteLoopDetection(true);
 ```
 
 ## Enhanced Error Codes
@@ -58,7 +54,7 @@ The system now detects these additional validation errors:
 - `MISSING_NULL_ACTION` - Transition with parameters but no action
 - `INCONSISTENT_WILDCARD_USAGE` - Mixed wildcard patterns
 - `TRANSITION_AMBIGUITY` - Conflicting transition definitions
-- `STATE_NOT_DEFINED` - Referenced state not in state definitions
+- `PAGE_NOT_DEFINED` - Referenced page not in state definitions
 - `ORPHANED_TRANSITION` - Transition references undefined states
 - `VALIDATION_MODE_VIOLATION` - Transition violates current validation mode
 
@@ -67,44 +63,39 @@ The system now detects these additional validation errors:
 ### Example 1: Strict Development Mode
 ```cpp
 // Enable strict validation for development
-sm->setValidationMode(VALIDATION_MODE_STRICT | VALIDATION_MODE_DEBUG);
-sm->enableStrictWildcardChecking(true);
-sm->requireDefinedStates(true);
-sm->enableInfiniteLoopDetection(true);
+sm.setValidationMode(VALIDATION_MODE_STRICT | VALIDATION_MODE_DEBUG);
+sm.enableStrictWildcardChecking(true);
+sm.requireDefinedStates(true);
+sm.enableInfiniteLoopDetection(true);
 
-// This will be rejected
+// This will be rejected (wildcard destination)
 stateTransition badTrans(DONT_CARE_PAGE, 0, 1, DONT_CARE_PAGE, 0, nullptr);
-validationResult result = sm->addTransition(badTrans);
+validationResult result = sm.addTransition(badTrans);
 // result == WILDCARD_IN_DESTINATION
 ```
 
 ### Example 2: Warning Mode for Production
 ```cpp
-// Enable warnings but allow transitions
-sm->setValidationMode(VALIDATION_MODE_WARN);
-sm->enableStrictWildcardChecking(false);
+sm.setValidationMode(VALIDATION_MODE_WARN);
+sm.enableStrictWildcardChecking(false);
 
-// This will succeed but generate warnings
 stateTransition riskyTrans(0, 0, 0, 0, 0, nullptr);
-sm->addTransition(riskyTrans);
+sm.addTransition(riskyTrans);
 
-// Check for warnings
-if (sm->hasValidationWarnings()) {
-    const auto& warnings = sm->getValidationWarnings();
-    for (const auto& warning : warnings) {
-        Serial.println(warning.c_str());
-    }
+if (sm.hasValidationWarnings()) {
+    const auto& warnings = sm.getValidationWarnings();
+    for (const auto& w : warnings) Serial.println(w.c_str());
 }
 ```
 
 ### Example 3: Assert Mode for Testing
 ```cpp
 // Enable assertions for critical errors
-sm->setValidationMode(VALIDATION_MODE_ASSERT | VALIDATION_MODE_STRICT);
+sm.setValidationMode(VALIDATION_MODE_ASSERT | VALIDATION_MODE_STRICT);
 
-// This would cause assertion failure in debug builds
+// Example invalid transition for testing
 stateTransition criticalTrans(0, 0, 1, DONT_CARE_PAGE, 0, nullptr);
-sm->addTransition(criticalTrans);
+sm.addTransition(criticalTrans);
 ```
 
 ## Testing the Enhanced Validation
@@ -112,7 +103,7 @@ sm->addTransition(criticalTrans);
 Run the enhanced validation tests:
 
 ```bash
-pio test -e test_enhanced_validation_runner
+pio test -e native --filter test_enhanced_validation
 ```
 
 The test suite covers:

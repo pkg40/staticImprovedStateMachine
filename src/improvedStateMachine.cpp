@@ -1,4 +1,4 @@
-#include "staticImprovedStateMachine.hpp"
+#include "improvedStateMachine.hpp"
 #include <algorithm>
 
 #ifndef ARDUINO
@@ -72,18 +72,19 @@ unsigned long micros() {
 }
 #endif
 
-staticImprovedStateMachine::staticImprovedStateMachine()
+improvedStateMachine::improvedStateMachine()
     : _transitionCount(0), _stateCount(0), _debugMode(false), 
-      _validationEnabled(true), _recursionDepth(0) {
+      _validationEnabled(true), _recursionDepth(0), _addTransitionCallSequence(0),
+      _lastErrorContext() {
   // Initialize scoreboard
-  for (int i = 0; i < STATIC_STATEMACHINE_SCOREBOARD_NUM_SEGMENTS; i++) {
+  for (int i = 0; i < STATEMACHINE_SCOREBOARD_NUM_SEGMENTS; i++) {
     _stateScoreboard[i] = 0;
   }
-  _stats = staticStateMachineStats();
+  _stats = stateMachineStats();
 }
 
 // Copy constructor
-staticImprovedStateMachine::staticImprovedStateMachine(const staticImprovedStateMachine& other)
+improvedStateMachine::improvedStateMachine(const improvedStateMachine& other)
     : _transitions(other._transitions),
       _states(other._states),
       _transitionCount(other._transitionCount),
@@ -93,15 +94,17 @@ staticImprovedStateMachine::staticImprovedStateMachine(const staticImprovedState
       _debugMode(other._debugMode),
       _validationEnabled(other._validationEnabled),
       _recursionDepth(0),  // Reset recursion depth for new instance
-      _stats(other._stats) {
+      _stats(other._stats),
+      _addTransitionCallSequence(0),  // Reset call sequence for new instance
+      _lastErrorContext() {  // Reset error context for new instance
   // Copy scoreboard
-  for (int i = 0; i < STATIC_STATEMACHINE_SCOREBOARD_NUM_SEGMENTS; i++) {
+  for (int i = 0; i < STATEMACHINE_SCOREBOARD_NUM_SEGMENTS; i++) {
     _stateScoreboard[i] = other._stateScoreboard[i];
   }
 }
 
 // Assignment operator
-staticImprovedStateMachine& staticImprovedStateMachine::operator=(const staticImprovedStateMachine& other) {
+improvedStateMachine& improvedStateMachine::operator=(const improvedStateMachine& other) {
   if (this != &other) {
     _transitions = other._transitions;
     _states = other._states;
@@ -113,9 +116,11 @@ staticImprovedStateMachine& staticImprovedStateMachine::operator=(const staticIm
     _validationEnabled = other._validationEnabled;
     _recursionDepth = 0;  // Reset recursion depth
     _stats = other._stats;
+    _addTransitionCallSequence = 0;  // Reset call sequence for new instance
+    _lastErrorContext = transitionErrorContext();  // Reset error context for new instance
     
     // Copy scoreboard
-    for (int i = 0; i < STATIC_STATEMACHINE_SCOREBOARD_NUM_SEGMENTS; i++) {
+    for (int i = 0; i < STATEMACHINE_SCOREBOARD_NUM_SEGMENTS; i++) {
       _stateScoreboard[i] = other._stateScoreboard[i];
     }
   }
@@ -123,13 +128,13 @@ staticImprovedStateMachine& staticImprovedStateMachine::operator=(const staticIm
 }
 
 // Configuration methods
-staticValidationResult staticImprovedStateMachine::addState(const staticStateDefinition &state) {
+validationResult improvedStateMachine::addState(const stateDefinition &state) {
   // Check for maximum states
-  if (_stateCount >= STATIC_STATEMACHINE_MAX_PAGES) {
+  if (_stateCount >= STATEMACHINE_MAX_PAGES) {
     if (_debugMode) {
-      Serial.printf("ERROR: Maximum states (%d) exceeded\n", STATIC_STATEMACHINE_MAX_PAGES);
+      Serial.printf("ERROR: Maximum states (%d) exceeded\n", STATEMACHINE_MAX_PAGES);
     }
-    return STATIC_MAX_PAGES_EXCEEDED;
+    return MAX_PAGES_EXCEEDED;
   }
 
   // Check for duplicate pages
@@ -138,16 +143,16 @@ staticValidationResult staticImprovedStateMachine::addState(const staticStateDef
       if (_debugMode) {
         Serial.printf("ERROR: Duplicate page ID %d\n", state.id);
       }
-      return STATIC_DUPLICATE_PAGE;
+      return DUPLICATE_PAGE;
     }
   }
 
   _states[_stateCount] = state;
   _stateCount++;
-  return STATIC_VALID;
+  return VALID;
 }
 
-const staticPageDefinition *staticImprovedStateMachine::getState(staticPageID id) const {
+const pageDefinition *improvedStateMachine::getState(pageID id) const {
   for (size_t i = 0; i < _stateCount; i++) {
     if (_states[i].id == id) {
       return &_states[i];
@@ -158,21 +163,31 @@ const staticPageDefinition *staticImprovedStateMachine::getState(staticPageID id
 
 
 
-staticValidationResult staticImprovedStateMachine::addTransition(const staticStateTransition &transition) {
+validationResult improvedStateMachine::addTransition(const stateTransition &transition) {
   // Check for maximum transitions
-  if (_transitionCount >= STATIC_STATEMACHINE_MAX_TRANSITIONS) {
+  if (_transitionCount >= STATEMACHINE_MAX_TRANSITIONS) {
     if (_debugMode) {
-      Serial.printf("ERROR: Maximum transitions (%d) exceeded\n", STATIC_STATEMACHINE_MAX_TRANSITIONS);
+      Serial.printf("ERROR: Maximum transitions (%d) exceeded\n", STATEMACHINE_MAX_TRANSITIONS);
     }
-    return STATIC_MAX_TRANSITIONS_EXCEEDED;
+    return MAX_TRANSITIONS_EXCEEDED;
   }
 
   // Validate transition if validation is enabled
   if (_validationEnabled) {
-    staticValidationResult result = validateTransition(transition);
-    if (result != STATIC_VALID) {
+    validationResult result = validateTransition(transition);
+    if (result != VALID) {
       if (_debugMode) {
-        Serial.printf("ERROR: Invalid transition - code %d\n", static_cast<int>(result));
+        Serial.printf("ERROR: Invalid transition - %s (code %d) at %s:%d\n", 
+                     getErrorDescription(result), static_cast<int>(result), 
+                     __FUNCTION__, __LINE__);
+        
+        // For duplicate transitions, show the conflicting transition details
+        if (result == DUPLICATE_TRANSITION) {
+          stateTransition conflictingTrans;
+          size_t conflictingIndex;
+          validateTransitionWithConflictDetails(transition, conflictingTrans, conflictingIndex, false);
+          printDuplicateTransitionError(transition, conflictingTrans, conflictingIndex);
+        }
       }
       _stats.validationErrors++;
       return result;
@@ -181,35 +196,90 @@ staticValidationResult staticImprovedStateMachine::addTransition(const staticSta
 
   _transitions[_transitionCount] = transition;
   _transitionCount++;
-  return STATIC_VALID;
+  return VALID;
+}
+
+validationResult improvedStateMachine::addTransition(const stateTransition& transition, const char* location) {
+  _addTransitionCallSequence++;
+  
+  // Check for maximum transitions
+  if (_transitionCount >= STATEMACHINE_MAX_TRANSITIONS) {
+    if (_debugMode) {
+      Serial.printf("ERROR: Maximum transitions (%d) exceeded\n", STATEMACHINE_MAX_TRANSITIONS);
+    }
+    
+    // Populate error context
+    _lastErrorContext = transitionErrorContext(MAX_TRANSITIONS_EXCEEDED, transition, 
+                                              _transitionCount, _addTransitionCallSequence, location);
+    return MAX_TRANSITIONS_EXCEEDED;
+  }
+
+  // Validate transition if validation is enabled
+  if (_validationEnabled) {
+    validationResult result = validateTransition(transition);
+    if (result != VALID) {
+      if (_debugMode) {
+        Serial.printf("ERROR: Invalid transition - %s (code %d) at %s:%d\n", 
+                     getErrorDescription(result), static_cast<int>(result), 
+                     __FUNCTION__, __LINE__);
+        
+        // For duplicate transitions, show the conflicting transition details
+        if (result == DUPLICATE_TRANSITION) {
+          stateTransition conflictingTrans;
+          size_t conflictingIndex;
+          validateTransitionWithConflictDetails(transition, conflictingTrans, conflictingIndex, false);
+          printDuplicateTransitionError(transition, conflictingTrans, conflictingIndex);
+        }
+      }
+      
+      // Populate error context
+      if (result == DUPLICATE_TRANSITION) {
+        stateTransition conflictingTrans;
+        size_t conflictingIndex;
+        validateTransitionWithConflictDetails(transition, conflictingTrans, conflictingIndex, false);
+        _lastErrorContext = transitionErrorContext(result, transition, 
+                                                  _transitionCount, _addTransitionCallSequence, location,
+                                                  conflictingTrans, conflictingIndex);
+      } else {
+        _lastErrorContext = transitionErrorContext(result, transition, 
+                                                  _transitionCount, _addTransitionCallSequence, location);
+      }
+      _stats.validationErrors++;
+      return result;
+    }
+  }
+
+  _transitions[_transitionCount] = transition;
+  _transitionCount++;
+  return VALID;
 }
 
 
 
 // Clear methods for reuse
-void staticImprovedStateMachine::clearConfiguration() {
+void improvedStateMachine::clearConfiguration() {
   _transitionCount = 0;
   _stateCount = 0;
   resetAllRuntime();
 }
 
-void staticImprovedStateMachine::clearTransitions() {
+void improvedStateMachine::clearTransitions() {
   _transitionCount = 0;
   resetStatistics();
 }
 
-void staticImprovedStateMachine::resetAllRuntime() {
-  _stats = staticStateMachineStats();
-  for (int i = 0; i < STATIC_STATEMACHINE_SCOREBOARD_NUM_SEGMENTS; i++) {
+void improvedStateMachine::resetAllRuntime() {
+  _stats = stateMachineStats();
+  for (int i = 0; i < STATEMACHINE_SCOREBOARD_NUM_SEGMENTS; i++) {
     _stateScoreboard[i] = 0;
   }
   _recursionDepth = 0;
-  _currentState = staticCurrentState();
-  _lastState = staticCurrentState();
+  _currentState = currentState();
+  _lastState = currentState();
 }
 
 // State management
-void staticImprovedStateMachine::initializeState(staticPageID page, staticButtonID button) {
+void improvedStateMachine::initializeState(pageID page, buttonID button) {
   _currentState.page = page;
   _currentState.button = button;
   _lastState = _currentState;
@@ -219,7 +289,7 @@ void staticImprovedStateMachine::initializeState(staticPageID page, staticButton
   }
 }
 
-void staticImprovedStateMachine::setState(staticPageID page, staticButtonID button) {
+void improvedStateMachine::setState(pageID page, buttonID button) {
   _lastState = _currentState;
   _currentState.page = page;
   _currentState.button = button;
@@ -229,7 +299,7 @@ void staticImprovedStateMachine::setState(staticPageID page, staticButtonID butt
   }
 }
 
-void staticImprovedStateMachine::setCurrentPage(staticPageID page) {
+void improvedStateMachine::setCurrentPage(pageID page) {
   _lastState = _currentState;
   _currentState.page = page;
 
@@ -238,14 +308,14 @@ void staticImprovedStateMachine::setCurrentPage(staticPageID page) {
   }
 }
 
-void staticImprovedStateMachine::forceState(staticPageID page, staticButtonID button) {
+void improvedStateMachine::forceState(pageID page, buttonID button) {
   setState(page, button);
 }
 
 // Event processing with safety checks
-uint16_t staticImprovedStateMachine::processEvent(staticEventID event, void *context) {
+uint16_t improvedStateMachine::processEvent(eventID event, void *context) {
   // Check for maximum recursion depth to prevent stack overflow
-  if (_recursionDepth >= STATIC_STATEMACHINE_MAX_RECURSION_DEPTH) {
+  if (_recursionDepth >= STATEMACHINE_MAX_RECURSION_DEPTH) {
     if (_debugMode) {
       Serial.printf("ERROR: Maximum recursion depth exceeded (%d)\n", _recursionDepth);
     }
@@ -258,7 +328,7 @@ uint16_t staticImprovedStateMachine::processEvent(staticEventID event, void *con
   uint32_t startTime = micros();
   _stats.totalTransitions++;
 
-  if (event >= STATIC_DONT_CARE_EVENT) {
+  if (event >= DONT_CARE_EVENT) {
     if (_debugMode) {
       Serial.printf("ERROR: Invalid Event - %d\n", event);
     }
@@ -273,7 +343,7 @@ uint16_t staticImprovedStateMachine::processEvent(staticEventID event, void *con
   }
 
   // Find first matching transition
-  const staticStateTransition *matchingTransition = nullptr;
+  const stateTransition *matchingTransition = nullptr;
   int matchCount = 0;
   for (size_t i = 0; i < _transitionCount; i++) {
     const auto& trans = _transitions[i];
@@ -300,7 +370,7 @@ uint16_t staticImprovedStateMachine::processEvent(staticEventID event, void *con
   }
 
   if (matchingTransition) {
-    const staticStateTransition &trans = *matchingTransition;
+    const stateTransition &trans = *matchingTransition;
     if (_debugMode) {
       Serial.printf("Found matching transition\n");
       printTransition(trans);
@@ -324,7 +394,7 @@ uint16_t staticImprovedStateMachine::processEvent(staticEventID event, void *con
     _lastState = _currentState;
 
     // Create new state from transition
-    staticCurrentState newState;
+    currentState newState;
     newState.page = trans.toPage;
     newState.button = trans.toButton;
 
@@ -364,8 +434,8 @@ uint16_t staticImprovedStateMachine::processEvent(staticEventID event, void *con
 }
 
 // Calculate redraw mask based on state changes
-uint16_t staticImprovedStateMachine::calculateRedrawMask(const staticCurrentState &oldState,
-                                                        const staticCurrentState &newState) const {
+uint16_t improvedStateMachine::calculateRedrawMask(const currentState &oldState,
+                                                        const currentState &newState) const {
   uint16_t mask = 0;
 
   if (oldState.page != newState.page) {
@@ -384,19 +454,19 @@ uint16_t staticImprovedStateMachine::calculateRedrawMask(const staticCurrentStat
 }
 
 // Helper methods
-bool staticImprovedStateMachine::matchesTransition(const staticStateTransition &trans,
-                                                  const staticCurrentState &state,
-                                                  staticEventID event) const {
-  if ((trans.fromPage == STATIC_DONT_CARE_PAGE || trans.fromPage == state.page) &&
-      (trans.fromButton == STATIC_DONT_CARE_BUTTON || trans.fromButton == state.button) &&
-      (trans.event == STATIC_DONT_CARE_EVENT || trans.event == event)) {
+bool improvedStateMachine::matchesTransition(const stateTransition &trans,
+                                                  const currentState &state,
+                                                  eventID event) const {
+  if ((trans.fromPage == DONT_CARE_PAGE || trans.fromPage == state.page) &&
+      (trans.fromButton == DONT_CARE_BUTTON || trans.fromButton == state.button) &&
+      (trans.event == DONT_CARE_EVENT || trans.event == event)) {
     return true;
   }
   return false;
 }
 
-bool staticImprovedStateMachine::transitionsConflict(const staticStateTransition &existing, 
-                                                    const staticStateTransition &newTrans) const {
+bool improvedStateMachine::transitionsConflict(const stateTransition &existing, 
+                                                    const stateTransition &newTrans) const {
   // Check for exact duplicates
   if (existing.fromPage == newTrans.fromPage &&
       existing.fromButton == newTrans.fromButton &&
@@ -407,20 +477,30 @@ bool staticImprovedStateMachine::transitionsConflict(const staticStateTransition
   }
 
   // Check if transitions could match the same state/event combination
-  bool pagesOverlap = (existing.fromPage == STATIC_DONT_CARE_PAGE ||
-                       newTrans.fromPage == STATIC_DONT_CARE_PAGE ||
+  // Only detect conflicts when both transitions could potentially match the same state
+  bool pagesOverlap = (existing.fromPage == DONT_CARE_PAGE ||
+                       newTrans.fromPage == DONT_CARE_PAGE ||
                        existing.fromPage == newTrans.fromPage);
 
-  bool buttonsOverlap = (existing.fromButton == STATIC_DONT_CARE_BUTTON ||
-                         newTrans.fromButton == STATIC_DONT_CARE_BUTTON ||
+  bool buttonsOverlap = (existing.fromButton == DONT_CARE_BUTTON ||
+                         newTrans.fromButton == DONT_CARE_BUTTON ||
                          existing.fromButton == newTrans.fromButton);
 
-  bool eventsOverlap = (existing.event == STATIC_DONT_CARE_EVENT ||
-                        newTrans.event == STATIC_DONT_CARE_EVENT ||
+  bool eventsOverlap = (existing.event == DONT_CARE_EVENT ||
+                        newTrans.event == DONT_CARE_EVENT ||
                         existing.event == newTrans.event);
 
+  // Only conflict if ALL three overlap AND they have different destinations
   if (pagesOverlap && buttonsOverlap && eventsOverlap) {
+    // If both transitions could match the same state, they must have the same destination
     if (existing.toPage != newTrans.toPage || existing.toButton != newTrans.toButton) {
+      // CRITICAL FIX: Only conflict if they could actually match the same specific state
+      // If both have specific (non-DONT_CARE) fromPage values and they're different, no conflict
+      if (existing.fromPage != DONT_CARE_PAGE && newTrans.fromPage != DONT_CARE_PAGE &&
+          existing.fromPage != newTrans.fromPage) {
+        return false; // Different specific pages, no conflict
+      }
+      // If one or both use DONT_CARE_PAGE, or they have the same fromPage, then they could conflict
       return true;
     }
   }
@@ -428,24 +508,24 @@ bool staticImprovedStateMachine::transitionsConflict(const staticStateTransition
   return false;
 }
 
-void staticImprovedStateMachine::executeAction(const staticStateTransition &trans,
-                                              staticEventID event, void *context) {
+void improvedStateMachine::executeAction(const stateTransition &trans,
+                                              eventID event, void *context) {
   if (trans.action) {
     trans.action(trans.toPage, event, context);
   }
 }
 
 // Debug and utility methods
-void staticImprovedStateMachine::dumpStateTable() const {
+void improvedStateMachine::dumpStateTable() const {
 #ifdef ARDUINO
-  Serial.println("\n--- STATIC STATES ---");
+  Serial.println("\n--- STATES ---");
   for (size_t i = 0; i < _stateCount; i++) {
     Serial.printf("State %d: %s\n", _states[i].id, _states[i].name);
   }
 
 
 
-  Serial.println("\n--- STATIC TRANSITION TABLE ---");
+  Serial.println("\n--- TRANSITION TABLE ---");
   Serial.println("From     Button Event To       ToBtn Description");
   Serial.println("-------- ------ ----- -------- ----- -----------");
 
@@ -517,136 +597,185 @@ void staticImprovedStateMachine::dumpStateTable() const {
            eventName, toName, trans.toButton, description);
   }
 
-  printf("=== END STATIC STATE TABLE ===\n\n");
+  printf("=== END STATE TABLE ===\n\n");
 #endif
 }
 
-void staticImprovedStateMachine::printCurrentState() const {
+void improvedStateMachine::printCurrentState() const {
   Serial.printf("Current: %d/%d \n", _currentState.page, _currentState.button);
 }
 
-void staticImprovedStateMachine::printTransition(const staticStateTransition &trans) const {
+void improvedStateMachine::printTransition(const stateTransition &trans) const {
   Serial.printf("%d\t%d\t%d\t%d\t%d\t%s\n", trans.fromPage, trans.fromButton,
                 trans.event, trans.toPage, trans.toButton,
                 trans.action ? "Yes" : "No");
 }
 
-void staticImprovedStateMachine::printAllTransitions() const {
+void improvedStateMachine::printAllTransitions() const {
 #ifdef ARDUINO
-  Serial.println("\n--- STATIC TRANSITION TABLE ---");
+  Serial.println("\n--- TRANSITION TABLE ---");
   Serial.println("FromPage\tFromButton\tEvent\tToPage\tToButton\tAction");
   for (size_t i = 0; i < _transitionCount; i++) {
     printTransition(_transitions[i]);
   }
-  Serial.println("--- END STATIC TRANSITION TABLE ---\n");
+  Serial.println("--- END TRANSITION TABLE ---\n");
 #else
-  printf("\n--- STATIC TRANSITION TABLE ---\n");
+  printf("\n--- TRANSITION TABLE ---\n");
   printf("FromPage\tFromButton\tEvent\tToPage\tToButton\tAction\n");
   for (size_t i = 0; i < _transitionCount; i++) {
     printTransition(_transitions[i]);
   }
-  printf("--- END STATIC TRANSITION TABLE ---\n");
+  printf("--- END TRANSITION TABLE ---\n");
 #endif
 }
 
 // Scoreboard functionality
-void staticImprovedStateMachine::updateScoreboard(staticPageID id) {
-  if (id < STATIC_STATEMACHINE_SCOREBOARD_SEGMENT_SIZE) {
+void improvedStateMachine::updateScoreboard(pageID id) {
+  if (id < STATEMACHINE_SCOREBOARD_SEGMENT_SIZE) {
     _stateScoreboard[0] |= (1UL << id);
-  } else if (id < STATIC_STATEMACHINE_SCOREBOARD_SEGMENT_SIZE * 2) {
-    _stateScoreboard[1] |= (1UL << (id - STATIC_STATEMACHINE_SCOREBOARD_SEGMENT_SIZE));
-  } else if (id < STATIC_STATEMACHINE_SCOREBOARD_SEGMENT_SIZE * 3) {
-    _stateScoreboard[2] |= (1UL << (id - STATIC_STATEMACHINE_SCOREBOARD_SEGMENT_SIZE * 2));
-  } else if (id < STATIC_STATEMACHINE_SCOREBOARD_SEGMENT_SIZE * STATIC_STATEMACHINE_SCOREBOARD_NUM_SEGMENTS) {
-    _stateScoreboard[3] |= (1UL << (id - STATIC_STATEMACHINE_SCOREBOARD_SEGMENT_SIZE * 3));
+  } else if (id < STATEMACHINE_SCOREBOARD_SEGMENT_SIZE * 2) {
+    _stateScoreboard[1] |= (1UL << (id - STATEMACHINE_SCOREBOARD_SEGMENT_SIZE));
+  } else if (id < STATEMACHINE_SCOREBOARD_SEGMENT_SIZE * 3) {
+    _stateScoreboard[2] |= (1UL << (id - STATEMACHINE_SCOREBOARD_SEGMENT_SIZE * 2));
+  } else if (id < STATEMACHINE_SCOREBOARD_SEGMENT_SIZE * STATEMACHINE_SCOREBOARD_NUM_SEGMENTS) {
+    _stateScoreboard[3] |= (1UL << (id - STATEMACHINE_SCOREBOARD_SEGMENT_SIZE * 3));
   }
   if (_debugMode)
     Serial.printf("Scoreboard(%d): %u/%u/%u/%u\n", id, _stateScoreboard[0],
                   _stateScoreboard[1], _stateScoreboard[2], _stateScoreboard[3]);
 }
 
-uint32_t staticImprovedStateMachine::getScoreboard(uint8_t index) const {
-  if (index < STATIC_STATEMACHINE_SCOREBOARD_NUM_SEGMENTS) {
+uint32_t improvedStateMachine::getScoreboard(uint8_t index) const {
+  if (index < STATEMACHINE_SCOREBOARD_NUM_SEGMENTS) {
     return _stateScoreboard[index];
   }
   return 0;
 }
 
-void staticImprovedStateMachine::setScoreboard(uint32_t value, uint8_t index) {
-  if (index < STATIC_STATEMACHINE_SCOREBOARD_NUM_SEGMENTS) {
+void improvedStateMachine::setScoreboard(uint32_t value, uint8_t index) {
+  if (index < STATEMACHINE_SCOREBOARD_NUM_SEGMENTS) {
     _stateScoreboard[index] = value;
   }
 }
 
 // Safety and validation methods
-staticValidationResult staticImprovedStateMachine::validateTransition(const staticStateTransition &trans, bool verbose) const {
+validationResult improvedStateMachine::validateTransition(const stateTransition &trans, bool verbose) const {
   // Check for valid state IDs
-  if (trans.fromPage > STATIC_STATEMACHINE_MAX_PAGES) {
-    if (_debugMode) {
+  if (trans.fromPage > STATEMACHINE_MAX_PAGES) {
+    if (verbose && _debugMode) {
       printf("validateTransition: INVALID_PAGE_ID, fromPage=%d\n", trans.fromPage);
     }
-    return STATIC_INVALID_PAGE_ID;
+    return INVALID_PAGE_ID;
   }
-  if (trans.fromButton > STATIC_STATEMACHINE_MAX_BUTTONS) {
-    if (_debugMode) {
+  if (trans.fromButton > STATEMACHINE_MAX_BUTTONS) {
+    if (verbose && _debugMode) {
       printf("validateTransition: INVALID_BUTTON_ID, fromButton=%d\n", trans.fromButton);
     }
-    return STATIC_INVALID_BUTTON_ID;
+    return INVALID_BUTTON_ID;
   }
 
-  if (trans.toPage >= STATIC_DONT_CARE_PAGE) {
-    if (_debugMode) {
+  if (trans.toPage >= DONT_CARE_PAGE) {
+    if (verbose && _debugMode) {
       printf("validateTransition: INVALID_PAGE_ID, toPage=%d\n", trans.toPage);
     }
-    return STATIC_INVALID_PAGE_ID;
+    return INVALID_PAGE_ID;
   }
-  if (trans.toButton >= STATIC_DONT_CARE_BUTTON) {
-    if (_debugMode) {
+  if (trans.toButton >= DONT_CARE_BUTTON) {
+    if (verbose && _debugMode) {
       printf("validateTransition: INVALID_BUTTON_ID, toButton=%d\n", trans.toButton);
     }
-    return STATIC_INVALID_BUTTON_ID;
+    return INVALID_BUTTON_ID;
   }
-  if (trans.event > STATIC_STATEMACHINE_MAX_EVENTS) {
-    if (_debugMode) {
+  if (trans.event > STATEMACHINE_MAX_EVENTS) {
+    if (verbose && _debugMode) {
       printf("validateTransition: INVALID_EVENT_ID, event=%d\n", trans.event);
     }
-    return STATIC_INVALID_EVENT_ID;
+    return INVALID_EVENT_ID;
   }
 
   // Check for conflicting transitions
   for (size_t i = 0; i < _transitionCount; i++) {
     const auto& existing = _transitions[i];
     if (transitionsConflict(existing, trans)) {
-      return STATIC_DUPLICATE_TRANSITION;
+      return DUPLICATE_TRANSITION;
     }
   }
-  return STATIC_VALID;
+  return VALID;
 }
 
-staticValidationResult staticImprovedStateMachine::validateStateMachine() const {
+validationResult improvedStateMachine::validateTransitionWithConflictDetails(const stateTransition &trans, 
+                                                                          stateTransition& conflictingTrans, 
+                                                                          size_t& conflictingIndex, 
+                                                                          bool verbose) const {
+  // Check for valid state IDs
+  if (trans.fromPage > STATEMACHINE_MAX_PAGES) {
+    if (verbose && _debugMode) {
+      printf("validateTransition: INVALID_PAGE_ID, fromPage=%d\n", trans.fromPage);
+    }
+    return INVALID_PAGE_ID;
+  }
+  if (trans.fromButton > STATEMACHINE_MAX_BUTTONS) {
+    if (verbose && _debugMode) {
+      printf("validateTransition: INVALID_BUTTON_ID, fromButton=%d\n", trans.fromButton);
+    }
+    return INVALID_BUTTON_ID;
+  }
+
+  if (trans.toPage >= DONT_CARE_PAGE) {
+    if (verbose && _debugMode) {
+      printf("validateTransition: INVALID_PAGE_ID, toPage=%d\n", trans.toPage);
+    }
+    return INVALID_PAGE_ID;
+  }
+  if (trans.toButton >= DONT_CARE_BUTTON) {
+    if (verbose && _debugMode) {
+      printf("validateTransition: INVALID_BUTTON_ID, toButton=%d\n", trans.toButton);
+    }
+    return INVALID_BUTTON_ID;
+  }
+  if (trans.event > STATEMACHINE_MAX_EVENTS) {
+    if (verbose && _debugMode) {
+      printf("validateTransition: INVALID_EVENT_ID, event=%d\n", trans.event);
+    }
+    return INVALID_EVENT_ID;
+  }
+
+  // Check for conflicting transitions
+  for (size_t i = 0; i < _transitionCount; i++) {
+    const auto& existing = _transitions[i];
+    if (transitionsConflict(existing, trans)) {
+      conflictingTrans = existing;
+      conflictingIndex = i;
+      return DUPLICATE_TRANSITION;
+    }
+  }
+  return VALID;
+}
+
+validationResult improvedStateMachine::validateStateMachine() const {
   // Check for unreachable states
   if (!isPageReachable(_currentState.page)) {
-    return STATIC_UNREACHABLE_PAGE;
+    return UNREACHABLE_PAGE;
   }
 
   // Check for dangling states
   if (hasDanglingStates()) {
-    return STATIC_DANGLING_PAGE;
+    return DANGLING_PAGE;
   }
 
   // Check for circular dependencies
   if (hasCircularDependencies()) {
-    return STATIC_CIRCULAR_DEPENDENCY;
+    return CIRCULAR_DEPENDENCY;
   }
 
-  return STATIC_VALID;
+  return VALID;
 }
 
-staticValidationResult staticImprovedStateMachine::validateConfiguration() const {
+validationResult improvedStateMachine::validateConfiguration() const {
   return validateStateMachine();
 }
 
-bool staticImprovedStateMachine::isPageReachable(staticPageID id) const {
+bool improvedStateMachine::isPageReachable(pageID id) const {
   for (size_t i = 0; i < _transitionCount; i++) {
     const auto& trans = _transitions[i];
     if (trans.toPage == id) {
@@ -656,13 +785,13 @@ bool staticImprovedStateMachine::isPageReachable(staticPageID id) const {
   return id == _currentState.page; // Initial state is always reachable
 }
 
-bool staticImprovedStateMachine::hasDanglingStates() const {
+bool improvedStateMachine::hasDanglingStates() const {
   // Check if any states have no outgoing transitions
   for (size_t s = 0; s < _stateCount; s++) {
     bool hasTransition = false;
     for (size_t t = 0; t < _transitionCount; t++) {
       const auto& trans = _transitions[t];
-      if (trans.fromPage == _states[s].id && trans.fromPage != STATIC_DONT_CARE_PAGE) {
+      if (trans.fromPage == _states[s].id && trans.fromPage != DONT_CARE_PAGE) {
         hasTransition = true;
         break;
       }
@@ -674,18 +803,18 @@ bool staticImprovedStateMachine::hasDanglingStates() const {
   return false;
 }
 
-bool staticImprovedStateMachine::hasCircularDependencies() const {
+bool improvedStateMachine::hasCircularDependencies() const {
   // Simple cycle detection
   for (size_t i = 0; i < _transitionCount; i++) {
     const auto& trans = _transitions[i];
-    if (trans.fromPage == trans.toPage && trans.fromPage != STATIC_DONT_CARE_PAGE) {
+    if (trans.fromPage == trans.toPage && trans.fromPage != DONT_CARE_PAGE) {
       continue; // Self-loops are allowed
     }
   }
   return false; // More sophisticated cycle detection could be added
 }
 
-void staticImprovedStateMachine::updateStatistics(uint32_t transitionTime, bool success) {
+void improvedStateMachine::updateStatistics(uint32_t transitionTime, bool success) {
   _stats.lastTransitionTime = transitionTime;
   
   if (transitionTime > _stats.maxTransitionTime) {
@@ -700,29 +829,29 @@ void staticImprovedStateMachine::updateStatistics(uint32_t transitionTime, bool 
 }
 
 // Menu helper methods
-void staticImprovedStateMachine::addButtonNavigation(staticPageID menuId, uint8_t numButtons,
-                                                   const std::array<staticPageID, STATIC_STATEMACHINE_MAX_MENU_LABELS>& targetMenus) {
-  for (uint8_t i = 0; i < numButtons && i < STATIC_STATEMACHINE_MAX_MENU_LABELS; i++) {
+void improvedStateMachine::addButtonNavigation(pageID menuId, uint8_t numButtons,
+                                                   const std::array<pageID, STATEMACHINE_MAX_MENU_LABELS>& targetMenus) {
+  for (uint8_t i = 0; i < numButtons && i < STATEMACHINE_MAX_MENU_LABELS; i++) {
     // Add RIGHT navigation (next button)
-    staticButtonID nextButton = (i + 1) % numButtons;
-    addTransition(staticStateTransition(menuId, i, 1, menuId, nextButton, nullptr)); // eventRIGHT = 1
+    buttonID nextButton = (i + 1) % numButtons;
+    addTransition(stateTransition(menuId, i, 1, menuId, nextButton, nullptr)); // eventRIGHT = 1
 
     // Add LEFT navigation (previous button)
-    staticButtonID prevButton = (i == 0) ? (numButtons - 1) : (i - 1);
-    addTransition(staticStateTransition(menuId, i, 2, menuId, prevButton, nullptr)); // eventLEFT = 2
+    buttonID prevButton = (i == 0) ? (numButtons - 1) : (i - 1);
+    addTransition(stateTransition(menuId, i, 2, menuId, prevButton, nullptr)); // eventLEFT = 2
 
     // Add DOWN navigation to target menu if specified
     if (i < targetMenus.size() && targetMenus[i] != 0) {
-      addTransition(staticStateTransition(menuId, i, 0, targetMenus[i], 0, nullptr)); // eventDOWN = 0
+      addTransition(stateTransition(menuId, i, 0, targetMenus[i], 0, nullptr)); // eventDOWN = 0
     }
   }
 }
 
-void staticImprovedStateMachine::addStandardMenuTransitions(staticPageID menuId, staticPageID parentMenu,
-                                                           const std::array<staticPageID, STATIC_STATEMACHINE_MAX_MENU_LABELS>& subMenus) {
+void improvedStateMachine::addStandardMenuTransitions(pageID menuId, pageID parentMenu,
+                                                           const std::array<pageID, STATEMACHINE_MAX_MENU_LABELS>& subMenus) {
   // Determine number of buttons for this menu
   uint8_t numButtons = 0;
-  for (size_t i = 0; i < subMenus.size() && i < STATIC_STATEMACHINE_MAX_MENU_LABELS; i++) {
+  for (size_t i = 0; i < subMenus.size() && i < STATEMACHINE_MAX_MENU_LABELS; i++) {
     if (subMenus[i] != 0) numButtons++;
   }
   if (numButtons == 0) numButtons = 1;
@@ -730,15 +859,204 @@ void staticImprovedStateMachine::addStandardMenuTransitions(staticPageID menuId,
   // For each button, add DOWN, LEFT, RIGHT transitions
   for (uint8_t i = 0; i < numButtons; i++) {
     // DOWN: transition to submenu (if exists) or parent
-    staticPageID downTarget = (i < subMenus.size() && subMenus[i] != 0) ? subMenus[i] : parentMenu;
-    addTransition(staticStateTransition(menuId, i, 0, downTarget, 0, nullptr)); // eventDOWN = 0
+    pageID downTarget = (i < subMenus.size() && subMenus[i] != 0) ? subMenus[i] : parentMenu;
+    addTransition(stateTransition(menuId, i, 0, downTarget, 0, nullptr)); // eventDOWN = 0
 
     // RIGHT: increment button index (wrap modulo numButtons)
-    staticButtonID nextButton = (i + 1) % numButtons;
-    addTransition(staticStateTransition(menuId, i, 1, menuId, nextButton, nullptr)); // eventRIGHT = 1
+    buttonID nextButton = (i + 1) % numButtons;
+    addTransition(stateTransition(menuId, i, 1, menuId, nextButton, nullptr)); // eventRIGHT = 1
 
     // LEFT: decrement button index (wrap modulo numButtons)
-    staticButtonID prevButton = (i == 0) ? (numButtons - 1) : (i - 1);
-    addTransition(staticStateTransition(menuId, i, 2, menuId, prevButton, nullptr)); // eventLEFT = 2
+    buttonID prevButton = (i == 0) ? (numButtons - 1) : (i - 1);
+    addTransition(stateTransition(menuId, i, 2, menuId, prevButton, nullptr)); // eventLEFT = 2
   }
+}
+
+// Enhanced error reporting methods
+const char* improvedStateMachine::getErrorDescription(validationResult errorCode) const {
+  switch (errorCode) {
+    case VALID: return "Valid transition";
+    case INVALID_PAGE_ID: return "Invalid page ID";
+    case INVALID_BUTTON_ID: return "Invalid button ID";
+    case INVALID_EVENT_ID: return "Invalid event ID";
+    case INVALID_TRANSITION: return "Invalid transition";
+    case DUPLICATE_TRANSITION: return "Duplicate transition";
+    case DUPLICATE_PAGE: return "Duplicate page";
+    case UNREACHABLE_PAGE: return "Unreachable page";
+    case DANGLING_PAGE: return "Dangling page";
+    case CIRCULAR_DEPENDENCY: return "Circular dependency";
+    case MAX_TRANSITIONS_EXCEEDED: return "Maximum transitions exceeded";
+    case MAX_PAGES_EXCEEDED: return "Maximum pages exceeded";
+    case MAX_MENUS_EXCEEDED: return "Maximum menus exceeded";
+    default: return "Unknown error";
+  }
+}
+
+void improvedStateMachine::printLastErrorDetails() const {
+  if (!hasLastError()) {
+    Serial.println("No error to report");
+    return;
+  }
+  
+  Serial.println("=== LAST TRANSITION ERROR DETAILS ===");
+  printTransitionError(_lastErrorContext);
+}
+
+void improvedStateMachine::printTransitionError(const stateTransition &error) const {
+  Serial.printf("Error Code: %d (%s)\n", static_cast<int>(INVALID_TRANSITION), 
+                getErrorDescription(INVALID_TRANSITION));
+  
+  if (error.fromPage > STATEMACHINE_MAX_PAGES) {
+    Serial.printf("Error Location: INVALID_PAGE_ID, fromPage=%d\n", error.fromPage);
+  }
+  if (error.fromButton > STATEMACHINE_MAX_BUTTONS) {
+    Serial.printf("Error Location: INVALID_BUTTON_ID, fromButton=%d\n", error.fromButton);
+  }
+  if (error.toPage >= DONT_CARE_PAGE) {
+    Serial.printf("Error Location: INVALID_PAGE_ID, toPage=%d\n", error.toPage);
+  }
+  if (error.toButton >= DONT_CARE_BUTTON) {
+    Serial.printf("Error Location: INVALID_BUTTON_ID, toButton=%d\n", error.toButton);
+  }
+  if (error.event > STATEMACHINE_MAX_EVENTS) {
+    Serial.printf("Error Location: INVALID_EVENT_ID, event=%d\n", error.event);
+  }
+  
+  Serial.println("Failed Transition Details:");
+  Serial.printf("  From: Page %d, Button %d\n", error.fromPage, error.fromButton);
+  Serial.printf("  Event: %d\n", error.event);
+  Serial.printf("  To: Page %d, Button %d\n", error.toPage, error.toButton);
+  Serial.printf("  Action: %s\n", error.action ? "Present" : "None");
+  
+  Serial.println("=====================================");
+}
+
+void improvedStateMachine::printTransitionError(const transitionErrorContext& error) const {
+  Serial.printf("Error Code: %d (%s)\n", static_cast<int>(error.errorCode), 
+                getErrorDescription(error.errorCode));
+  
+  if (error.errorLocation) {
+    Serial.printf("Location: %s\n", error.errorLocation);
+  }
+  
+  Serial.printf("Call Sequence: %d\n", error.callSequence);
+  Serial.printf("Transition Index: %d\n", error.transitionIndex);
+  
+  Serial.println("Failed Transition Details:");
+  Serial.printf("  From: Page %d, Button %d\n", error.failedTransition.fromPage, error.failedTransition.fromButton);
+  Serial.printf("  Event: %d\n", error.failedTransition.event);
+  Serial.printf("  To: Page %d, Button %d\n", error.failedTransition.toPage, error.failedTransition.toButton);
+  Serial.printf("  Action: %s\n", error.failedTransition.action ? "Present" : "None");
+  
+  // For duplicate transitions, show the conflicting transition details
+  if (error.errorCode == DUPLICATE_TRANSITION && error.conflictingTransitionIndex > 0) {
+    Serial.println("\nConflicts with existing transition (index " + String(error.conflictingTransitionIndex) + "):");
+    Serial.printf("  From: Page %d, Button %d, Event %d\n", error.conflictingTransition.fromPage, error.conflictingTransition.fromButton, error.conflictingTransition.event);
+    Serial.printf("  To: Page %d, Button %d\n", error.conflictingTransition.toPage, error.conflictingTransition.toButton);
+    Serial.printf("  Action: %s\n", error.conflictingTransition.action ? "Present" : "None");
+    
+    Serial.println("\nConflict Analysis:");
+    if (error.conflictingTransition.fromPage == DONT_CARE_PAGE || error.failedTransition.fromPage == DONT_CARE_PAGE || error.conflictingTransition.fromPage == error.failedTransition.fromPage) {
+      Serial.println("  - Pages could overlap (one or both use DONT_CARE or same page)");
+    }
+    if (error.conflictingTransition.fromButton == DONT_CARE_BUTTON || error.failedTransition.fromButton == DONT_CARE_BUTTON || error.conflictingTransition.fromButton == error.failedTransition.fromButton) {
+      Serial.println("  - Buttons could overlap (one or both use DONT_CARE or same button)");
+    }
+    if (error.conflictingTransition.event == DONT_CARE_EVENT || error.failedTransition.event == DONT_CARE_EVENT || error.conflictingTransition.event == error.failedTransition.event) {
+      Serial.println("  - Events could overlap (one or both use DONT_CARE or same event)");
+    }
+    Serial.println("  - Different destinations cause conflict");
+  }
+  
+  if (error.timestamp > 0) {
+    Serial.printf("Timestamp: %d\n", error.timestamp);
+  }
+  
+  Serial.println("=====================================");
+}
+
+validationResult improvedStateMachine::addTransition(const stateTransition& transition, const char* location, transitionErrorContext& errorContext) {
+  _addTransitionCallSequence++;
+  
+  // Check for maximum transitions
+  if (_transitionCount >= STATEMACHINE_MAX_TRANSITIONS) {
+    if (_debugMode) {
+      Serial.printf("ERROR: Maximum transitions (%d) exceeded\n", STATEMACHINE_MAX_TRANSITIONS);
+    }
+    
+    // Populate error context
+    errorContext = transitionErrorContext(MAX_TRANSITIONS_EXCEEDED, transition, 
+                                        _transitionCount, _addTransitionCallSequence, location);
+    _lastErrorContext = errorContext;
+    return MAX_TRANSITIONS_EXCEEDED;
+  }
+
+  // Validate transition if validation is enabled
+  if (_validationEnabled) {
+    validationResult result = validateTransition(transition);
+    if (result != VALID) {
+      if (_debugMode) {
+        Serial.printf("ERROR: Invalid transition - %s (code %d) at %s:%d\n", 
+                     getErrorDescription(result), static_cast<int>(result), 
+                     __FUNCTION__, __LINE__);
+        
+        // For duplicate transitions, show the conflicting transition details
+        if (result == DUPLICATE_TRANSITION) {
+          stateTransition conflictingTrans;
+          size_t conflictingIndex;
+          validateTransitionWithConflictDetails(transition, conflictingTrans, conflictingIndex, false);
+          printDuplicateTransitionError(transition, conflictingTrans, conflictingIndex);
+        }
+      }
+      
+      // Populate error context
+      if (result == DUPLICATE_TRANSITION) {
+        stateTransition conflictingTrans;
+        size_t conflictingIndex;
+        validateTransitionWithConflictDetails(transition, conflictingTrans, conflictingIndex, false);
+        errorContext = transitionErrorContext(result, transition, 
+                                            _transitionCount, _addTransitionCallSequence, location,
+                                            conflictingTrans, conflictingIndex);
+      } else {
+        errorContext = transitionErrorContext(result, transition, 
+                                            _transitionCount, _addTransitionCallSequence, location);
+      }
+      _lastErrorContext = errorContext;
+      _stats.validationErrors++;
+      return result;
+    }
+  }
+
+  _transitions[_transitionCount] = transition;
+  _transitionCount++;
+  return VALID;
+}
+
+void improvedStateMachine::printDuplicateTransitionError(const stateTransition& newTrans, 
+                                                       const stateTransition& existingTrans, 
+                                                       size_t existingIndex) const {
+  Serial.println("=== DUPLICATE TRANSITION ERROR ===");
+  Serial.println("New transition (rejected):");
+  Serial.printf("  From: Page %d, Button %d, Event %d\n", newTrans.fromPage, newTrans.fromButton, newTrans.event);
+  Serial.printf("  To: Page %d, Button %d\n", newTrans.toPage, newTrans.toButton);
+  Serial.printf("  Action: %s\n", newTrans.action ? "Present" : "None");
+  
+  Serial.println("\nConflicts with existing transition (index " + String(existingIndex) + "):");
+  Serial.printf("  From: Page %d, Button %d, Event %d\n", existingTrans.fromPage, existingTrans.fromButton, existingTrans.event);
+  Serial.printf("  To: Page %d, Button %d\n", existingTrans.toPage, existingTrans.toButton);
+  Serial.printf("  Action: %s\n", existingTrans.action ? "Present" : "None");
+  
+  Serial.println("\nConflict Analysis:");
+  if (existingTrans.fromPage == DONT_CARE_PAGE || newTrans.fromPage == DONT_CARE_PAGE || existingTrans.fromPage == newTrans.fromPage) {
+    Serial.println("  - Pages could overlap (one or both use DONT_CARE or same page)");
+  }
+  if (existingTrans.fromButton == DONT_CARE_BUTTON || newTrans.fromButton == DONT_CARE_BUTTON || existingTrans.fromButton == newTrans.fromButton) {
+    Serial.println("  - Buttons could overlap (one or both use DONT_CARE or same button)");
+  }
+  if (existingTrans.event == DONT_CARE_EVENT || newTrans.event == DONT_CARE_EVENT || existingTrans.event == newTrans.event) {
+    Serial.println("  - Events could overlap (one or both use DONT_CARE or same event)");
+  }
+  Serial.println("  - Different destinations cause conflict");
+  
+  Serial.println("=== END DUPLICATE TRANSITION ERROR ===");
 }

@@ -110,7 +110,7 @@ void test_079_random_state_definitions() {
 }
 
 void test_080_fuzz_event_processing() {
-    sm->setDebugMode(true);
+    sm->setDebugMode(false);
     sm->initializeState(1);
     sm->addTransition(stateTransition(1,0,DONT_CARE_EVENT,2,0,nullptr));  // Use specific event DONT_CARE_EVENT-1
     sm->addTransition(stateTransition(2,0,DONT_CARE_EVENT,1,0,nullptr));  // Use specific event DONT_CARE_EVENT-1

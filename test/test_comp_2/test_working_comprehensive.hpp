@@ -55,7 +55,7 @@ void test_005_wildcard_transitions() {
 }
 
 void test_006_boundary_states() {
-    sm->setDebugMode(true);
+    sm->setDebugMode(false);
     sm->initializeState(0);
     TEST_ASSERT_EQUAL_UINT8(0, sm->getPage());
     sm->initializeState(DONT_CARE_PAGE);

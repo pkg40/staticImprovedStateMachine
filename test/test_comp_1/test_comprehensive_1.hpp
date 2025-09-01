@@ -88,7 +88,7 @@ void test_005_basic_transition() {
 
   stateTransition t(1, 0, 1, 2, 0, nullptr);
   validationResult result = sm->addTransition(t);
-  sm->dumpTransitionTable();
+      sm->dumpStateTable();
 
   TEST_ASSERT_EQUAL_UINT8(static_cast<uint8_t>(validationResult::VALID),
                           static_cast<uint8_t>(result));

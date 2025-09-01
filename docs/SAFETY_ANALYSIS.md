@@ -195,7 +195,7 @@ validationResult validateTransition(const StateTransition& trans) const {
    ```cpp
    // Mandatory validation in safety-critical builds
    #ifdef SAFETY_CRITICAL
-   static_assert(STATEMACHINE_ENABLE_VALIDATION, "Validation required for safety-critical builds");
+   static_assert(STATEMACHINE_ENABLE_VALIDATION == 1, "Validation required for safety-critical builds");
    
    // Runtime validation always enabled
    sm.enableValidation(true);

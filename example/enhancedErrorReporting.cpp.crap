@@ -1,0 +1,161 @@
+#include "../src/improvedStateMachine.hpp"
+
+// Example demonstrating enhanced error reporting for addTransition calls
+void demonstrateEnhancedErrorReporting() {
+    improvedStateMachine sm;
+    sm.setDebugMode(true);
+    
+    // Example 1: Basic error reporting with location
+    Serial.println("=== Example 1: Basic Location Tracking ===");
+    
+    // This will fail due to invalid page ID
+    validationResult result = sm.addTransition(
+        stateTransition(255, 0, 1, 0, 0, nullptr),  // Invalid fromPage (255)
+        "main_menu_setup"
+    );
+    
+    if (result != VALID) {
+        Serial.printf("Transition failed with error code: %d\n", static_cast<int>(result));
+        
+        // Get detailed error information
+        if (sm.hasLastError()) {
+            sm.printLastErrorDetails();
+        }
+    }
+    
+    // Example 2: Detailed error context retrieval
+    Serial.println("\n=== Example 2: Detailed Error Context ===");
+    
+    transitionErrorContext errorContext;
+    result = sm.addTransition(
+        stateTransition(0, 0, 1, 255, 0, nullptr),  // Invalid toPage (255)
+        "navigation_setup",
+        errorContext
+    );
+    
+    if (result != VALID) {
+        Serial.printf("Transition failed with error code: %d\n", static_cast<int>(result));
+        
+        // Access error context directly
+        Serial.printf("Error occurred at: %s\n", 
+                     errorContext.errorLocation ? errorContext.errorLocation : "unknown");
+        Serial.printf("Call sequence number: %d\n", errorContext.callSequence);
+        Serial.printf("Failed transition details:\n");
+        Serial.printf("  From: Page %d, Button %d\n", 
+                     errorContext.failedTransition.fromPage, errorContext.failedTransition.fromButton);
+        Serial.printf("  Event: %d\n", errorContext.failedTransition.event);
+        Serial.printf("  To: Page %d, Button %d\n", 
+                     errorContext.failedTransition.toPage, errorContext.failedTransition.toButton);
+    }
+    
+    // Example 3: Multiple failed transitions with sequence tracking
+    Serial.println("\n=== Example 3: Multiple Failed Transitions ===");
+    
+    // Add several invalid transitions to see sequence tracking
+    sm.addTransition(stateTransition(0, 16, 1, 0, 0, nullptr), "button_nav_1");  // Invalid button ID
+    sm.addTransition(stateTransition(0, 0, 64, 0, 0, nullptr), "button_nav_2");  // Invalid event ID
+    sm.addTransition(stateTransition(0, 0, 1, 0, 16, nullptr), "button_nav_3");  // Invalid toButton ID
+    
+    // Check the last error
+    if (sm.hasLastError()) {
+        Serial.println("Last error details:");
+        sm.printLastErrorDetails();
+    }
+    
+    // Example 4: Error context in a loop
+    Serial.println("\n=== Example 4: Error Context in Loop ===");
+    
+    for (int i = 0; i < 5; i++) {
+        char location[32];
+        snprintf(location, sizeof(location), "loop_iteration_%d", i);
+        
+        // Try to add a transition that might fail
+        result = sm.addTransition(
+            stateTransition(i, 0, 1, i + 1, 0, nullptr),
+            location
+        );
+        
+        if (result != VALID) {
+            Serial.printf("Failed at %s: ", location);
+            Serial.println(sm.getErrorDescription(result));
+        }
+    }
+    
+    // Example 5: Using error context for debugging
+    Serial.println("\n=== Example 5: Debugging with Error Context ===");
+    
+    // Simulate a complex setup scenario
+    const char* setupSteps[] = {
+        "main_menu_creation",
+        "submenu_navigation", 
+        "button_handlers",
+        "event_processing",
+        "state_validation"
+    };
+    
+    for (int i = 0; i < 5; i++) {
+        // Simulate different types of failures
+        validationResult testResult;
+        switch (i) {
+            case 0: // Valid transition
+                testResult = sm.addTransition(
+                    stateTransition(0, 0, 1, 1, 0, nullptr),
+                    setupSteps[i]
+                );
+                break;
+            case 1: // Invalid page ID
+                testResult = sm.addTransition(
+                    stateTransition(100, 0, 1, 1, 0, nullptr),
+                    setupSteps[i]
+                );
+                break;
+            case 2: // Invalid button ID
+                testResult = sm.addTransition(
+                    stateTransition(1, 20, 1, 2, 0, nullptr),
+                    setupSteps[i]
+                );
+                break;
+            case 3: // Invalid event ID
+                testResult = sm.addTransition(
+                    stateTransition(2, 0, 100, 3, 0, nullptr),
+                    setupSteps[i]
+                );
+                break;
+            case 4: // Valid transition
+                testResult = sm.addTransition(
+                    stateTransition(3, 0, 1, 4, 0, nullptr),
+                    setupSteps[i]
+                );
+                break;
+        }
+        
+        if (testResult != VALID) {
+            Serial.printf("Setup step '%s' failed: %s\n", 
+                         setupSteps[i], sm.getErrorDescription(testResult));
+            
+            // Get detailed error information for debugging
+            if (sm.hasLastError()) {
+                const transitionErrorContext& lastError = sm.getLastErrorContext();
+                Serial.printf("  Error occurred at call sequence %d\n", lastError.callSequence);
+                Serial.printf("  Failed transition index: %d\n", lastError.transitionIndex);
+            }
+        } else {
+            Serial.printf("Setup step '%s' completed successfully\n", setupSteps[i]);
+        }
+    }
+    
+    Serial.println("\n=== Enhanced Error Reporting Demo Complete ===");
+}
+
+// Main function for Arduino
+void setup() {
+    Serial.begin(115200);
+    Serial.println("Enhanced Error Reporting Demo Starting...");
+    
+    demonstrateEnhancedErrorReporting();
+}
+
+void loop() {
+    // Nothing to do in loop for this demo
+    delay(1000);
+}

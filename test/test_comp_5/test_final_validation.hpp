@@ -189,7 +189,7 @@ void test_103_extreme_boundary_values() {
     TEST_ASSERT_EQUAL(validationResult::DUPLICATE_TRANSITION, r3);
     TEST_ASSERT_EQUAL(validationResult::DUPLICATE_TRANSITION, r4);
 
-    sm->dumpTransitionTable();
+    sm->dumpStateTable();
     // Test extreme transitions
     sm->processEvent(DONT_CARE_EVENT);
     TEST_ASSERT_EQUAL_UINT8(DONT_CARE_PAGE, sm->getCurrentPage());  // Should go to page DONT_CARE_PAGE
@@ -239,6 +239,8 @@ void test_104_state_machine_cloning_behavior() {
 }
 
 void test_105_comprehensive_validation_pipeline() {
+
+    sm -> setDebugMode(true);
     sm->initializeState(1);
     
     // Test comprehensive validation scenarios
@@ -276,6 +278,7 @@ void test_105_comprehensive_validation_pipeline() {
         TEST_ASSERT_TRUE(results[i] == validationResult::VALID || 
                         results[i] == validationResult::DUPLICATE_TRANSITION);
     }
+    sm -> setDebugMode(false);
 }
 
 void test_106_final_integration_verification() {
