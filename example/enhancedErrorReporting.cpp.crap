@@ -3,7 +3,7 @@
 // Example demonstrating enhanced error reporting for addTransition calls
 void demonstrateEnhancedErrorReporting() {
     improvedStateMachine sm;
-    sm.setDebugMode(true);
+    sm.setDebugMode(false);
     
     // Example 1: Basic error reporting with location
     Serial.println("=== Example 1: Basic Location Tracking ===");

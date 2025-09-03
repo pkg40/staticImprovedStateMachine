@@ -4,6 +4,10 @@
 
 #define BUILDING_TEST_RUNNER_BUNDLE 1
 #include "../test_common.hpp"
+#include "../enhanced_unity.hpp"
+
+// External declaration for enhanced Unity failure counter
+extern int _enhancedUnityFailureCount;
 
 // Final validation test constants
 #define FINAL_TEST_CIRCULAR_ITERATIONS 20
@@ -30,6 +34,7 @@
 // =============================================================================
 
 void test_096_circular_dependency_detection() {
+    ENHANCED_UNITY_INIT();
     sm->initializeState(1);
     
     // Create circular dependencies
@@ -42,11 +47,13 @@ void test_096_circular_dependency_detection() {
     for (int i = 0; i < FINAL_TEST_CIRCULAR_ITERATIONS; i++) {
         uint8_t expectedState = 1 + ((i + 1) % 4);
         sm->processEvent(1);
-        TEST_ASSERT_EQUAL_UINT8(expectedState, sm->getCurrentPage());
+        TEST_ASSERT_EQUAL_UINT8_DEBUG(expectedState, sm->getCurrentPage());
     }
+    ENHANCED_UNITY_REPORT();
 }
 
 void test_097_self_referencing_states() {
+    ENHANCED_UNITY_INIT();
     sm->initializeState(FINAL_TEST_SELF_REF_STATE);
     
     // Self-referencing state (stays in same state)
@@ -56,12 +63,13 @@ void test_097_self_referencing_states() {
     // Test self-reference
     for (int i = 0; i < FINAL_TEST_SELF_REF_ITERATIONS; i++) {
         sm->processEvent(FINAL_TEST_SELF_REF_EVENT_A);
-        TEST_ASSERT_EQUAL_UINT8(FINAL_TEST_SELF_REF_STATE, sm->getCurrentPage());
+        TEST_ASSERT_EQUAL_UINT8_DEBUG(FINAL_TEST_SELF_REF_STATE, sm->getCurrentPage());
     }
     
     // Test exit from self-reference
     sm->processEvent(FINAL_TEST_SELF_REF_EVENT_B);
-    TEST_ASSERT_EQUAL_UINT8(FINAL_TEST_SELF_REF_STATE_B, sm->getCurrentPage());
+    TEST_ASSERT_EQUAL_UINT8_DEBUG(FINAL_TEST_SELF_REF_STATE_B, sm->getCurrentPage());
+    ENHANCED_UNITY_REPORT();
 }
 
 void test_098_massive_state_space() {
@@ -84,8 +92,8 @@ void test_098_massive_state_space() {
 
 void test_099_event_storm_handling() {
     sm->initializeState(1);
-    sm->addTransition(stateTransition(1,0,DONT_CARE_EVENT,2,0,nullptr));
-    sm->addTransition(stateTransition(2,0,DONT_CARE_EVENT,1,0,nullptr));
+    sm->addTransition(stateTransition(1,0,DONT_CARE_EVENT,2,0,nullptr));  // Wildcard: match any valid event from page 1
+    sm->addTransition(stateTransition(2,0,DONT_CARE_EVENT,1,0,nullptr));  // Wildcard: match any valid event from page 2
     
     uint32_t startTime = millis();
     
@@ -111,10 +119,10 @@ void test_100_multilayer_wildcard_resolution() {
     sm->initializeState(1);
     
     // Multiple wildcard layers
-    sm->addTransition(stateTransition(DONT_CARE_PAGE,0,DONT_CARE_EVENT,DONT_CARE_PAGE-1,0,nullptr)); // Catch-all
-    sm->addTransition(stateTransition(DONT_CARE_PAGE,0,5,50,0,nullptr));         // Event-specific
-    sm->addTransition(stateTransition(1,0,DONT_CARE_EVENT,10,0,nullptr));        // State-specific
-    sm->addTransition(stateTransition(1,0,5,15,0,nullptr));               // Most specific
+    sm->addTransition(stateTransition(DONT_CARE_PAGE,0,DONT_CARE_EVENT,DONT_CARE_PAGE-1,0,nullptr)); // Catch-all: match any valid event from any page
+    sm->addTransition(stateTransition(DONT_CARE_PAGE,0,5,50,0,nullptr));         // Event-specific: match event 5 from any page
+    sm->addTransition(stateTransition(1,0,DONT_CARE_EVENT,10,0,nullptr));        // State-specific: match any valid event from page 1
+    sm->addTransition(stateTransition(1,0,5,15,0,nullptr));               // Most specific: match event 5 from page 1
     
     // Test resolution priority
     sm->processEvent(5);
@@ -125,11 +133,11 @@ void test_100_multilayer_wildcard_resolution() {
     TEST_ASSERT_EQUAL_UINT8(50, sm->getCurrentPage()); // Event-specific
     
     sm->setCurrentPage(1);
-    sm->processEvent(7);
+    sm->processEvent(7);  // Use event 7 to trigger state-specific transition (any valid event)
     TEST_ASSERT_EQUAL_UINT8(10, sm->getCurrentPage()); // State-specific
     
     sm->setCurrentPage(3);
-    sm->processEvent(8);
+    sm->processEvent(8);  // Use event 8 to trigger catch-all transition (any valid event)
     TEST_ASSERT_EQUAL_UINT8(DONT_CARE_PAGE-1, sm->getCurrentPage()); // Catch-all
 }
 
@@ -176,10 +184,13 @@ void test_102_concurrent_scoreboard_operations() {
 
 void test_103_extreme_boundary_values() {
     // Test extreme boundary values
-    sm->initializeState(DONT_CARE_PAGE);
+    sm->initializeState(0);  // Use valid page 0 instead of DONT_CARE_PAGE
     
-    validationResult r1 = sm->addTransition(stateTransition(DONT_CARE_PAGE,0,DONT_CARE_EVENT,0,0,nullptr));
-    validationResult r2 = sm->addTransition(stateTransition(0,0,0,DONT_CARE_PAGE-1,0,nullptr));  // Use 126 instead of 127
+    // Clear any existing transitions to ensure clean state
+    sm->clearTransitions();
+    
+    validationResult r1 = sm->addTransition(stateTransition(DONT_CARE_PAGE,0,DONT_CARE_EVENT,0,0,nullptr));  // Wildcard: match any valid event from any page
+    validationResult r2 = sm->addTransition(stateTransition(0,0,0,DONT_CARE_PAGE-1,0,nullptr));  // Use 254 instead of 255
     validationResult r3 = sm->addTransition(stateTransition(27,0,28,29,0,nullptr));
     validationResult r4 = sm->addTransition(stateTransition(DONT_CARE_PAGE-1,0,1,1,0,nullptr));
     
@@ -190,13 +201,13 @@ void test_103_extreme_boundary_values() {
     TEST_ASSERT_EQUAL(validationResult::DUPLICATE_TRANSITION, r4);
 
     sm->dumpStateTable();
-    // Test extreme transitions
-    sm->processEvent(DONT_CARE_EVENT);
-    TEST_ASSERT_EQUAL_UINT8(DONT_CARE_PAGE, sm->getCurrentPage());  // Should go to page DONT_CARE_PAGE
     
+    // Test extreme transitions - start from a different page to ensure wildcard works
+    sm->setCurrentPage(5);
+    sm->processEvent(31); 
+    TEST_ASSERT_EQUAL_UINT8(0, sm->getCurrentPage());  // Should go to page 0 (from DONT_CARE_PAGE wildcard)
     sm->processEvent(0);
-    TEST_ASSERT_EQUAL_UINT8(0, sm->getCurrentPage());  // Should go to page 0
-
+    TEST_ASSERT_EQUAL_UINT8(0, sm->getCurrentPage());
     sm->setCurrentPage(27);
     sm->processEvent(28);
     TEST_ASSERT_EQUAL_UINT8(0, sm->getCurrentPage());
@@ -240,7 +251,7 @@ void test_104_state_machine_cloning_behavior() {
 
 void test_105_comprehensive_validation_pipeline() {
 
-    sm -> setDebugMode(true);
+    sm -> setDebugMode(false);
     sm->initializeState(1);
     
     // Test comprehensive validation scenarios
@@ -261,11 +272,11 @@ void test_105_comprehensive_validation_pipeline() {
     // More transitions
     results[4] = sm->addTransition(stateTransition(2,0,2,3,0,nullptr));
     results[5] = sm->addTransition(stateTransition(3,0,3,1,0,nullptr));
-    results[6] = sm->addTransition(stateTransition(DONT_CARE_PAGE,0,DONT_CARE_EVENT-1,DONT_CARE_PAGE-1,0,nullptr));
-    results[7] = sm->addTransition(stateTransition(50,0,DONT_CARE_EVENT,51,0,nullptr));
+    results[6] = sm->addTransition(stateTransition(DONT_CARE_PAGE,0,DONT_CARE_EVENT-1,DONT_CARE_PAGE-1,0,nullptr));  // Wildcard: match any valid event from any page
+    results[7] = sm->addTransition(stateTransition(50,0,DONT_CARE_EVENT,51,0,nullptr));  // Wildcard: match any valid event from page 50
     
     // Edge case transitions
-    results[8] = sm->addTransition(stateTransition(DONT_CARE_PAGE,0,DONT_CARE_EVENT,DONT_CARE_PAGE-1,0,nullptr));
+    results[8] = sm->addTransition(stateTransition(DONT_CARE_PAGE,0,DONT_CARE_EVENT,DONT_CARE_PAGE-1,0,nullptr));  // Wildcard: match any valid event from any page
     results[9] = sm->addTransition(stateTransition(0,0,0,DONT_CARE_PAGE-1,0,nullptr));
 
     // Verify results

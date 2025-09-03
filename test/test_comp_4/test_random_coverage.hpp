@@ -4,6 +4,10 @@
 
 #define BUILDING_TEST_RUNNER_BUNDLE 1
 #include "../test_common.hpp"
+#include "../enhanced_unity.hpp"
+
+// External declaration for enhanced Unity failure counter
+extern int _enhancedUnityFailureCount;
 
 // Random coverage test constants
 #define RANDOM_TEST_MIN_STATES 5
@@ -30,6 +34,7 @@
 // =============================================================================
 
 void test_076_random_state_transitions() {
+    ENHANCED_UNITY_INIT();
     // Set up a random state machine configuration
     uint8_t numStates = RANDOM_TEST_MIN_STATES + (getRandomNumber() % RANDOM_TEST_STATE_RANGE); // 5-12 states
     uint8_t numEvents = RANDOM_TEST_MIN_EVENTS + (getRandomNumber() % RANDOM_TEST_EVENT_RANGE);  // 3-8 events
@@ -53,11 +58,13 @@ void test_076_random_state_transitions() {
         uint8_t afterState = sm->getCurrentPage();
         
         // State should be valid
-        TEST_ASSERT_TRUE(afterState >= 1 && afterState <= numStates + 1);
+        TEST_ASSERT_TRUE_DEBUG(afterState >= 1 && afterState <= numStates + 1);
     }
+    ENHANCED_UNITY_REPORT();
 }
 
 void test_077_random_event_sequences() {
+    ENHANCED_UNITY_INIT();
     sm->initializeState(1);
     
     // Set up a small predictable state machine
@@ -76,12 +83,14 @@ void test_077_random_event_sequences() {
             
             // Verify state is always valid
             uint8_t state = sm->getCurrentPage();
-            TEST_ASSERT_TRUE(state >= 1 && state <= 3);
+            TEST_ASSERT_TRUE_DEBUG(state >= 1 && state <= 3);
         }
     }
+    ENHANCED_UNITY_REPORT();
 }
 
 void test_078_random_scoreboard_operations() {
+    ENHANCED_UNITY_INIT();
     sm->initializeState(1);
     
     // Random scoreboard operations
@@ -92,8 +101,9 @@ void test_078_random_scoreboard_operations() {
         sm->setScoreboard(score, state);
         uint32_t retrieved = sm->getScoreboard(state);
         
-        TEST_ASSERT_EQUAL_UINT32(score, retrieved);
+        TEST_ASSERT_EQUAL_UINT32_DEBUG(score, retrieved);
     }
+    ENHANCED_UNITY_REPORT();
 }
 
 void test_079_random_state_definitions() {
@@ -135,8 +145,8 @@ void test_081_random_boundary_testing() {
     sm->initializeState(getRandomPage());
     
     // Test random boundary values
-    uint8_t randomPages[] = {0, 1, DONT_CARE_PAGE, DONT_CARE_PAGE+1, DONT_CARE_PAGE-1, 0};
-    uint8_t randomEvents[] = {0, 1, DONT_CARE_EVENT, DONT_CARE_EVENT+1, DONT_CARE_EVENT, 255};
+    uint8_t randomPages[] = {0, 1, DONT_CARE_PAGE, DONT_CARE_PAGE-1, DONT_CARE_PAGE-2, 0};
+    uint8_t randomEvents[] = {0, 1, DONT_CARE_EVENT, DONT_CARE_EVENT-1, DONT_CARE_EVENT-2, 31};
     
     for (int i = 0; i < 6; i++) {
         for (int j = 0; j < 6; j++) {

@@ -34,7 +34,7 @@ static void onStaticError(pageID toPage, eventID event, void* /*context*/) {
 
 void setupStaticExample() {
     staticSM.enableValidation(true);
-    staticSM.setDebugMode(true);
+    staticSM.setDebugMode(false);
     
     // Add states with fixed-size string storage
     staticSM.addState(stateDefinition(STATIC_STATE_IDLE, "IDLE", "Idle State"));

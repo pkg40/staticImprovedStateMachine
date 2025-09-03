@@ -4,6 +4,10 @@
 
 #define BUILDING_TEST_RUNNER_BUNDLE 1
 #include "../test_common.hpp"
+#include "../enhanced_unity.hpp"
+
+// External declaration for enhanced Unity failure counter
+extern int _enhancedUnityFailureCount;
 
 // When this file is compiled standalone (not via the runner include), emit
 // nothing

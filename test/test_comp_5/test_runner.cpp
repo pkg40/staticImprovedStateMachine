@@ -2,6 +2,9 @@
 #include "../test_common.hpp"
 #include "test_final_validation.hpp"
 
+// Define the global failure counter for enhanced Unity macros
+int _enhancedUnityFailureCount = 0;
+
 // Define the shared test state machine used by all tests
 improvedStateMachine* sm = nullptr;
 

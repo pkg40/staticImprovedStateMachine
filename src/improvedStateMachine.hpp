@@ -23,8 +23,8 @@ unsigned long micros();
 #endif
 
 #ifndef STATEMACHINE_MAX_PAGES
-    #define STATEMACHINE_MAX_PAGES 256
-    #define DONT_CARE_PAGE STATEMACHINE_MAX_PAGES
+#define STATEMACHINE_MAX_PAGES 255
+#define DONT_CARE_PAGE STATEMACHINE_MAX_PAGES
 #endif
 
 #ifndef STATEMACHINE_MAX_BUTTONS
@@ -78,6 +78,12 @@ unsigned long micros();
 #ifndef DESCRIPTION_BUFFER_SIZE
     #define DESCRIPTION_BUFFER_SIZE 12
 #endif
+
+enum class debugFlag_t {
+    VERBOSE = 0,
+    SHOW_PASS = 1,
+    ALT_UNITY = 2
+};
 
 // Validation results
 enum validationResult {
@@ -304,8 +310,10 @@ private:
     currentState _currentState;
     currentState _lastState;
     uint32_t _stateScoreboard[STATEMACHINE_SCOREBOARD_NUM_SEGMENTS];
-    bool _debugMode;
-    bool _validationEnabled;
+    bool _debugModeVerbose = false;
+    bool _debugModeShowPass = true;
+    bool _debugModeAltUnity = false;
+    bool _validationEnabled = false;
     uint8_t _recursionDepth;
     stateMachineStats _stats;
     
@@ -369,7 +377,7 @@ public:
     
     // State queries
     pageID getCurrentPage() const { 
-        if (_debugMode) Serial.printf("Current page: %d\n", _currentState.page);
+        if (_debugModeVerbose) Serial.printf("Current page: %d\n", _currentState.page);
         return _currentState.page; 
     }
     pageID getPage() const { return getCurrentPage(); }
@@ -384,8 +392,9 @@ public:
     const pageDefinition* getState(pageID id) const;
 
     // Debug and utilities
-    void setDebugMode(bool enabled) { _debugMode = enabled; }
-    bool getDebugMode() const { return _debugMode; }
+    void setDebugMode(bool value, debugFlag_t flag = debugFlag_t::VERBOSE);
+
+    bool getDebugMode(debugFlag_t flag = debugFlag_t::VERBOSE) const ;
 
     void dumpStateTable() const;
     void printCurrentState() const;

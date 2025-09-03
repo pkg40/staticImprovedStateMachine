@@ -73,7 +73,7 @@ unsigned long micros() {
 #endif
 
 improvedStateMachine::improvedStateMachine()
-    : _transitionCount(0), _stateCount(0), _debugMode(false), 
+    : _transitionCount(0), _stateCount(0), _debugModeVerbose(false), 
       _validationEnabled(true), _recursionDepth(0), _addTransitionCallSequence(0),
       _lastErrorContext() {
   // Initialize scoreboard
@@ -91,7 +91,9 @@ improvedStateMachine::improvedStateMachine(const improvedStateMachine& other)
       _stateCount(other._stateCount),
       _currentState(other._currentState),
       _lastState(other._lastState),
-      _debugMode(other._debugMode),
+      _debugModeVerbose(other._debugModeVerbose),
+      _debugModeShowPass(other._debugModeShowPass),
+      _debugModeAltUnity(other._debugModeAltUnity),
       _validationEnabled(other._validationEnabled),
       _recursionDepth(0),  // Reset recursion depth for new instance
       _stats(other._stats),
@@ -112,7 +114,9 @@ improvedStateMachine& improvedStateMachine::operator=(const improvedStateMachine
     _stateCount = other._stateCount;
     _currentState = other._currentState;
     _lastState = other._lastState;
-    _debugMode = other._debugMode;
+    _debugModeVerbose = other._debugModeVerbose;
+    _debugModeShowPass = other._debugModeShowPass;
+    _debugModeAltUnity = other._debugModeAltUnity;
     _validationEnabled = other._validationEnabled;
     _recursionDepth = 0;  // Reset recursion depth
     _stats = other._stats;
@@ -131,7 +135,7 @@ improvedStateMachine& improvedStateMachine::operator=(const improvedStateMachine
 validationResult improvedStateMachine::addState(const stateDefinition &state) {
   // Check for maximum states
   if (_stateCount >= STATEMACHINE_MAX_PAGES) {
-    if (_debugMode) {
+    if (_debugModeVerbose) {
       Serial.printf("ERROR: Maximum states (%d) exceeded\n", STATEMACHINE_MAX_PAGES);
     }
     return MAX_PAGES_EXCEEDED;
@@ -140,7 +144,7 @@ validationResult improvedStateMachine::addState(const stateDefinition &state) {
   // Check for duplicate pages
   for (size_t i = 0; i < _stateCount; i++) {
     if (_states[i].id == state.id) {
-      if (_debugMode) {
+      if (_debugModeVerbose) {
         Serial.printf("ERROR: Duplicate page ID %d\n", state.id);
       }
       return DUPLICATE_PAGE;
@@ -161,12 +165,39 @@ const pageDefinition *improvedStateMachine::getState(pageID id) const {
   return nullptr;
 }
 
+    void improvedStateMachine::setDebugMode(bool value, debugFlag_t flag ) { 
+        switch (flag) {
+            case debugFlag_t::VERBOSE:
+                _debugModeVerbose = value;
+                break;
+            case debugFlag_t::SHOW_PASS:
+                _debugModeShowPass = value;
+                break;
+            case debugFlag_t::ALT_UNITY:
+                _debugModeAltUnity = value;
+                break;
+            default:
+                break;
+        }
+    }
 
+bool improvedStateMachine::getDebugMode(debugFlag_t flag ) const { 
+        switch  (flag) {
+            case debugFlag_t::VERBOSE:
+                return _debugModeVerbose;
+            case debugFlag_t::SHOW_PASS:
+                return _debugModeShowPass;
+            case debugFlag_t::ALT_UNITY:
+                return _debugModeAltUnity;
+            default:
+                return false;
+        }
+    }
 
 validationResult improvedStateMachine::addTransition(const stateTransition &transition) {
   // Check for maximum transitions
   if (_transitionCount >= STATEMACHINE_MAX_TRANSITIONS) {
-    if (_debugMode) {
+    if (_debugModeVerbose) {
       Serial.printf("ERROR: Maximum transitions (%d) exceeded\n", STATEMACHINE_MAX_TRANSITIONS);
     }
     return MAX_TRANSITIONS_EXCEEDED;
@@ -176,7 +207,7 @@ validationResult improvedStateMachine::addTransition(const stateTransition &tran
   if (_validationEnabled) {
     validationResult result = validateTransition(transition);
     if (result != VALID) {
-      if (_debugMode) {
+      if (_debugModeVerbose) {
         Serial.printf("ERROR: Invalid transition - %s (code %d) at %s:%d\n", 
                      getErrorDescription(result), static_cast<int>(result), 
                      __FUNCTION__, __LINE__);
@@ -204,7 +235,7 @@ validationResult improvedStateMachine::addTransition(const stateTransition& tran
   
   // Check for maximum transitions
   if (_transitionCount >= STATEMACHINE_MAX_TRANSITIONS) {
-    if (_debugMode) {
+    if (_debugModeVerbose) {
       Serial.printf("ERROR: Maximum transitions (%d) exceeded\n", STATEMACHINE_MAX_TRANSITIONS);
     }
     
@@ -218,7 +249,7 @@ validationResult improvedStateMachine::addTransition(const stateTransition& tran
   if (_validationEnabled) {
     validationResult result = validateTransition(transition);
     if (result != VALID) {
-      if (_debugMode) {
+      if (_debugModeVerbose) {
         Serial.printf("ERROR: Invalid transition - %s (code %d) at %s:%d\n", 
                      getErrorDescription(result), static_cast<int>(result), 
                      __FUNCTION__, __LINE__);
@@ -284,7 +315,7 @@ void improvedStateMachine::initializeState(pageID page, buttonID button) {
   _currentState.button = button;
   _lastState = _currentState;
 
-  if (_debugMode) {
+  if (_debugModeVerbose) {
     Serial.printf("Initial state set: %d/%d\n", page, button);
   }
 }
@@ -294,7 +325,7 @@ void improvedStateMachine::setState(pageID page, buttonID button) {
   _currentState.page = page;
   _currentState.button = button;
 
-  if (_debugMode) {
+  if (_debugModeVerbose) {
     Serial.printf("State changed to: %d/%d\n", page, button);
   }
 }
@@ -303,7 +334,7 @@ void improvedStateMachine::setCurrentPage(pageID page) {
   _lastState = _currentState;
   _currentState.page = page;
 
-  if (_debugMode) {
+  if (_debugModeVerbose) {
     Serial.printf("Current page ID set to: %d\n", page);
   }
 }
@@ -316,7 +347,7 @@ void improvedStateMachine::forceState(pageID page, buttonID button) {
 uint16_t improvedStateMachine::processEvent(eventID event, void *context) {
   // Check for maximum recursion depth to prevent stack overflow
   if (_recursionDepth >= STATEMACHINE_MAX_RECURSION_DEPTH) {
-    if (_debugMode) {
+    if (_debugModeVerbose) {
       Serial.printf("ERROR: Maximum recursion depth exceeded (%d)\n", _recursionDepth);
     }
     _stats.failedTransitions++;
@@ -329,7 +360,7 @@ uint16_t improvedStateMachine::processEvent(eventID event, void *context) {
   _stats.totalTransitions++;
 
   if (event >= DONT_CARE_EVENT) {
-    if (_debugMode) {
+    if (_debugModeVerbose) {
       Serial.printf("ERROR: Invalid Event - %d\n", event);
     }
     _stats.failedTransitions++;
@@ -337,7 +368,7 @@ uint16_t improvedStateMachine::processEvent(eventID event, void *context) {
     return 0;
   }
 
-  if (_debugMode) {
+  if (_debugModeVerbose) {
     Serial.printf("Processing event %d from state %d/%d\n", event,
                   _currentState.page, _currentState.button);
   }
@@ -349,7 +380,7 @@ uint16_t improvedStateMachine::processEvent(eventID event, void *context) {
     const auto& trans = _transitions[i];
     if (matchesTransition(trans, _currentState, event)) {
       matchingTransition = &trans;
-      if (!_debugMode) {
+      if (!_debugModeVerbose) {
         break; // Stop at first match
       } else {
         matchCount++;
@@ -358,12 +389,12 @@ uint16_t improvedStateMachine::processEvent(eventID event, void *context) {
   }
 
   if (matchCount > 1) {
-    if (_debugMode) {
+    if (_debugModeVerbose) {
       Serial.printf("ERROR: Multiple matching transitions found (%d)\n", matchCount);
       matchingTransition = nullptr;
     }
   } else if (matchCount == 0) {
-    if (_debugMode) {
+    if (_debugModeVerbose) {
       Serial.printf("ERROR: No matching transition found\n");
       matchingTransition = nullptr;
     }
@@ -371,7 +402,7 @@ uint16_t improvedStateMachine::processEvent(eventID event, void *context) {
 
   if (matchingTransition) {
     const stateTransition &trans = *matchingTransition;
-    if (_debugMode) {
+    if (_debugModeVerbose) {
       Serial.printf("Found matching transition\n");
       printTransition(trans);
     }
@@ -380,7 +411,7 @@ uint16_t improvedStateMachine::processEvent(eventID event, void *context) {
     try {
       executeAction(trans, event, context);
     } catch (...) {
-      if (_debugMode) {
+      if (_debugModeVerbose) {
         Serial.println("ERROR: Exception in action execution");
       }
       _stats.failedTransitions++;
@@ -408,7 +439,7 @@ uint16_t improvedStateMachine::processEvent(eventID event, void *context) {
     // Calculate redraw mask
     uint16_t mask = calculateRedrawMask(_lastState, _currentState);
 
-    if (_debugMode) {
+    if (_debugModeVerbose) {
       Serial.printf("New state: %d/%d, mask: 0x%04x, scoreboard: %x/%x/%x/%x\n",
                     _currentState.page, _currentState.button, mask,
                     _stateScoreboard[0], _stateScoreboard[1],
@@ -423,7 +454,7 @@ uint16_t improvedStateMachine::processEvent(eventID event, void *context) {
     return mask;
   }
 
-  if (_debugMode) {
+  if (_debugModeVerbose) {
     Serial.printf("No matching transition found for event %d\n", event);
   }
 
@@ -640,7 +671,7 @@ void improvedStateMachine::updateScoreboard(pageID id) {
   } else if (id < STATEMACHINE_SCOREBOARD_SEGMENT_SIZE * STATEMACHINE_SCOREBOARD_NUM_SEGMENTS) {
     _stateScoreboard[3] |= (1UL << (id - STATEMACHINE_SCOREBOARD_SEGMENT_SIZE * 3));
   }
-  if (_debugMode)
+  if (_debugModeVerbose)
     Serial.printf("Scoreboard(%d): %u/%u/%u/%u\n", id, _stateScoreboard[0],
                   _stateScoreboard[1], _stateScoreboard[2], _stateScoreboard[3]);
 }
@@ -662,32 +693,32 @@ void improvedStateMachine::setScoreboard(uint32_t value, uint8_t index) {
 validationResult improvedStateMachine::validateTransition(const stateTransition &trans, bool verbose) const {
   // Check for valid state IDs
   if (trans.fromPage > STATEMACHINE_MAX_PAGES) {
-    if (verbose && _debugMode) {
+    if (verbose && _debugModeVerbose) {
       printf("validateTransition: INVALID_PAGE_ID, fromPage=%d\n", trans.fromPage);
     }
     return INVALID_PAGE_ID;
   }
   if (trans.fromButton > STATEMACHINE_MAX_BUTTONS) {
-    if (verbose && _debugMode) {
+    if (verbose && _debugModeVerbose) {
       printf("validateTransition: INVALID_BUTTON_ID, fromButton=%d\n", trans.fromButton);
     }
     return INVALID_BUTTON_ID;
   }
 
   if (trans.toPage >= DONT_CARE_PAGE) {
-    if (verbose && _debugMode) {
+    if (verbose && _debugModeVerbose) {
       printf("validateTransition: INVALID_PAGE_ID, toPage=%d\n", trans.toPage);
     }
     return INVALID_PAGE_ID;
   }
   if (trans.toButton >= DONT_CARE_BUTTON) {
-    if (verbose && _debugMode) {
+    if (verbose && _debugModeVerbose) {
       printf("validateTransition: INVALID_BUTTON_ID, toButton=%d\n", trans.toButton);
     }
     return INVALID_BUTTON_ID;
   }
   if (trans.event > STATEMACHINE_MAX_EVENTS) {
-    if (verbose && _debugMode) {
+    if (verbose && _debugModeVerbose) {
       printf("validateTransition: INVALID_EVENT_ID, event=%d\n", trans.event);
     }
     return INVALID_EVENT_ID;
@@ -709,32 +740,32 @@ validationResult improvedStateMachine::validateTransitionWithConflictDetails(con
                                                                           bool verbose) const {
   // Check for valid state IDs
   if (trans.fromPage > STATEMACHINE_MAX_PAGES) {
-    if (verbose && _debugMode) {
+    if (verbose && _debugModeVerbose) {
       printf("validateTransition: INVALID_PAGE_ID, fromPage=%d\n", trans.fromPage);
     }
     return INVALID_PAGE_ID;
   }
   if (trans.fromButton > STATEMACHINE_MAX_BUTTONS) {
-    if (verbose && _debugMode) {
+    if (verbose && _debugModeVerbose) {
       printf("validateTransition: INVALID_BUTTON_ID, fromButton=%d\n", trans.fromButton);
     }
     return INVALID_BUTTON_ID;
   }
 
   if (trans.toPage >= DONT_CARE_PAGE) {
-    if (verbose && _debugMode) {
+    if (verbose && _debugModeVerbose) {
       printf("validateTransition: INVALID_PAGE_ID, toPage=%d\n", trans.toPage);
     }
     return INVALID_PAGE_ID;
   }
   if (trans.toButton >= DONT_CARE_BUTTON) {
-    if (verbose && _debugMode) {
+    if (verbose && _debugModeVerbose) {
       printf("validateTransition: INVALID_BUTTON_ID, toButton=%d\n", trans.toButton);
     }
     return INVALID_BUTTON_ID;
   }
   if (trans.event > STATEMACHINE_MAX_EVENTS) {
-    if (verbose && _debugMode) {
+    if (verbose && _debugModeVerbose) {
       printf("validateTransition: INVALID_EVENT_ID, event=%d\n", trans.event);
     }
     return INVALID_EVENT_ID;
@@ -980,7 +1011,7 @@ validationResult improvedStateMachine::addTransition(const stateTransition& tran
   
   // Check for maximum transitions
   if (_transitionCount >= STATEMACHINE_MAX_TRANSITIONS) {
-    if (_debugMode) {
+    if (_debugModeVerbose) {
       Serial.printf("ERROR: Maximum transitions (%d) exceeded\n", STATEMACHINE_MAX_TRANSITIONS);
     }
     
@@ -995,7 +1026,7 @@ validationResult improvedStateMachine::addTransition(const stateTransition& tran
   if (_validationEnabled) {
     validationResult result = validateTransition(transition);
     if (result != VALID) {
-      if (_debugMode) {
+      if (_debugModeVerbose) {
         Serial.printf("ERROR: Invalid transition - %s (code %d) at %s:%d\n", 
                      getErrorDescription(result), static_cast<int>(result), 
                      __FUNCTION__, __LINE__);

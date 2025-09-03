@@ -3,6 +3,10 @@
 #include <Arduino.h>
 #endif
 #include "../test_common.hpp"
+#include "../enhanced_unity.hpp"
+
+// External declaration for enhanced Unity failure counter
+extern int _enhancedUnityFailureCount;
 
 
 // WORKING COMPREHENSIVE TESTS (API Compatible)
@@ -10,15 +14,19 @@
 // All test functions use extern improvedStateMachine* sm from test_common.hpp
 // ...existing code...
 void test_001_basic_instantiation() {
-    TEST_ASSERT_NOT_NULL(sm);
-    TEST_ASSERT_EQUAL_UINT8(0, sm->getPage());
+    ENHANCED_UNITY_INIT();
+    TEST_ASSERT_NOT_NULL_DEBUG(sm);
+    TEST_ASSERT_EQUAL_UINT8_DEBUG(0, sm->getPage());
+    ENHANCED_UNITY_REPORT();
 }
 
 void test_002_initial_state_setting() {
+    ENHANCED_UNITY_INIT();
     sm->initializeState(1);
-    TEST_ASSERT_EQUAL_UINT8(1, sm->getPage());
+    TEST_ASSERT_EQUAL_UINT8_DEBUG(1, sm->getPage());
     sm->initializeState(42);
-    TEST_ASSERT_EQUAL_UINT8(42, sm->getPage());
+    TEST_ASSERT_EQUAL_UINT8_DEBUG(42, sm->getPage());
+    ENHANCED_UNITY_REPORT();
 }
 
 void test_003_simple_transitions() {
