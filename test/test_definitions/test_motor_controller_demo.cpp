@@ -4,14 +4,18 @@
 #include <unity.h>
 #include "../src/improvedStateMachine.hpp"
 #include "../example/motorControllerMenuConfig_fixed.hpp"
-
+#include "../enhanced_unity.hpp"
 
 // Use shared ImprovedStateMachine from runner
 extern improvedStateMachine* sm;
 
+// External declaration for enhanced Unity failure counter
+extern int _enhancedUnityFailureCount;
+
 // Note: setUp/tearDown provided by test_common.hpp when compiled into the shared TU.
 
 void test_motor_controller_visualization() {
+    ENHANCED_UNITY_INIT();
 #ifdef ARDUINO
     Serial.println("\n=== MOTOR CONTROLLER MENU VISUALIZATION ===");
 #else
@@ -107,7 +111,7 @@ void test_motor_controller_visualization() {
 #endif
         
         // Assert for unit test framework
-        TEST_ASSERT_EQUAL_UINT8(sequence[step].expectedState, afterState);
+        TEST_ASSERT_EQUAL_UINT8_DEBUG(sequence[step].expectedState, afterState);
     }
     
     // Print final statistics
@@ -136,16 +140,18 @@ void test_motor_controller_visualization() {
 #endif
     
     // Validate we're back at main menu
-    TEST_ASSERT_EQUAL_UINT8(MotorControllerMenuConfig::MENU_MAIN, sm->getCurrentPage());
+    TEST_ASSERT_EQUAL_UINT8_DEBUG(MotorControllerMenuConfig::MENU_MAIN, sm->getCurrentPage());
     
 #ifdef ARDUINO
     Serial.println("\n=== MOTOR CONTROLLER VISUALIZATION COMPLETE ===\n");
 #else
     printf("\n=== MOTOR CONTROLLER VISUALIZATION COMPLETE ===\n\n");
 #endif
+    ENHANCED_UNITY_REPORT();
 }
 
 void test_menu_breadth_exploration() {
+    ENHANCED_UNITY_INIT();
 #ifdef ARDUINO
     Serial.println("\n=== MENU BREADTH EXPLORATION ===");
 #else
@@ -222,13 +228,14 @@ void test_menu_breadth_exploration() {
     }
     
     // Should be back at main menu
-    TEST_ASSERT_EQUAL_UINT8(MotorControllerMenuConfig::MENU_MAIN, sm->getCurrentPage());
+    TEST_ASSERT_EQUAL_UINT8_DEBUG(MotorControllerMenuConfig::MENU_MAIN, sm->getCurrentPage());
     
 #ifdef ARDUINO
     Serial.println("=== BREADTH EXPLORATION COMPLETE ===\n");
 #else
     printf("=== BREADTH EXPLORATION COMPLETE ===\n\n");
 #endif
+    ENHANCED_UNITY_REPORT();
 }
 
 // Register motor demo tests with shared runner

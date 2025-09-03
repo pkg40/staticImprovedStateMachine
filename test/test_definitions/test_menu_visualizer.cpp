@@ -3,8 +3,12 @@
 #endif
 #include <unity.h>
 #include "../src/improvedStateMachine.hpp"
+#include "../enhanced_unity.hpp"
 
 extern improvedStateMachine* sm;
+
+// External declaration for enhanced Unity failure counter
+extern int _enhancedUnityFailureCount;
 
 // setUp/tearDown provided by shared header when compiled together with runner
 
@@ -111,6 +115,7 @@ void printStatistics() {
 }
 
 void test_menu_visualization_basic() {
+    ENHANCED_UNITY_INIT();
 #ifdef ARDUINO
     Serial.println("\n=== BASIC MENU VISUALIZATION TEST ===");
 #else
@@ -175,16 +180,18 @@ void test_menu_visualization_basic() {
     printStatistics();
     
     // Validate we ended up in the expected state
-    TEST_ASSERT_EQUAL_UINT8(1, sm->getPage());
+    TEST_ASSERT_EQUAL_UINT8_DEBUG(1, sm->getPage());
     
 #ifdef ARDUINO
     Serial.println("=== BASIC MENU VISUALIZATION COMPLETE ===\n");
 #else
     printf("=== BASIC MENU VISUALIZATION COMPLETE ===\n\n");
 #endif
+    ENHANCED_UNITY_REPORT();
 }
 
 void test_menu_visualization_comprehensive() {
+    ENHANCED_UNITY_INIT();
 #ifdef ARDUINO
     Serial.println("\n=== COMPREHENSIVE MENU VISUALIZATION TEST ===");
 #else
@@ -273,16 +280,18 @@ void test_menu_visualization_comprehensive() {
     printStatistics();
     
     // Validate we're back at main menu
-    TEST_ASSERT_EQUAL_UINT8(1, sm->getPage());
+    TEST_ASSERT_EQUAL_UINT8_DEBUG(1, sm->getPage());
     
 #ifdef ARDUINO
     Serial.println("=== COMPREHENSIVE MENU VISUALIZATION COMPLETE ===\n");
 #else
     printf("=== COMPREHENSIVE MENU VISUALIZATION COMPLETE ===\n\n");
 #endif
+    ENHANCED_UNITY_REPORT();
 }
 
 void test_menu_structure_dump() {
+    ENHANCED_UNITY_INIT();
 #ifdef ARDUINO
     Serial.println("\n=== MENU STRUCTURE DUMP ===");
 #else
@@ -307,7 +316,8 @@ void test_menu_structure_dump() {
     printf("=== MENU STRUCTURE DUMP COMPLETE ===\n\n");
 #endif
     
-    TEST_ASSERT_TRUE(true);  // Always pass - this is just for visualization
+    TEST_ASSERT_TRUE_DEBUG(true);  // Always pass - this is just for visualization
+    ENHANCED_UNITY_REPORT();
 }
 
 void register_menu_visualizer_tests() {

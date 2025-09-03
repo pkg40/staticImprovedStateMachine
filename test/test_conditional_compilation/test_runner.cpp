@@ -2,6 +2,9 @@
 #include "../test_common.hpp"
 #include "test_conditional_compilation.hpp"
 
+// Define the enhanced Unity failure counter
+int _enhancedUnityFailureCount = 0;
+
 // Unity lifecycle hooks
 void setUp() {
     // No setup needed for conditional compilation tests
@@ -20,7 +23,7 @@ void setup() {
         delay(100);
     }
     Serial.flush();
-    delay(2000);
+    delay(5000);
 
 #ifdef ARDUINO
     Serial.println("=== Conditional Compilation Test Suite ===");

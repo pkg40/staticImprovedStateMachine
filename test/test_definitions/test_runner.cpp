@@ -1,15 +1,19 @@
 #include <unity.h>
 #include "../src/improvedStateMachine.hpp"
+#include "../enhanced_unity.hpp"
 
 // Shared state machine instance for all tests
 improvedStateMachine* sm = nullptr;
+
+// Define the enhanced Unity failure counter
+int _enhancedUnityFailureCount = 0;
 
 void setUp() {
     if (sm) {
         delete sm;
     }
     sm = new improvedStateMachine();
-    TEST_ASSERT_NOT_NULL(sm);
+    TEST_ASSERT_NOT_NULL_DEBUG(sm);
 }
 
 void tearDown() {

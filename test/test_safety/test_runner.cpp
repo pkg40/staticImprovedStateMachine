@@ -5,6 +5,9 @@
 // Define the shared test state machine used by all tests
 improvedStateMachine* sm = nullptr;
 
+// Define the enhanced Unity failure counter
+int _enhancedUnityFailureCount = 0;
+
 // Unity lifecycle hooks
 void setUp() {
     delete sm;
@@ -22,7 +25,7 @@ void setup() {
         delay(100);
     }
     Serial.flush();
-    delay(2000);
+    delay(5000);
 
     // Fresh state machine before Unity begins
     delete sm;

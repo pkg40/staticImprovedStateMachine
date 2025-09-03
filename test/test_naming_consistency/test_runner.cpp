@@ -1,9 +1,13 @@
 // Test runner for naming consistency tests
 #include "../test_common.hpp"
 #include "test_naming_consistency.hpp"
+#include "../enhanced_unity.hpp"
 
 // Define the shared test state machine used by all tests
 improvedStateMachine* sm = nullptr;
+
+// Define the enhanced Unity failure counter
+int _enhancedUnityFailureCount = 0;
 
 // Unity lifecycle hooks
 void setUp() {
@@ -25,7 +29,7 @@ void setup() {
         delay(100);
     }
     Serial.flush();
-    delay(2000);
+    delay(5000);
 
 #ifdef ARDUINO
     Serial.println("=== NAMING CONSISTENCY TESTS ===");

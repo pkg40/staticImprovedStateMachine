@@ -104,8 +104,8 @@ extern int _enhancedUnityFailureCount;
         if (_expected != _actual) { \
             _enhancedUnityFailureCount++; \
             printf("FAIL: TEST_ASSERT_EQUAL_UINT8 failed: Expected %u, got %u at line %d\n", _expected, _actual, __LINE__); \
-        } else if (sm->getDebugMode(debugFlag_t::SHOW_PASS)) { \  
-                printf("DEBUG: TEST_ASSERT_EQUAL_UINT8 passed: Expected %u, got %u at line %d\n", _expected, _actual, __LINE__); \
+        } else if (sm->getDebugMode(debugFlag_t::SHOW_PASS)) { \
+            printf("DEBUG: TEST_ASSERT_EQUAL_UINT8 passed: Expected %u, got %u at line %d\n", _expected, _actual, __LINE__); \
         } \
     } while(0)
 

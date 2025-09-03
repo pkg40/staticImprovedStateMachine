@@ -53,7 +53,7 @@ void test_076_random_state_transitions() {
     // Process random events
     for (int i = 0; i < RANDOM_TEST_PROCESS_ITERATIONS; i++) {
         uint8_t event = getRandomNumber() % numEvents;
-        uint8_t beforeState = sm->getCurrentPage();
+//        uint8_t beforeState = sm->getCurrentPage();
         sm->processEvent(event);
         uint8_t afterState = sm->getCurrentPage();
         
@@ -180,7 +180,7 @@ void test_082_random_complex_graphs() {
     // Random walk through the graph
     for (int i = 0; i < RANDOM_TEST_EXTENDED_ITERATIONS; i++) {
         uint8_t event = 1 + (getRandomNumber() % 3);
-        uint8_t beforeState = sm->getCurrentPage();
+//        uint8_t beforeState = sm->getCurrentPage();
         sm->processEvent(event);
         uint8_t afterState = sm->getCurrentPage();
         

@@ -28,7 +28,7 @@ void setup() {
         delay(100);
     }
     Serial.flush();
-    delay(2000);
+    delay(5000);
     
 #ifdef ARDUINO
     Serial.println("=== RANDOM Basic Function Tests (20+ tests) ===");

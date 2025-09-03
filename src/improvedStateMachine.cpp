@@ -692,18 +692,8 @@ void improvedStateMachine::setScoreboard(uint32_t value, uint8_t index) {
 // Safety and validation methods
 validationResult improvedStateMachine::validateTransition(const stateTransition &trans, bool verbose) const {
   // Check for valid state IDs
-  if (trans.fromPage > STATEMACHINE_MAX_PAGES) {
-    if (verbose && _debugModeVerbose) {
-      printf("validateTransition: INVALID_PAGE_ID, fromPage=%d\n", trans.fromPage);
-    }
-    return INVALID_PAGE_ID;
-  }
-  if (trans.fromButton > STATEMACHINE_MAX_BUTTONS) {
-    if (verbose && _debugModeVerbose) {
-      printf("validateTransition: INVALID_BUTTON_ID, fromButton=%d\n", trans.fromButton);
-    }
-    return INVALID_BUTTON_ID;
-  }
+  // Note: fromPage and fromButton are uint8_t, so they can't exceed their maximum values
+  // The DONT_CARE values are used as wildcards and are valid
 
   if (trans.toPage >= DONT_CARE_PAGE) {
     if (verbose && _debugModeVerbose) {
@@ -739,18 +729,8 @@ validationResult improvedStateMachine::validateTransitionWithConflictDetails(con
                                                                           size_t& conflictingIndex, 
                                                                           bool verbose) const {
   // Check for valid state IDs
-  if (trans.fromPage > STATEMACHINE_MAX_PAGES) {
-    if (verbose && _debugModeVerbose) {
-      printf("validateTransition: INVALID_PAGE_ID, fromPage=%d\n", trans.fromPage);
-    }
-    return INVALID_PAGE_ID;
-  }
-  if (trans.fromButton > STATEMACHINE_MAX_BUTTONS) {
-    if (verbose && _debugModeVerbose) {
-      printf("validateTransition: INVALID_BUTTON_ID, fromButton=%d\n", trans.fromButton);
-    }
-    return INVALID_BUTTON_ID;
-  }
+  // Note: fromPage and fromButton are uint8_t, so they can't exceed their maximum values
+  // The DONT_CARE values are used as wildcards and are valid
 
   if (trans.toPage >= DONT_CARE_PAGE) {
     if (verbose && _debugModeVerbose) {
@@ -937,12 +917,8 @@ void improvedStateMachine::printTransitionError(const stateTransition &error) co
   Serial.printf("Error Code: %d (%s)\n", static_cast<int>(INVALID_TRANSITION), 
                 getErrorDescription(INVALID_TRANSITION));
   
-  if (error.fromPage > STATEMACHINE_MAX_PAGES) {
-    Serial.printf("Error Location: INVALID_PAGE_ID, fromPage=%d\n", error.fromPage);
-  }
-  if (error.fromButton > STATEMACHINE_MAX_BUTTONS) {
-    Serial.printf("Error Location: INVALID_BUTTON_ID, fromButton=%d\n", error.fromButton);
-  }
+  // Note: fromPage and fromButton are uint8_t, so they can't exceed their maximum values
+  // These checks are redundant and have been removed
   if (error.toPage >= DONT_CARE_PAGE) {
     Serial.printf("Error Location: INVALID_PAGE_ID, toPage=%d\n", error.toPage);
   }

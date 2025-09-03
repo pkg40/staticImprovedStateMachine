@@ -23,7 +23,7 @@ void setup() {
         delay(100);
     }
     Serial.flush();
-    delay(2000);
+    delay(5000);
 
     // Fresh state machine before Unity begins
     delete sm;

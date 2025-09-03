@@ -220,11 +220,12 @@ void test_064_scoreboard_persistence() {
     }
     sm->clearScoreboard();
     for (uint8_t i = 0; i<31; i++) {
-        uint32_t tmp = sm->processEvent(1);
+//        uint32_t tmp = sm->processEvent(1);
         tmpScoreBoard1=tmpScoreBoard1<<1 | 2;
         if(sm->getDebugMode()) Serial.printf("test_064: tmpScoreBoard1=%08x, sm->getScoreboard(0)=%08x\n", tmpScoreBoard1, sm->getScoreboard(0));
         TEST_ASSERT_EQUAL_UINT32_DEBUG(tmpScoreBoard1, sm->getScoreboard(0));
     }
+    TEST_ASSERT_EQUAL_UINT32_DEBUG(0, score0);
     TEST_ASSERT_EQUAL_UINT32_DEBUG(0, score1);
     TEST_ASSERT_EQUAL_UINT32_DEBUG(0, score2);
     TEST_ASSERT_EQUAL_UINT32_DEBUG(0, score3);
@@ -236,6 +237,7 @@ void test_064_scoreboard_persistence() {
         if(sm->getDebugMode()) Serial.printf("test_064: tmpScoreBoard2=%08x, sm->getScoreboard(0)=%08x\n", tmpScoreBoard2, sm->getScoreboard(0));
         TEST_ASSERT_EQUAL_UINT32_DEBUG(tmpScoreBoard2, sm->getScoreboard(0));
     }
+    TEST_ASSERT_EQUAL_UINT32_DEBUG(0, score0);
     TEST_ASSERT_EQUAL_UINT32_DEBUG(0, score1);
     TEST_ASSERT_EQUAL_UINT32_DEBUG(0, score2);
     TEST_ASSERT_EQUAL_UINT32_DEBUG(0, score3);
@@ -471,7 +473,7 @@ void test_075_statistics_and_scoreboard_integration() {
     uint32_t score1_after = sm->getScoreboard(1);
     uint32_t score2_after = sm->getScoreboard(2);
     // Use enhanced assertions that show actual values
-//    TEST_ASSERT_EQUAL_UINT32_DEBUG(before.totalTransitions + 2, after.totalTransitions);
+    TEST_ASSERT_EQUAL_UINT32_DEBUG(before.totalTransitions + 2, after.totalTransitions);
     TEST_ASSERT_EQUAL_UINT32_DEBUG(0x1001, score1_after);
     TEST_ASSERT_EQUAL_UINT32_DEBUG(0x2001, score2_after);
     sm->setDebugMode(false);

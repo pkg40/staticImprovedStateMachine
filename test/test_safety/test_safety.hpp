@@ -5,6 +5,10 @@
 
 #define BUILDING_TEST_RUNNER_BUNDLE 1
 #include "../test_common.hpp"
+#include "../enhanced_unity.hpp"
+
+// External declaration for enhanced Unity failure counter
+extern int _enhancedUnityFailureCount;
 
 // Safety test constants
 #define SAFETY_TEST_ITERATIONS 100
@@ -17,6 +21,7 @@
 
 // Recursion depth safety test
 void test_recursion_depth_limit(void) {
+    ENHANCED_UNITY_INIT();
     // Create a transition that could cause infinite recursion
     bool recursiveActionCalled = false;
     
@@ -34,16 +39,18 @@ void test_recursion_depth_limit(void) {
     uint16_t mask = sm->processEvent(0);
 
     stateMachineStats stats = sm->getStatistics();
-    TEST_ASSERT_TRUE(stats.failedTransitions > 0);
+    TEST_ASSERT_TRUE_DEBUG(stats.failedTransitions > 0);
+    ENHANCED_UNITY_REPORT();
 }
 
 // Memory safety test
 void test_large_state_ids(void) {
+    ENHANCED_UNITY_INIT();
     // Test with state IDs near the limit
     pageID maxState = STATEMACHINE_MAX_PAGES - 1;
     stateTransition validTrans(maxState, 0, 0, maxState, 0, nullptr);
     validationResult result = sm->addTransition(validTrans);
-    TEST_ASSERT_EQUAL(validationResult::VALID, result);
+    TEST_ASSERT_EQUAL_DEBUG(validationResult::VALID, result);
 
 // Reset state machine transitions before each invalid test
 //    sm->clearTransitions();
@@ -52,7 +59,7 @@ void test_large_state_ids(void) {
     stateTransition invalidTrans_from(STATEMACHINE_MAX_PAGES, 0, 0, 0, 0, nullptr);
     result = sm->addTransition(invalidTrans_from);
 //    Serial.printf("[TEST] result for invalidTrans_from: %d\n", result);
-    TEST_ASSERT_EQUAL(validationResult::DUPLICATE_TRANSITION, result);
+    TEST_ASSERT_EQUAL_DEBUG(validationResult::DUPLICATE_TRANSITION, result);
 
 //    sm->clearTransitions();
     // Test with toState out of bounds
@@ -60,11 +67,13 @@ void test_large_state_ids(void) {
     stateTransition invalidTrans_to(0, 0, 0, STATEMACHINE_MAX_PAGES, 0, nullptr);
     result = sm->addTransition(invalidTrans_to);
     Serial.printf("[TEST] result for invalidTrans_to: %d\n", result);
-    TEST_ASSERT_EQUAL(validationResult::INVALID_PAGE_ID, result);
+    TEST_ASSERT_EQUAL_DEBUG(validationResult::INVALID_PAGE_ID, result);
+    ENHANCED_UNITY_REPORT();
 }
 
 // Null pointer safety test
 void test_null_context_safety(void) {
+    ENHANCED_UNITY_INIT();
     bool actionCalled = false;
     auto safeAction = [&](pageID state, eventID event, void* context) {
         actionCalled = true;
@@ -80,12 +89,14 @@ void test_null_context_safety(void) {
 
     // Process with null context
     uint16_t mask = sm->processEvent(0, nullptr);
-    TEST_ASSERT_TRUE(actionCalled);
-    TEST_ASSERT_EQUAL(1, sm->getPage());
+    TEST_ASSERT_TRUE_DEBUG(actionCalled);
+    TEST_ASSERT_EQUAL_DEBUG(1, sm->getPage());
+    ENHANCED_UNITY_REPORT();
 }
 
 // State machine integrity test
 void test_state_machine_integrity(void) {
+    ENHANCED_UNITY_INIT();
     // Add states and transitions
     sm->addState(stateDefinition(0, "STATE0", "State 0"));
     sm->addState(stateDefinition(1, "STATE1", "State 1"));
@@ -96,11 +107,13 @@ void test_state_machine_integrity(void) {
     sm->addTransition(stateTransition(2, 0, 2, 0, 0, nullptr));
 
     validationResult result = sm->validateConfiguration();
-    TEST_ASSERT_EQUAL(validationResult::VALID, result);
+    TEST_ASSERT_EQUAL_DEBUG(validationResult::VALID, result);
+    ENHANCED_UNITY_REPORT();
 }
 
 // Concurrent access simulation test
 void test_concurrent_access_simulation(void) {
+    ENHANCED_UNITY_INIT();
     sm->setInitialState(0);
     sm->addTransition(stateTransition(0, 0, 0, 1, 0, nullptr));
     sm->addTransition(stateTransition(1, 0, 1, 0, 0, nullptr));
@@ -111,41 +124,47 @@ void test_concurrent_access_simulation(void) {
 
         // Verify state is always valid
         pageID current = sm->getPage();
-        TEST_ASSERT_TRUE(current <= 1);
+        TEST_ASSERT_TRUE_DEBUG(current <= 1);
     }
 
     stateMachineStats stats = sm->getStatistics();
-    TEST_ASSERT_EQUAL(SAFETY_TEST_ITERATIONS, stats.totalTransitions);
+    TEST_ASSERT_EQUAL_DEBUG(SAFETY_TEST_ITERATIONS, stats.totalTransitions);
+    ENHANCED_UNITY_REPORT();
 }
 
 // Edge case: Empty state machine
 void test_empty_state_machine(void) {
+    ENHANCED_UNITY_INIT();
     // Process event on empty state machine
     uint16_t mask = sm->processEvent(0);
-    TEST_ASSERT_EQUAL(0, mask);
+    TEST_ASSERT_EQUAL_DEBUG(0, mask);
 
     stateMachineStats stats = sm->getStatistics();
-    TEST_ASSERT_EQUAL(1, stats.totalTransitions);
-    TEST_ASSERT_EQUAL(1, stats.failedTransitions);
+    TEST_ASSERT_EQUAL_DEBUG(1, stats.totalTransitions);
+    TEST_ASSERT_EQUAL_DEBUG(1, stats.failedTransitions);
+    ENHANCED_UNITY_REPORT();
 }
 
 // Edge case: Maximum values
 void test_maximum_values(void) {
+    ENHANCED_UNITY_INIT();
     // Test with maximum state and event IDs (within limits)
     pageID maxPage = STATEMACHINE_MAX_PAGES - 1;
     eventID maxEvent = DONT_CARE_EVENT;
     
     stateTransition trans(maxPage, 0, maxEvent, 0, 0, nullptr);
     validationResult result = sm->addTransition(trans);
-    TEST_ASSERT_EQUAL(validationResult::VALID, result);
+    TEST_ASSERT_EQUAL_DEBUG(validationResult::VALID, result);
 
     sm->setInitialState(maxPage);
     uint16_t mask = sm->processEvent(maxEvent);
-    TEST_ASSERT_EQUAL(maxPage, sm->getPage());
+    TEST_ASSERT_EQUAL_DEBUG(maxPage, sm->getPage());
+    ENHANCED_UNITY_REPORT();
 }
 
 // Memory leak detection (basic)
 void test_memory_management(void) {
+    ENHANCED_UNITY_INIT();
     // Create and destroy multiple state machines
     for (int i = 0; i < SAFETY_MEMORY_TEST_ITERATIONS; i++) {
         improvedStateMachine* tempSM = new improvedStateMachine();
@@ -165,11 +184,13 @@ void test_memory_management(void) {
     }
     
     // If we get here without crashing, memory management is working
-    TEST_ASSERT_TRUE(true);
+    TEST_ASSERT_TRUE_DEBUG(true);
+    ENHANCED_UNITY_REPORT();
 }
 
 // Statistics overflow protection
 void test_statistics_overflow_protection(void) {
+    ENHANCED_UNITY_INIT();
     sm->setInitialState(0);
     sm->addTransition(stateTransition(0, 0, 0, 0, 0, nullptr)); // Self-loop
 
@@ -179,13 +200,15 @@ void test_statistics_overflow_protection(void) {
     }
 
     stateMachineStats stats = sm->getStatistics();
-    TEST_ASSERT_EQUAL(SAFETY_OVERFLOW_TEST_ITERATIONS, stats.totalTransitions);
-    TEST_ASSERT_TRUE(stats.averageTransitionTime < stats.maxTransitionTime || 
+    TEST_ASSERT_EQUAL_DEBUG(SAFETY_OVERFLOW_TEST_ITERATIONS, stats.totalTransitions);
+    TEST_ASSERT_TRUE_DEBUG(stats.averageTransitionTime < stats.maxTransitionTime || 
                      stats.maxTransitionTime == 0);
+    ENHANCED_UNITY_REPORT();
 }
 
 // Dangling state detection test
 void test_dangling_state_detection(void) {
+    ENHANCED_UNITY_INIT();
     // Add states
     sm->addState(stateDefinition(0, "STATE0", "Connected State"));
     sm->addState(stateDefinition(1, "STATE1", "Dangling State"));
@@ -196,7 +219,8 @@ void test_dangling_state_detection(void) {
     
     // This should detect the dangling state
     validationResult result = sm->validateConfiguration();
-    TEST_ASSERT_EQUAL(validationResult::DANGLING_PAGE, result);
+    TEST_ASSERT_EQUAL_DEBUG(validationResult::DANGLING_PAGE, result);
+    ENHANCED_UNITY_REPORT();
 }
 
 // Expose registration function for shared runner
