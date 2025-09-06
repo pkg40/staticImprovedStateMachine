@@ -66,7 +66,7 @@ void test_002_initial_state_setting() {
   sm->initializeState(TEST_STATE_A);
   TEST_ASSERT_EQUAL_UINT8_DEBUG(TEST_STATE_A, sm->getCurrentPage());
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_003_multiple_state_settings() {
@@ -76,7 +76,7 @@ void test_003_multiple_state_settings() {
     TEST_ASSERT_EQUAL_UINT8_DEBUG(i, sm->getCurrentPage());
   }
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_004_state_boundaries() {
@@ -89,7 +89,7 @@ void test_004_state_boundaries() {
   TEST_ASSERT_EQUAL_UINT8_DEBUG(TEST_STATE_A, savedState);
   TEST_ASSERT_EQUAL_UINT8_DEBUG(TEST_STATE_B, newState);
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_005_basic_transition() {
@@ -112,7 +112,7 @@ void test_005_basic_transition() {
   TEST_ASSERT_TRUE_DEBUG(oldState != newState);
   testStats.passedTests++;
   sm->setDebugMode(false);
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_006_no_matching_transition() {
@@ -127,7 +127,7 @@ void test_006_no_matching_transition() {
 
   TEST_ASSERT_EQUAL_UINT8_DEBUG(oldState, newState); // Should stay same
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_007_circular_transitions() {
@@ -146,7 +146,7 @@ void test_007_circular_transitions() {
   sm->processEvent(3); // 3->1
   TEST_ASSERT_EQUAL_UINT8_DEBUG(1, sm->getCurrentPage());
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_008_self_transitions() {
@@ -157,7 +157,7 @@ void test_008_self_transitions() {
   sm->processEvent(1);
   TEST_ASSERT_EQUAL_UINT8_DEBUG(5, sm->getCurrentPage());
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_009_multiple_events_same_state() {
@@ -170,7 +170,7 @@ void test_009_multiple_events_same_state() {
   sm->processEvent(2); // Should go to state 3
   TEST_ASSERT_EQUAL_UINT8_DEBUG(3, sm->getCurrentPage());
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_010_overlapping_transitions() {
@@ -185,7 +185,7 @@ void test_010_overlapping_transitions() {
   sm->processEvent(1);
   TEST_ASSERT_EQUAL_UINT8_DEBUG(2, sm->getCurrentPage()); // Only first transition exists
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 // =============================================================================
@@ -204,7 +204,7 @@ void test_011_duplicate_transition_validation() {
                           static_cast<uint8_t>(result1));
   TEST_ASSERT_TRUE_DEBUG(static_cast<uint8_t>(validationResult::VALID) != static_cast<uint8_t>(result2));
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_012_invalid_state_transitions() {
@@ -218,7 +218,7 @@ void test_012_invalid_state_transitions() {
   sm->processEvent(1); // Should not transition
   TEST_ASSERT_EQUAL_UINT8_DEBUG(1, sm->getCurrentPage());
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_013_wildcard_transitions() {
@@ -230,7 +230,7 @@ void test_013_wildcard_transitions() {
   sm->processEvent(5);
   TEST_ASSERT_EQUAL_UINT8_DEBUG(10, sm->getCurrentPage());
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_014_dont_care_event() {
@@ -242,7 +242,7 @@ void test_014_dont_care_event() {
   sm->processEvent(DONT_CARE_EVENT - 1); // Any event should work
   TEST_ASSERT_EQUAL_UINT8_DEBUG(5, sm->getCurrentPage());
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_015_transition_priority() {
@@ -261,7 +261,7 @@ void test_015_transition_priority() {
          "ordered and processed one at a time from the event queue.\n");
   TEST_ASSERT_TRUE_DEBUG(true);
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_016_boundary_state_values() {
@@ -273,7 +273,7 @@ void test_016_boundary_state_values() {
   TEST_ASSERT_EQUAL_UINT8_DEBUG(0, sm->getCurrentPage());
   testStats.boundaryTests++;
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_017_boundary_event_values() {
@@ -294,7 +294,7 @@ void test_017_boundary_event_values() {
   TEST_ASSERT_EQUAL_UINT8_DEBUG(3, sm->getCurrentPage());
   testStats.boundaryTests++;
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_018_maximum_transitions() {
@@ -309,7 +309,7 @@ void test_018_maximum_transitions() {
                             static_cast<uint8_t>(result));
   }
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_019_state_definition_validation() {
@@ -324,7 +324,7 @@ void test_019_state_definition_validation() {
   // TEST_ASSERT_NOT_NULL(retrieved);
   // TEST_ASSERT_EQUAL_UINT8(1, retrieved->id);
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_020_duplicate_state_validation() {
@@ -339,7 +339,7 @@ void test_020_duplicate_state_validation() {
                           static_cast<uint8_t>(result1));
   TEST_ASSERT_TRUE_DEBUG(static_cast<uint8_t>(validationResult::VALID) != static_cast<uint8_t>(result2));
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 // =============================================================================
@@ -364,7 +364,7 @@ void test_021_statistics_tracking() {
                            afterStats.stateChanges);
   testStats.passedTests++;
   sm->setDebugMode(false);
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_022_failed_transition_statistics() {
@@ -379,7 +379,7 @@ void test_022_failed_transition_statistics() {
   TEST_ASSERT_EQUAL_UINT32_DEBUG(initialStats.failedTransitions + 1,
                            afterStats.failedTransitions);
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_023_scoreboard_functionality() {
@@ -391,7 +391,7 @@ void test_023_scoreboard_functionality() {
   TEST_ASSERT_TRUE_DEBUG(sm->getScoreboard(0) & (1UL << 2));
   TEST_ASSERT_EQUAL_UINT8_DEBUG(6, sm->getScoreboard(0));
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_024_scoreboard_updates() {
@@ -405,7 +405,7 @@ void test_024_scoreboard_updates() {
   TEST_ASSERT_EQUAL_UINT8_DEBUG(4, sm->getScoreboard(0));
   testStats.passedTests++;
   sm->setDebugMode(false);
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_025_scoreboard_boundaries() {
@@ -417,7 +417,7 @@ void test_025_scoreboard_boundaries() {
   TEST_ASSERT_EQUAL_UINT32_DEBUG(0xFFFFFFFF, sm->getScoreboard(0));
   testStats.boundaryTests++;
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_026_performance_timing() {
@@ -435,7 +435,7 @@ void test_026_performance_timing() {
   // Should complete 100 transitions in reasonable time
   TEST_ASSERT_TRUE_DEBUG(elapsed < PERFORMANCE_TIME_LIMIT_US); // Less than 100ms
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_027_statistics_reset() {
@@ -448,7 +448,7 @@ void test_027_statistics_reset() {
   stateMachineStats stats = sm->getStatistics();
   TEST_ASSERT_TRUE_DEBUG(stats.totalTransitions > 0);
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_028_action_execution_stats() {
@@ -463,7 +463,7 @@ void test_028_action_execution_stats() {
 
   TEST_ASSERT_TRUE_DEBUG(after.actionExecutions >= before.actionExecutions);
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_029_multi_state_scoreboard() {
@@ -480,7 +480,7 @@ void test_029_multi_state_scoreboard() {
   }
   testStats.passedTests++;
   sm->setDebugMode(false);
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_030_scoreboard_overflow_protection() {
@@ -492,7 +492,7 @@ void test_030_scoreboard_overflow_protection() {
   uint32_t score = sm->getScoreboard(0);
   TEST_ASSERT_EQUAL_UINT32_DEBUG(0xFFFFFFFF, score);
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 // =============================================================================
@@ -522,7 +522,7 @@ void test_031_complex_state_graph() {
   sm->processEvent(1); // 4->1
   TEST_ASSERT_EQUAL_UINT8_DEBUG(1, sm->getCurrentPage());
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_032_state_machine_persistence() {
@@ -537,7 +537,7 @@ void test_032_state_machine_persistence() {
   TEST_ASSERT_EQUAL_UINT8_DEBUG(10, newState);
   TEST_ASSERT_EQUAL_UINT8_DEBUG(10, sm->getCurrentButton());
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_033_concurrent_event_processing() {
@@ -547,7 +547,7 @@ void test_033_concurrent_event_processing() {
          "ordered and processed one at a time from the event queue.\n");
   TEST_ASSERT_TRUE_DEBUG(true);
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_034_deep_state_nesting() {
@@ -566,7 +566,7 @@ void test_034_deep_state_nesting() {
 
   TEST_ASSERT_EQUAL_UINT8_DEBUG(11, sm->getCurrentPage());
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_035_event_filtering() {
@@ -587,7 +587,7 @@ void test_035_event_filtering() {
   sm->processEvent(5);
   TEST_ASSERT_EQUAL_UINT8_DEBUG(2, sm->getCurrentPage());
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_036_state_machine_reset() {
@@ -601,7 +601,7 @@ void test_036_state_machine_reset() {
   sm->initializeState(5);
   TEST_ASSERT_EQUAL_UINT8_DEBUG(5, sm->getCurrentPage());
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_037_multi_path_navigation() {
@@ -617,7 +617,7 @@ void test_037_multi_path_navigation() {
   sm->processEvent(2); // Should go to state 3
   TEST_ASSERT_EQUAL_UINT8_DEBUG(3, sm->getCurrentPage());
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_038_state_validation_comprehensive() {
@@ -640,7 +640,7 @@ void test_038_state_validation_comprehensive() {
   // TEST_ASSERT_EQUAL_UINT8(2, state2->id);
   // TEST_ASSERT_EQUAL_UINT8(3, state3->id);
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_039_edge_case_transitions() {
@@ -662,7 +662,7 @@ void test_039_edge_case_transitions() {
   TEST_ASSERT_EQUAL_UINT8_DEBUG(DONT_CARE_PAGE - 1, sm->getCurrentPage());
   testStats.edgeCaseTests++;
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_040_performance_stress() {
@@ -688,7 +688,7 @@ void test_040_performance_stress() {
   TEST_ASSERT_TRUE_DEBUG(elapsed < 500000); // Less than 500ms
   testStats.stressTests++;
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 // =============================================================================
@@ -737,7 +737,7 @@ void test_041_random_state_transitions() {
 
   testStats.randomTests++;
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_042_random_event_sequences() {
@@ -766,7 +766,7 @@ void test_042_random_event_sequences() {
 
   testStats.randomTests++;
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_043_random_scoreboard_operations() {
@@ -779,7 +779,7 @@ void test_043_random_scoreboard_operations() {
   }
   testStats.randomTests++;
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_044_random_state_definitions() {
@@ -797,7 +797,7 @@ void test_044_random_state_definitions() {
 
   testStats.randomTests++;
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_045_fuzz_event_processing() {
@@ -817,7 +817,7 @@ void test_045_fuzz_event_processing() {
   }
   testStats.randomTests++;
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_state_event_id_validation() {
@@ -886,7 +886,7 @@ void test_state_event_id_validation() {
   printf("State/Event ID validation tests completed.\n");
   testStats.passedTests++;
   sm->setDebugMode(false);
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 // Generate additional random tests
@@ -919,7 +919,7 @@ void generateRandomTests() {
     testStats.randomTests++;
     testStats.passedTests++;
   }
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 // =============================================================================
@@ -986,7 +986,7 @@ void test_comprehensive_coverage() {
 
   testStats.randomTests++;
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_stress_testing() {
@@ -1029,7 +1029,7 @@ void test_stress_testing() {
 
   testStats.stressTests++;
   testStats.passedTests++;
-  ENHANCED_UNITY_REPORT();
+  ENHANCED_UNITY_FINAL_REPORT();
 }
 
 // Expose as registration function for the shared runner

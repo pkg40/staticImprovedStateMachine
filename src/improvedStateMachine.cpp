@@ -92,8 +92,6 @@ improvedStateMachine::improvedStateMachine(const improvedStateMachine& other)
       _currentState(other._currentState),
       _lastState(other._lastState),
       _debugModeVerbose(other._debugModeVerbose),
-      _debugModeShowPass(other._debugModeShowPass),
-      _debugModeAltUnity(other._debugModeAltUnity),
       _validationEnabled(other._validationEnabled),
       _recursionDepth(0),  // Reset recursion depth for new instance
       _stats(other._stats),
@@ -115,8 +113,6 @@ improvedStateMachine& improvedStateMachine::operator=(const improvedStateMachine
     _currentState = other._currentState;
     _lastState = other._lastState;
     _debugModeVerbose = other._debugModeVerbose;
-    _debugModeShowPass = other._debugModeShowPass;
-    _debugModeAltUnity = other._debugModeAltUnity;
     _validationEnabled = other._validationEnabled;
     _recursionDepth = 0;  // Reset recursion depth
     _stats = other._stats;
@@ -165,34 +161,13 @@ const pageDefinition *improvedStateMachine::getState(pageID id) const {
   return nullptr;
 }
 
-    void improvedStateMachine::setDebugMode(bool value, debugFlag_t flag ) { 
-        switch (flag) {
-            case debugFlag_t::VERBOSE:
+    void improvedStateMachine::setDebugMode(bool value) { 
                 _debugModeVerbose = value;
-                break;
-            case debugFlag_t::SHOW_PASS:
-                _debugModeShowPass = value;
-                break;
-            case debugFlag_t::ALT_UNITY:
-                _debugModeAltUnity = value;
-                break;
-            default:
-                break;
-        }
     }
 
-bool improvedStateMachine::getDebugMode(debugFlag_t flag ) const { 
-        switch  (flag) {
-            case debugFlag_t::VERBOSE:
-                return _debugModeVerbose;
-            case debugFlag_t::SHOW_PASS:
-                return _debugModeShowPass;
-            case debugFlag_t::ALT_UNITY:
-                return _debugModeAltUnity;
-            default:
-                return false;
-        }
-    }
+bool improvedStateMachine::getDebugMode() const { 
+        return _debugModeVerbose;
+}
 
 validationResult improvedStateMachine::addTransition(const stateTransition &transition) {
   // Check for maximum transitions
@@ -886,13 +861,16 @@ void improvedStateMachine::addStandardMenuTransitions(pageID menuId, pageID pare
 // Enhanced error reporting methods
 const char* improvedStateMachine::getErrorDescription(validationResult errorCode) const {
   switch (errorCode) {
-    case VALID: return "Valid transition";
+    case VALID: return "Valid";
     case INVALID_PAGE_ID: return "Invalid page ID";
     case INVALID_BUTTON_ID: return "Invalid button ID";
     case INVALID_EVENT_ID: return "Invalid event ID";
     case INVALID_TRANSITION: return "Invalid transition";
     case DUPLICATE_TRANSITION: return "Duplicate transition";
     case DUPLICATE_PAGE: return "Duplicate page";
+    case INVALID_PAGE_NAME: return "Invalid page name";
+    case INVALID_PAGE_DISPLAY_NAME: return "Invalid page display name";
+    case INVALID_MENU_TEMPLATE: return "Invalid menu template";
     case UNREACHABLE_PAGE: return "Unreachable page";
     case DANGLING_PAGE: return "Dangling page";
     case CIRCULAR_DEPENDENCY: return "Circular dependency";
@@ -1066,4 +1044,251 @@ void improvedStateMachine::printDuplicateTransitionError(const stateTransition& 
   Serial.println("  - Different destinations cause conflict");
   
   Serial.println("=== END DUPLICATE TRANSITION ERROR ===");
+}
+
+// Enhanced page validation methods
+validationResult improvedStateMachine::validatePage(const pageDefinition& page, bool verbose) const {
+  // Check page ID range
+  if (page.id >= DONT_CARE_PAGE) {
+    if (verbose && _debugModeVerbose) {
+      Serial.printf("ERROR: Page ID %d exceeds maximum (%d)\n", page.id, DONT_CARE_PAGE);
+    }
+    return INVALID_PAGE_ID;
+  }
+  
+  // Check page name validity
+  if (!page.name || strlen(page.name) == 0 || strlen(page.name) >= sizeof(page.name)) {
+    if (verbose && _debugModeVerbose) {
+      Serial.printf("ERROR: Invalid page name for page %d\n", page.id);
+    }
+    return INVALID_PAGE_NAME;
+  }
+  
+  // Check display name validity
+  if (!page.displayName || strlen(page.displayName) >= sizeof(page.displayName)) {
+    if (verbose && _debugModeVerbose) {
+      Serial.printf("ERROR: Invalid display name for page %d\n", page.id);
+    }
+    return INVALID_PAGE_DISPLAY_NAME;
+  }
+  
+  // Check menu template validity
+  if (static_cast<uint8_t>(page.menu.templateType) >= static_cast<uint8_t>(menuTemplate::MAX_NUMBER_OF_BUTTONS)) {
+    if (verbose && _debugModeVerbose) {
+      Serial.printf("ERROR: Invalid menu template %d for page %d\n", 
+                   static_cast<int>(page.menu.templateType), page.id);
+    }
+    return INVALID_MENU_TEMPLATE;
+  }
+  
+  return VALID;
+}
+
+validationResult improvedStateMachine::validatePageWithConflictDetails(const pageDefinition& page,
+                                                                    pageDefinition& conflictingPage, 
+                                                                    size_t& conflictingIndex, 
+                                                                    bool verbose) const {
+  // First validate the page itself
+  validationResult result = validatePage(page, verbose);
+  if (result != VALID) {
+    return result;
+  }
+  
+  // Check for duplicate page ID
+  for (size_t i = 0; i < _stateCount; i++) {
+    if (_states[i].id == page.id) {
+      conflictingPage = _states[i];
+      conflictingIndex = i;
+      return DUPLICATE_PAGE;
+    }
+  }
+  
+  return VALID;
+}
+
+// Enhanced addState method with location
+validationResult improvedStateMachine::addState(const pageDefinition& state, const char* location) {
+  _addStateCallSequence++;
+  
+  // Check for maximum states
+  if (_stateCount >= STATEMACHINE_MAX_PAGES) {
+    if (_debugModeVerbose) {
+      Serial.printf("ERROR: Maximum states (%d) exceeded\n", STATEMACHINE_MAX_PAGES);
+    }
+    
+    // Populate page error context
+    _lastPageErrorContext = pageErrorContext(MAX_PAGES_EXCEEDED, state, 
+                                           _stateCount, _addStateCallSequence, location);
+    return MAX_PAGES_EXCEEDED;
+  }
+  
+  // Validate page if validation is enabled
+  if (_validationEnabled) {
+    validationResult result = validatePage(state);
+    if (result != VALID) {
+      if (_debugModeVerbose) {
+        Serial.printf("ERROR: Invalid page - %s (code %d) at %s:%d\n", 
+                     getErrorDescription(result), static_cast<int>(result), 
+                     __FUNCTION__, __LINE__);
+      }
+      
+      // Populate page error context
+      _lastPageErrorContext = pageErrorContext(result, state, 
+                                             _stateCount, _addStateCallSequence, location);
+      _stats.validationErrors++;
+      return result;
+    }
+  }
+  
+  // Check for duplicate pages
+  for (size_t i = 0; i < _stateCount; i++) {
+    if (_states[i].id == state.id) {
+      if (_debugModeVerbose) {
+        Serial.printf("ERROR: Duplicate page ID %d\n", state.id);
+      }
+      
+      // Populate page error context with conflict details
+      _lastPageErrorContext = pageErrorContext(DUPLICATE_PAGE, state, 
+                                             _stateCount, _addStateCallSequence, location,
+                                             _states[i], i);
+      return DUPLICATE_PAGE;
+    }
+  }
+  
+  _states[_stateCount] = state;
+  _stateCount++;
+  return VALID;
+}
+
+// Enhanced addState method with error context
+validationResult improvedStateMachine::addState(const pageDefinition& state, const char* location, pageErrorContext& errorContext) {
+  _addStateCallSequence++;
+  
+  // Check for maximum states
+  if (_stateCount >= STATEMACHINE_MAX_PAGES) {
+    if (_debugModeVerbose) {
+      Serial.printf("ERROR: Maximum states (%d) exceeded\n", STATEMACHINE_MAX_PAGES);
+    }
+    
+    // Populate error context
+    errorContext = pageErrorContext(MAX_PAGES_EXCEEDED, state, 
+                                  _stateCount, _addStateCallSequence, location);
+    _lastPageErrorContext = errorContext;
+    return MAX_PAGES_EXCEEDED;
+  }
+  
+  // Validate page if validation is enabled
+  if (_validationEnabled) {
+    validationResult result = validatePage(state);
+    if (result != VALID) {
+      if (_debugModeVerbose) {
+        Serial.printf("ERROR: Invalid page - %s (code %d) at %s:%d\n", 
+                     getErrorDescription(result), static_cast<int>(result), 
+                     __FUNCTION__, __LINE__);
+      }
+      
+      // Populate error context
+      errorContext = pageErrorContext(result, state, 
+                                    _stateCount, _addStateCallSequence, location);
+      _lastPageErrorContext = errorContext;
+      _stats.validationErrors++;
+      return result;
+    }
+  }
+  
+  // Check for duplicate pages
+  for (size_t i = 0; i < _stateCount; i++) {
+    if (_states[i].id == state.id) {
+      if (_debugModeVerbose) {
+        Serial.printf("ERROR: Duplicate page ID %d\n", state.id);
+      }
+      
+      // Populate error context with conflict details
+      errorContext = pageErrorContext(DUPLICATE_PAGE, state, 
+                                    _stateCount, _addStateCallSequence, location,
+                                    _states[i], i);
+      _lastPageErrorContext = errorContext;
+      return DUPLICATE_PAGE;
+    }
+  }
+  
+  _states[_stateCount] = state;
+  _stateCount++;
+  return VALID;
+}
+
+// Page error printing methods
+void improvedStateMachine::printLastPageErrorDetails() const {
+  if (!hasLastPageError()) {
+    Serial.println("No page error to report");
+    return;
+  }
+  
+  Serial.println("=== LAST PAGE ERROR DETAILS ===");
+  printPageError(_lastPageErrorContext);
+}
+
+void improvedStateMachine::printPageError(const pageDefinition& page) const {
+  Serial.println("=== PAGE ERROR ===");
+  Serial.printf("Page ID: %d\n", page.id);
+  Serial.printf("Page Name: %s\n", page.name);
+  Serial.printf("Display Name: %s\n", page.displayName);
+  Serial.printf("Menu Template: %d\n", static_cast<int>(page.menu.templateType));
+  Serial.println("==================");
+}
+
+void improvedStateMachine::printPageError(const pageErrorContext& error) const {
+  Serial.printf("Error Code: %d (%s)\n", static_cast<int>(error.errorCode), 
+                getErrorDescription(error.errorCode));
+  
+  if (error.errorLocation) {
+    Serial.printf("Location: %s\n", error.errorLocation);
+  }
+  
+  Serial.printf("Call Sequence: %d\n", error.callSequence);
+  Serial.printf("Page Index: %d\n", error.pageIndex);
+  
+  Serial.println("Failed Page Details:");
+  Serial.printf("  ID: %d\n", error.failedPage.id);
+  Serial.printf("  Name: %s\n", error.failedPage.name);
+  Serial.printf("  Display Name: %s\n", error.failedPage.displayName);
+  Serial.printf("  Menu Template: %d\n", static_cast<int>(error.failedPage.menu.templateType));
+  
+  // For duplicate pages, show the conflicting page details
+  if (error.errorCode == DUPLICATE_PAGE && error.conflictingPageIndex > 0) {
+    Serial.println("\nConflicts with existing page (index " + String(error.conflictingPageIndex) + "):");
+    Serial.printf("  ID: %d\n", error.conflictingPage.id);
+    Serial.printf("  Name: %s\n", error.conflictingPage.name);
+    Serial.printf("  Display Name: %s\n", error.conflictingPage.displayName);
+    Serial.printf("  Menu Template: %d\n", static_cast<int>(error.conflictingPage.menu.templateType));
+  }
+  
+  if (error.timestamp > 0) {
+    Serial.printf("Timestamp: %d\n", error.timestamp);
+  }
+  
+  Serial.println("=====================================");
+}
+
+void improvedStateMachine::printDuplicatePageError(const pageDefinition& newPage, 
+                                                 const pageDefinition& existingPage, 
+                                                 size_t existingIndex) const {
+  Serial.println("=== DUPLICATE PAGE ERROR ===");
+  Serial.println("New page (rejected):");
+  Serial.printf("  ID: %d\n", newPage.id);
+  Serial.printf("  Name: %s\n", newPage.name);
+  Serial.printf("  Display Name: %s\n", newPage.displayName);
+  Serial.printf("  Menu Template: %d\n", static_cast<int>(newPage.menu.templateType));
+  
+  Serial.println("\nConflicts with existing page (index " + String(existingIndex) + "):");
+  Serial.printf("  ID: %d\n", existingPage.id);
+  Serial.printf("  Name: %s\n", existingPage.name);
+  Serial.printf("  Display Name: %s\n", existingPage.displayName);
+  Serial.printf("  Menu Template: %d\n", static_cast<int>(existingPage.menu.templateType));
+  
+  Serial.println("\nConflict Analysis:");
+  Serial.printf("  - Both pages have the same ID (%d)\n", newPage.id);
+  Serial.println("  - Page IDs must be unique");
+  
+  Serial.println("=== END DUPLICATE PAGE ERROR ===");
 }

@@ -17,7 +17,7 @@ void test_001_basic_instantiation() {
     ENHANCED_UNITY_INIT();
     TEST_ASSERT_NOT_NULL_DEBUG(sm);
     TEST_ASSERT_EQUAL_UINT8_DEBUG(0, sm->getPage());
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_002_initial_state_setting() {
@@ -26,7 +26,7 @@ void test_002_initial_state_setting() {
     TEST_ASSERT_EQUAL_UINT8_DEBUG(1, sm->getPage());
     sm->initializeState(42);
     TEST_ASSERT_EQUAL_UINT8_DEBUG(42, sm->getPage());
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_003_simple_transitions() {
@@ -35,7 +35,7 @@ void test_003_simple_transitions() {
     sm->addTransition(stateTransition(1,0,5,2,0,nullptr));
     sm->processEvent(5);
     TEST_ASSERT_EQUAL_UINT8_DEBUG(2, sm->getPage());
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_004_multiple_transitions() {
@@ -50,7 +50,7 @@ void test_004_multiple_transitions() {
     TEST_ASSERT_EQUAL_UINT8_DEBUG(3, sm->getPage());
     sm->processEvent(3);
     TEST_ASSERT_EQUAL_UINT8_DEBUG(1, sm->getPage());
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_005_wildcard_transitions() {
@@ -65,7 +65,7 @@ void test_005_wildcard_transitions() {
     sm->setState(42);
     sm->processEvent(DONT_CARE_EVENT-1);
     TEST_ASSERT_EQUAL_UINT8_DEBUG(DONT_CARE_PAGE-1, sm->getPage());
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_006_boundary_states() {
@@ -79,7 +79,7 @@ void test_006_boundary_states() {
     sm->processEvent(1);
     TEST_ASSERT_EQUAL_UINT8_DEBUG(0, sm->getPage());
     sm->setDebugMode(false);
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_007_invalid_events() {
@@ -90,7 +90,7 @@ void test_007_invalid_events() {
     TEST_ASSERT_EQUAL_UINT8_DEBUG(1, sm->getPage());
     sm->processEvent(5);
     TEST_ASSERT_EQUAL_UINT8_DEBUG(2, sm->getPage());
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_008_state_definitions() {
@@ -101,7 +101,7 @@ void test_008_state_definitions() {
     sm->addState(state1);
     sm->addState(state2);
     TEST_ASSERT_EQUAL_UINT8_DEBUG(1, sm->getPage());
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_009_scoreboard_operations() {
@@ -115,7 +115,7 @@ void test_009_scoreboard_operations() {
     TEST_ASSERT_EQUAL_UINT32_DEBUG(200, sm->getScoreboard(1));
     TEST_ASSERT_EQUAL_UINT32_DEBUG(300, sm->getScoreboard(2));
     TEST_ASSERT_EQUAL_UINT32_DEBUG(400, sm->getScoreboard(3));
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_010_statistics_tracking() {
@@ -128,7 +128,7 @@ void test_010_statistics_tracking() {
     sm->processEvent(1);
     stateMachineStats after = sm->getStatistics();
     TEST_ASSERT_TRUE_DEBUG(after.totalTransitions > before.totalTransitions);
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_011_random_stress() {
@@ -143,7 +143,7 @@ void test_011_random_stress() {
         uint8_t afterState = sm->getPage();
         TEST_ASSERT_TRUE_DEBUG(afterState == 1 || afterState == 2);
     }
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_012_circular_states() {
@@ -163,7 +163,7 @@ void test_012_circular_states() {
         sm->processEvent(1);
         TEST_ASSERT_EQUAL_UINT8_DEBUG(1, sm->getPage());
     }
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_013_performance_validation() {
@@ -178,7 +178,7 @@ void test_013_performance_validation() {
     }
     uint32_t elapsed = micros() - startTime;
     TEST_ASSERT_TRUE_DEBUG(elapsed < 10000);
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_014_memory_safety() {
@@ -191,7 +191,7 @@ void test_014_memory_safety() {
         sm->processEvent(1);
         TEST_ASSERT_TRUE_DEBUG(sm->getPage() < 10);
     }
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_015_comprehensive_integration() {
@@ -209,7 +209,7 @@ void test_015_comprehensive_integration() {
     TEST_ASSERT_EQUAL_UINT8_DEBUG(3, sm->getPage());
     sm->processEvent(3);
     TEST_ASSERT_EQUAL_UINT8_DEBUG(1, sm->getPage());
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 inline void register_working_comprehensive_tests() {

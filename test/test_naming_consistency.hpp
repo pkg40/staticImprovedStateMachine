@@ -50,7 +50,7 @@ void test_naming_consistency_basic() {
 
     delete sm;
     testStats.passedTests++;
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_naming_consistency_advanced() {
@@ -73,7 +73,7 @@ void test_naming_consistency_advanced() {
 
     delete sm;
     testStats.passedTests++;
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_naming_consistency_safety_classes() {
@@ -92,7 +92,7 @@ void test_naming_consistency_safety_classes() {
 
     delete sm;
     testStats.passedTests++;
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 // Test runner integration

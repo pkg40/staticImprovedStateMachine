@@ -17,7 +17,7 @@ void test_051_statistics_tracking() {
     stateMachineStats afterStats = sm->getStatistics();
     TEST_ASSERT_EQUAL_UINT32_DEBUG(initialStats.totalTransitions + 1, afterStats.totalTransitions);
     TEST_ASSERT_EQUAL_UINT32_DEBUG(initialStats.stateChanges + 1, afterStats.stateChanges);
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_052_failed_transition_statistics() {
@@ -28,7 +28,7 @@ void test_052_failed_transition_statistics() {
     sm->processEvent(99);
     stateMachineStats afterStats = sm->getStatistics();
     TEST_ASSERT_EQUAL_UINT32_DEBUG(initialStats.failedTransitions + 1, afterStats.failedTransitions);
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_053_action_execution_stats() {
@@ -40,7 +40,7 @@ void test_053_action_execution_stats() {
     sm->processEvent(1);
     stateMachineStats after = sm->getStatistics();
     TEST_ASSERT_GREATER_THAN_DEBUG(before.actionExecutions - 1, after.actionExecutions);
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_054_statistics_accumulation() {
@@ -59,7 +59,7 @@ void test_054_statistics_accumulation() {
     stateMachineStats final = sm->getStatistics();
     TEST_ASSERT_EQUAL_UINT32_DEBUG(initial.totalTransitions + 10, final.totalTransitions);
     TEST_ASSERT_EQUAL_UINT32_DEBUG(initial.stateChanges + 10, final.stateChanges);
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_055_scoreboard_functionality() {
@@ -69,7 +69,7 @@ void test_055_scoreboard_functionality() {
     sm->setScoreboard(200, 2);
     TEST_ASSERT_EQUAL_UINT32_DEBUG(100, sm->getScoreboard(1));
     TEST_ASSERT_EQUAL_UINT32_DEBUG(200, sm->getScoreboard(2));
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_056_scoreboard_updates() {
@@ -80,7 +80,7 @@ void test_056_scoreboard_updates() {
     sm->processEvent(1);
     uint32_t afterScore = sm->getScoreboard(0);
     TEST_ASSERT_GREATER_THAN_DEBUG(initialScore, afterScore);
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_057_scoreboard_boundaries() {
@@ -89,7 +89,7 @@ void test_057_scoreboard_boundaries() {
     sm->setScoreboard(0, 1);
     TEST_ASSERT_EQUAL_UINT32_DEBUG(0xFFFFFFFF, sm->getScoreboard(0));
     TEST_ASSERT_EQUAL_UINT32_DEBUG(0, sm->getScoreboard(1));
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_058_multi_state_scoreboard() {
@@ -101,7 +101,7 @@ void test_058_multi_state_scoreboard() {
     for (uint8_t i = 0; i < STATEMACHINE_SCOREBOARD_NUM_SEGMENTS; i++) {
         TEST_ASSERT_EQUAL_UINT32_DEBUG(i * 10, sm->getScoreboard(i));
     }
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_059_scoreboard_overflow_protection() {
@@ -112,7 +112,7 @@ void test_059_scoreboard_overflow_protection() {
     sm->processEvent(1);
     uint32_t score = sm->getScoreboard(0);
     TEST_ASSERT_GREATER_THAN_DEBUG(0xFFFFFFFD, score);
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_060_performance_timing() {
@@ -130,7 +130,7 @@ void test_060_performance_timing() {
     }
     uint32_t elapsed = micros() - start;
     TEST_ASSERT_TRUE_DEBUG(elapsed < 100000);
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_061_statistics_consistency() {
@@ -148,7 +148,7 @@ void test_061_statistics_consistency() {
     stateMachineStats stats = sm->getStatistics();
     TEST_ASSERT_TRUE_DEBUG(stats.stateChanges <= stats.totalTransitions);
     TEST_ASSERT_TRUE_DEBUG(stats.actionExecutions <= stats.totalTransitions);
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_062_scoreboard_state_correlation() {
@@ -169,7 +169,7 @@ void test_062_scoreboard_state_correlation() {
     TEST_ASSERT_TRUE_DEBUG(score1_after > score1_before);
     TEST_ASSERT_TRUE_DEBUG(score2_after > score2_before);
     TEST_ASSERT_TRUE_DEBUG(score3_after > score3_before);
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_063_statistics_error_tracking() {
@@ -185,7 +185,7 @@ void test_063_statistics_error_tracking() {
     TEST_ASSERT_EQUAL_UINT32_DEBUG(before.totalTransitions + 4, after.totalTransitions);
     TEST_ASSERT_EQUAL_UINT32_DEBUG(before.stateChanges + 1, after.stateChanges);
     TEST_ASSERT_EQUAL_UINT32_DEBUG(before.failedTransitions + 3, after.failedTransitions);
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_064_scoreboard_persistence() {
@@ -242,7 +242,7 @@ void test_064_scoreboard_persistence() {
     TEST_ASSERT_EQUAL_UINT32_DEBUG(0, score2);
     TEST_ASSERT_EQUAL_UINT32_DEBUG(0, score3);
     sm->setDebugMode(false);
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_065_performance_stress() {
@@ -262,7 +262,7 @@ void test_065_performance_stress() {
     TEST_ASSERT_TRUE_DEBUG(elapsed < 500);
     stateMachineStats stats = sm->getStatistics();
     TEST_ASSERT_TRUE_DEBUG(stats.totalTransitions >= 1000);
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_066_scoreboard_concurrent_updates() {
@@ -281,7 +281,7 @@ void test_066_scoreboard_concurrent_updates() {
     }
     uint32_t finalScore = sm->getScoreboard(0);
     TEST_ASSERT_TRUE_DEBUG(finalScore >= 2); // Bit 1 should be set (value 2)
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_067_statistics_boundary_values() {
@@ -298,7 +298,7 @@ void test_067_statistics_boundary_values() {
     TEST_ASSERT_EQUAL_UINT32_DEBUG(3, stats.totalTransitions);
     TEST_ASSERT_EQUAL_UINT32_DEBUG(3, stats.stateChanges);
     sm->setDebugMode(false);
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_068_scoreboard_array_bounds() {
@@ -309,7 +309,7 @@ void test_068_scoreboard_array_bounds() {
     }
     uint32_t score = sm->getScoreboard(10);
     TEST_ASSERT_TRUE_DEBUG(score == 0);
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_069_statistics_timing_accuracy() {
@@ -323,7 +323,7 @@ void test_069_statistics_timing_accuracy() {
     stateMachineStats after = sm->getStatistics();
     TEST_ASSERT_TRUE_DEBUG(after.totalTransitions == before.totalTransitions + 1);
     TEST_ASSERT_TRUE_DEBUG(elapsed < 10000);
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_070_scoreboard_incremental_updates() {
@@ -337,7 +337,7 @@ void test_070_scoreboard_incremental_updates() {
     }
     uint32_t finalScore = sm->getScoreboard(0);
     TEST_ASSERT_TRUE_DEBUG(finalScore > initialScore);
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_071_statistics_overflow_protection() {
@@ -356,7 +356,7 @@ void test_071_statistics_overflow_protection() {
     TEST_ASSERT_TRUE_DEBUG(stats.totalTransitions >= 10000);
     TEST_ASSERT_TRUE_DEBUG(stats.stateChanges >= 10000);
     TEST_ASSERT_TRUE_DEBUG(stats.totalTransitions < 0xFFFFFFFF);
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_072_scoreboard_reset_behavior() {
@@ -370,7 +370,7 @@ void test_072_scoreboard_reset_behavior() {
     sm->setScoreboard(0, 2);
     TEST_ASSERT_EQUAL_UINT32_DEBUG(0, sm->getScoreboard(1));
     TEST_ASSERT_EQUAL_UINT32_DEBUG(0, sm->getScoreboard(2));
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_073_comprehensive_statistics_validation() {
@@ -436,7 +436,7 @@ void test_073_comprehensive_statistics_validation() {
     TEST_ASSERT_EQUAL_UINT32_DEBUG(initial.actionExecutions + 8, final.actionExecutions);
     
     sm->setDebugMode(false);
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_074_scoreboard_multi_instance() {
@@ -447,7 +447,7 @@ void test_074_scoreboard_multi_instance() {
     TEST_ASSERT_EQUAL_UINT32_DEBUG(100, sm->getScoreboard(1));
     TEST_ASSERT_EQUAL_UINT32_DEBUG(200, sm2->getScoreboard(1));
     delete sm2;
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_075_statistics_and_scoreboard_integration() {
@@ -477,7 +477,7 @@ void test_075_statistics_and_scoreboard_integration() {
     TEST_ASSERT_EQUAL_UINT32_DEBUG(0x1001, score1_after);
     TEST_ASSERT_EQUAL_UINT32_DEBUG(0x2001, score2_after);
     sm->setDebugMode(false);
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 inline void register_statistics_scoreboard_tests() {

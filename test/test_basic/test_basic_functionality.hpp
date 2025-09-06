@@ -30,14 +30,14 @@ void test_001_basic_instantiation() {
     ENHANCED_UNITY_INIT();
     TEST_ASSERT_NOT_NULL_DEBUG(sm);
     TEST_ASSERT_EQUAL_UINT8_DEBUG(0, sm->getCurrentPage());
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_002_initial_page_setting() {
     ENHANCED_UNITY_INIT();
     sm->initializeState(5);
     TEST_ASSERT_EQUAL_UINT8_DEBUG(5, sm->getCurrentPage());
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_003_multiple_page_settings() {
@@ -46,21 +46,21 @@ void test_003_multiple_page_settings() {
         sm->initializeState(i);
         TEST_ASSERT_EQUAL_UINT8_DEBUG(i, sm->getCurrentPage());
     }
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_004_page_boundary_zero() {
     ENHANCED_UNITY_INIT();
     sm->initializeState(0);
     TEST_ASSERT_EQUAL_UINT8_DEBUG(0, sm->getCurrentPage());
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_005_page_boundary_max() {
     ENHANCED_UNITY_INIT();
     sm->initializeState(DONT_CARE_PAGE);
     TEST_ASSERT_EQUAL_UINT8_DEBUG(DONT_CARE_PAGE, sm->getCurrentPage());
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_006_basic_transition() {
@@ -74,7 +74,7 @@ void test_006_basic_transition() {
     uint8_t newPage = sm->getCurrentPage();
     TEST_ASSERT_EQUAL_UINT8_DEBUG(2, newPage);
     TEST_ASSERT_TRUE_DEBUG(oldPage != newPage);
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_007_no_matching_transition() {
@@ -85,7 +85,7 @@ void test_007_no_matching_transition() {
     TEST_ASSERT_EQUAL_UINT8_DEBUG(static_cast<uint8_t>(validationResult::VALID), static_cast<uint8_t>(result));
     sm->processEvent(2); // No matching event
     TEST_ASSERT_EQUAL_UINT8_DEBUG(1, sm->getCurrentPage());
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_008_circular_transitions() {
@@ -103,7 +103,7 @@ void test_008_circular_transitions() {
 
     sm->processEvent(3); // 3->1
     TEST_ASSERT_EQUAL_UINT8_DEBUG(1, sm->getCurrentPage());
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_009_self_transitions() {
@@ -113,7 +113,7 @@ void test_009_self_transitions() {
 
     sm->processEvent(1);
     TEST_ASSERT_EQUAL_UINT8_DEBUG(5, sm->getCurrentPage());
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_010_multiple_events_same_state() {
@@ -125,7 +125,7 @@ void test_010_multiple_events_same_state() {
 
     sm->processEvent(2); // Should go to page 3
     TEST_ASSERT_EQUAL_UINT8_DEBUG(3, sm->getCurrentPage());
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_011_overlapping_transitions() {
@@ -136,7 +136,7 @@ void test_011_overlapping_transitions() {
 
     sm->processEvent(1);
     TEST_ASSERT_EQUAL_UINT8_DEBUG(2, sm->getCurrentPage()); // First transition wins
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_012_event_boundary_zero() {
@@ -146,7 +146,7 @@ void test_012_event_boundary_zero() {
 
     sm->processEvent(0);
     TEST_ASSERT_EQUAL_UINT8_DEBUG(2, sm->getCurrentPage());
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_013_event_boundary_max() {
@@ -156,7 +156,7 @@ void test_013_event_boundary_max() {
 
     sm->processEvent(DONT_CARE_EVENT); // DONT_CARE_EVENT is DONT_CARE, invalid as input event
     TEST_ASSERT_EQUAL_UINT8_DEBUG(1, sm->getCurrentPage()); // Should remain on original page
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_013a_event_boundary_valid() {
@@ -166,7 +166,7 @@ void test_013a_event_boundary_valid() {
 
     sm->processEvent(DONT_CARE_EVENT-1); // Valid event
     TEST_ASSERT_EQUAL_UINT8_DEBUG(2, sm->getCurrentPage()); // Should transition to page 2
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_014_wildcard_transitions() {
@@ -176,7 +176,7 @@ void test_014_wildcard_transitions() {
 
     sm->processEvent(BASIC_TEST_EVENT_A);
     TEST_ASSERT_EQUAL_UINT8_DEBUG(BASIC_TEST_STATE_B, sm->getCurrentPage());
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_015_dont_care_event() {
@@ -186,7 +186,7 @@ void test_015_dont_care_event() {
 
     sm->processEvent(DONT_CARE_EVENT-1); // Any event should work
     TEST_ASSERT_EQUAL_UINT8_DEBUG(5, sm->getCurrentPage());
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_016_transition_priority() {
@@ -202,7 +202,7 @@ void test_016_transition_priority() {
     // Only the wildcard transition should exist, so event 3 goes to page 5
     sm->processEvent(3);
     TEST_ASSERT_EQUAL_UINT8_DEBUG(5, sm->getCurrentPage());
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_017_complex_state_graph() {
@@ -227,7 +227,7 @@ void test_017_complex_state_graph() {
 
     sm->processEvent(1); // 4->1
     TEST_ASSERT_EQUAL_UINT8_DEBUG(1, sm->getCurrentPage());
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_018_deep_state_chain() {
@@ -244,7 +244,7 @@ void test_018_deep_state_chain() {
     }
 
     TEST_ASSERT_EQUAL_UINT8_DEBUG(6, sm->getCurrentPage());
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_019_event_filtering() {
@@ -262,7 +262,7 @@ void test_019_event_filtering() {
     // Try matching event
     sm->processEvent(BASIC_TEST_EVENT_A);
     TEST_ASSERT_EQUAL_UINT8_DEBUG(2, sm->getCurrentPage());
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_020_state_machine_reset() {
@@ -275,7 +275,7 @@ void test_020_state_machine_reset() {
     // Reset to initial state
     sm->initializeState(BASIC_TEST_STATE_A);
     TEST_ASSERT_EQUAL_UINT8_DEBUG(BASIC_TEST_STATE_A, sm->getCurrentPage());
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_021_multi_path_navigation() {
@@ -290,7 +290,7 @@ void test_021_multi_path_navigation() {
     // Test each path
     sm->processEvent(2); // Should go to page 3
     TEST_ASSERT_EQUAL_UINT8_DEBUG(3, sm->getCurrentPage());
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_022_rapid_transitions() {
@@ -310,7 +310,7 @@ void test_022_rapid_transitions() {
             TEST_ASSERT_EQUAL_UINT8_DEBUG(1, sm->getCurrentPage());
         }
     }
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_023_maximum_transitions() {
@@ -323,7 +323,7 @@ void test_023_maximum_transitions() {
         validationResult result = sm->addTransition(t);
         TEST_ASSERT_EQUAL_UINT8_DEBUG(static_cast<uint8_t>(validationResult::VALID), static_cast<uint8_t>(result));
     }
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_024_concurrent_event_processing() {
@@ -343,7 +343,7 @@ void test_024_concurrent_event_processing() {
 
     // Should end up back at page 1
     TEST_ASSERT_EQUAL_UINT8_DEBUG(1, sm->getCurrentPage());
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_025_edge_case_transitions() {
@@ -364,7 +364,7 @@ void test_025_edge_case_transitions() {
     TEST_ASSERT_EQUAL_UINT8_DEBUG(DONT_CARE_PAGE-1, sm->getCurrentPage());
 
     sm->setDebugMode(false);
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 // Expose registration function for shared runner

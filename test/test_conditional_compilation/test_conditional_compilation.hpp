@@ -31,5 +31,5 @@ void test_conditional_compilation_flags(void) {
     #else
     TEST_FAIL_MESSAGE_DEBUG("SAFETY_CRITICAL_BUILD should be defined");
     #endif
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }

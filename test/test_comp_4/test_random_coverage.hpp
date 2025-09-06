@@ -60,7 +60,7 @@ void test_076_random_state_transitions() {
         // State should be valid
         TEST_ASSERT_TRUE_DEBUG(afterState >= 1 && afterState <= numStates + 1);
     }
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_077_random_event_sequences() {
@@ -86,7 +86,7 @@ void test_077_random_event_sequences() {
             TEST_ASSERT_TRUE_DEBUG(state >= 1 && state <= 3);
         }
     }
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_078_random_scoreboard_operations() {
@@ -103,7 +103,7 @@ void test_078_random_scoreboard_operations() {
         
         TEST_ASSERT_EQUAL_UINT32_DEBUG(score, retrieved);
     }
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_079_random_state_definitions() {

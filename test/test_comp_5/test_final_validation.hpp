@@ -49,7 +49,7 @@ void test_096_circular_dependency_detection() {
         sm->processEvent(1);
         TEST_ASSERT_EQUAL_UINT8_DEBUG(expectedState, sm->getCurrentPage());
     }
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_097_self_referencing_states() {
@@ -69,7 +69,7 @@ void test_097_self_referencing_states() {
     // Test exit from self-reference
     sm->processEvent(FINAL_TEST_SELF_REF_EVENT_B);
     TEST_ASSERT_EQUAL_UINT8_DEBUG(FINAL_TEST_SELF_REF_STATE_B, sm->getCurrentPage());
-    ENHANCED_UNITY_REPORT();
+    ENHANCED_UNITY_FINAL_REPORT();
 }
 
 void test_098_massive_state_space() {

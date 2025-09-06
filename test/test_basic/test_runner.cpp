@@ -31,9 +31,16 @@ void setup() {
     delete sm;
     sm = new improvedStateMachine();
 
+#ifdef USE_BASELINE_UNITY
     UNITY_BEGIN();
     register_basic_tests();
     UNITY_END();
+#else
+    ENHANCED_UNITY_START_TEST_FILE("test_basic.hpp");
+    register_basic_tests();
+    ENHANCED_UNITY_FINAL_SUMMARY();
+    ENHANCED_UNITY_END_TEST_FILE();
+#endif
 }
 
 void loop() {

@@ -33,7 +33,7 @@ unsigned long micros();
 #endif
 
 #ifndef STATEMACHINE_MAX_EVENTS
-    #define STATEMACHINE_MAX_EVENTS 32
+    #define STATEMACHINE_MAX_EVENTS 31
     #define DONT_CARE_EVENT STATEMACHINE_MAX_EVENTS
 #endif
 
@@ -95,6 +95,9 @@ enum validationResult {
     INVALID_TRANSITION,
     DUPLICATE_TRANSITION,
     DUPLICATE_PAGE,
+    INVALID_PAGE_NAME,
+    INVALID_PAGE_DISPLAY_NAME,
+    INVALID_MENU_TEMPLATE,
     UNREACHABLE_PAGE,
     DANGLING_PAGE,
     CIRCULAR_DEPENDENCY,
@@ -286,6 +289,38 @@ struct pageDefinition {
 // Alias for backward compatibility
 using stateDefinition = pageDefinition;
 
+// Enhanced error context for page definition errors
+struct pageErrorContext {
+    validationResult errorCode;
+    pageDefinition failedPage;
+    size_t pageIndex;              // Index in the pages array
+    size_t callSequence;           // Sequence number of the addState call
+    const char* errorLocation;     // Optional string describing where the error occurred
+    uint32_t timestamp;            // Timestamp when error occurred
+    
+    // For duplicate page errors, store the conflicting page details
+    pageDefinition conflictingPage;
+    size_t conflictingPageIndex;
+    
+    pageErrorContext() : errorCode(VALID), pageIndex(0), callSequence(0), 
+                               errorLocation(nullptr), timestamp(0), 
+                               conflictingPageIndex(0) {}
+    
+    pageErrorContext(validationResult code, const pageDefinition& page, 
+                           size_t index, size_t sequence, const char* location = nullptr)
+        : errorCode(code), failedPage(page), pageIndex(index), 
+          callSequence(sequence), errorLocation(location), timestamp(0),
+          conflictingPageIndex(0) {}
+    
+    // Constructor for duplicate page errors with conflicting page details
+    pageErrorContext(validationResult code, const pageDefinition& page, 
+                           size_t index, size_t sequence, const char* location,
+                           const pageDefinition& conflicting, size_t conflictingIndex)
+        : errorCode(code), failedPage(page), pageIndex(index), 
+          callSequence(sequence), errorLocation(location), timestamp(0),
+          conflictingPage(conflicting), conflictingPageIndex(conflictingIndex) {}
+};
+
 // Current state structure
 struct currentState {
     pageID page;
@@ -311,15 +346,15 @@ private:
     currentState _lastState;
     uint32_t _stateScoreboard[STATEMACHINE_SCOREBOARD_NUM_SEGMENTS];
     bool _debugModeVerbose = false;
-    bool _debugModeShowPass = true;
-    bool _debugModeAltUnity = false;
     bool _validationEnabled = false;
     uint8_t _recursionDepth;
     stateMachineStats _stats;
     
     // Enhanced error reporting
     size_t _addTransitionCallSequence;
+    size_t _addStateCallSequence;
     transitionErrorContext _lastErrorContext;
+    pageErrorContext _lastPageErrorContext;
     
     // Helper methods
     bool matchesTransition(const stateTransition& trans, const currentState& state, eventID event) const;
@@ -392,9 +427,9 @@ public:
     const pageDefinition* getState(pageID id) const;
 
     // Debug and utilities
-    void setDebugMode(bool value, debugFlag_t flag = debugFlag_t::VERBOSE);
+    void setDebugMode(bool value);
 
-    bool getDebugMode(debugFlag_t flag = debugFlag_t::VERBOSE) const ;
+    bool getDebugMode() const ;
 
     void dumpStateTable() const;
     void printCurrentState() const;
@@ -426,16 +461,37 @@ public:
                                                         size_t& conflictingIndex, 
                                                         bool verbose = false) const;
     
+    // Enhanced page validation methods
+    validationResult validatePage(const pageDefinition& page, bool verbose = false) const;
+    validationResult validatePageWithConflictDetails(const pageDefinition& page,
+                                                  pageDefinition& conflictingPage, 
+                                                  size_t& conflictingIndex, 
+                                                  bool verbose = false) const;
+    
     // Enhanced error reporting methods
     validationResult addTransition(const stateTransition& transition, const char* location);
     validationResult addTransition(const stateTransition& transition, const char* location, transitionErrorContext& errorContext);
+    validationResult addState(const pageDefinition& state, const char* location);
+    validationResult addState(const pageDefinition& state, const char* location, pageErrorContext& errorContext);
+    
+    // Error context access
     const transitionErrorContext& getLastErrorContext() const { return _lastErrorContext; }
+    const pageErrorContext& getLastPageErrorContext() const { return _lastPageErrorContext; }
     bool hasLastError() const { return _lastErrorContext.errorCode != VALID; }
+    bool hasLastPageError() const { return _lastPageErrorContext.errorCode != VALID; }
     void clearLastError() { _lastErrorContext = transitionErrorContext(); }
+    void clearLastPageError() { _lastPageErrorContext = pageErrorContext(); }
+    
+    // Error description and printing
     const char* getErrorDescription(validationResult errorCode) const;
     void printLastErrorDetails() const;
+    void printLastPageErrorDetails() const;
     void printTransitionError(const stateTransition& trans) const;
     void printTransitionError(const transitionErrorContext& error) const;
+    void printPageError(const pageDefinition& page) const;
+    void printPageError(const pageErrorContext& error) const;
     void printDuplicateTransitionError(const stateTransition& newTrans, const stateTransition& existingTrans, 
                                      size_t existingIndex) const;
+    void printDuplicatePageError(const pageDefinition& newPage, const pageDefinition& existingPage, 
+                                size_t existingIndex) const;
 };
