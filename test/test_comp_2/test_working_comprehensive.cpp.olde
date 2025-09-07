@@ -303,21 +303,21 @@ void setup() {
     Serial.println("Running 15 comprehensive tests with proper API...");
 #endif
     
-    RUN_TEST(test_001_basic_instantiation);
-    RUN_TEST(test_002_initial_state_setting);
-    RUN_TEST(test_003_simple_transitions);
-    RUN_TEST(test_004_multiple_transitions);
-    RUN_TEST(test_005_wildcard_transitions);
-    RUN_TEST(test_006_boundary_states);
-    RUN_TEST(test_007_invalid_events);
-    RUN_TEST(test_008_state_definitions);
-    RUN_TEST(test_009_scoreboard_operations);
-    RUN_TEST(test_010_statistics_tracking);
-    RUN_TEST(test_011_random_stress);
-    RUN_TEST(test_012_circular_states);
-    RUN_TEST(test_013_performance_validation);
-    RUN_TEST(test_014_memory_safety);
-    RUN_TEST(test_015_comprehensive_integration);
+    RUN_TEST_DEBUG(test_001_basic_instantiation);
+    RUN_TEST_DEBUG(test_002_initial_state_setting);
+    RUN_TEST_DEBUG(test_003_simple_transitions);
+    RUN_TEST_DEBUG(test_004_multiple_transitions);
+    RUN_TEST_DEBUG(test_005_wildcard_transitions);
+    RUN_TEST_DEBUG(test_006_boundary_states);
+    RUN_TEST_DEBUG(test_007_invalid_events);
+    RUN_TEST_DEBUG(test_008_state_definitions);
+    RUN_TEST_DEBUG(test_009_scoreboard_operations);
+    RUN_TEST_DEBUG(test_010_statistics_tracking);
+    RUN_TEST_DEBUG(test_011_random_stress);
+    RUN_TEST_DEBUG(test_012_circular_states);
+    RUN_TEST_DEBUG(test_013_performance_validation);
+    RUN_TEST_DEBUG(test_014_memory_safety);
+    RUN_TEST_DEBUG(test_015_comprehensive_integration);
     
 #ifdef ARDUINO
     Serial.println("=== COMPREHENSIVE TESTS COMPLETED ===");

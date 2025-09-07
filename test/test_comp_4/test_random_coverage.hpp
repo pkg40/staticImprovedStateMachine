@@ -34,7 +34,7 @@ extern int _enhancedUnityFailureCount;
 // =============================================================================
 
 void test_076_random_state_transitions() {
-    ENHANCED_UNITY_INIT();
+    ENHANCED_UNITY_START_TEST_METHOD("test_076_random_state_transitions", "test_random_coverage.hpp", __LINE__);
     // Set up a random state machine configuration
     uint8_t numStates = RANDOM_TEST_MIN_STATES + (getRandomNumber() % RANDOM_TEST_STATE_RANGE); // 5-12 states
     uint8_t numEvents = RANDOM_TEST_MIN_EVENTS + (getRandomNumber() % RANDOM_TEST_EVENT_RANGE);  // 3-8 events
@@ -60,11 +60,11 @@ void test_076_random_state_transitions() {
         // State should be valid
         TEST_ASSERT_TRUE_DEBUG(afterState >= 1 && afterState <= numStates + 1);
     }
-    ENHANCED_UNITY_FINAL_REPORT();
+    ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_077_random_event_sequences() {
-    ENHANCED_UNITY_INIT();
+    ENHANCED_UNITY_START_TEST_METHOD("test_077_random_event_sequences", "test_random_coverage.hpp", __LINE__);
     sm->initializeState(1);
     
     // Set up a small predictable state machine
@@ -86,11 +86,11 @@ void test_077_random_event_sequences() {
             TEST_ASSERT_TRUE_DEBUG(state >= 1 && state <= 3);
         }
     }
-    ENHANCED_UNITY_FINAL_REPORT();
+    ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_078_random_scoreboard_operations() {
-    ENHANCED_UNITY_INIT();
+    ENHANCED_UNITY_START_TEST_METHOD("test_078_random_scoreboard_operations", "test_random_coverage.hpp", __LINE__);
     sm->initializeState(1);
     
     // Random scoreboard operations
@@ -103,10 +103,11 @@ void test_078_random_scoreboard_operations() {
         
         TEST_ASSERT_EQUAL_UINT32_DEBUG(score, retrieved);
     }
-    ENHANCED_UNITY_FINAL_REPORT();
+    ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_079_random_state_definitions() {
+    ENHANCED_UNITY_START_TEST_METHOD("test_079_random_state_definitions", "test_random_coverage.hpp", __LINE__);
     // Add random state definitions
     for (int i = 0; i < RANDOM_TEST_SETUP_ITERATIONS; i++) {
         uint8_t stateId = getRandomNumber() % RANDOM_TEST_MAX_STATE_ID;
@@ -114,12 +115,14 @@ void test_079_random_state_definitions() {
         
         validationResult result = sm->addState(state);
         // Should either be valid or duplicate
-        TEST_ASSERT_TRUE(result == validationResult::VALID || 
+        TEST_ASSERT_TRUE_DEBUG(result == validationResult::VALID || 
                         result == validationResult::DUPLICATE_PAGE);
     }
+    ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_080_fuzz_event_processing() {
+    ENHANCED_UNITY_START_TEST_METHOD("test_080_fuzz_event_processing", "test_random_coverage.hpp", __LINE__);
     sm->setDebugMode(false);
     sm->initializeState(1);
     sm->addTransition(stateTransition(1,0,DONT_CARE_EVENT,2,0,nullptr));  // Use specific event DONT_CARE_EVENT-1
@@ -135,13 +138,15 @@ void test_080_fuzz_event_processing() {
         
         // State should toggle between 1 and 2
         if (sm->getDebugMode()) printf("Fuzzing event: %d, before: %d, after: %d\n", event, beforePage, afterPage);
-        TEST_ASSERT_TRUE(afterPage == 1 || afterPage == 2);
-        TEST_ASSERT_NOT_EQUAL(beforePage, afterPage);
+        TEST_ASSERT_TRUE_DEBUG(afterPage == 1 || afterPage == 2);
+        TEST_ASSERT_NOT_EQUAL_DEBUG(beforePage, afterPage);
     }
     sm->setDebugMode(false);
+    ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_081_random_boundary_testing() {
+    ENHANCED_UNITY_START_TEST_METHOD("test_081_random_boundary_testing", "test_random_coverage.hpp", __LINE__);
     sm->initializeState(getRandomPage());
     
     // Test random boundary values
@@ -160,11 +165,13 @@ void test_081_random_boundary_testing() {
         sm->processEvent(event);
         
         uint8_t currentState = sm->getCurrentPage();
-        TEST_ASSERT_TRUE(currentState < 255); // Should be valid
+        TEST_ASSERT_TRUE_DEBUG(currentState < 255); // Should be valid
     }
+    ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_082_random_complex_graphs() {
+    ENHANCED_UNITY_START_TEST_METHOD("test_082_random_complex_graphs", "test_random_coverage.hpp", __LINE__);
     sm->initializeState(1);
     
     // Create random complex state graph
@@ -184,11 +191,13 @@ void test_082_random_complex_graphs() {
         sm->processEvent(event);
         uint8_t afterState = sm->getCurrentPage();
         
-        TEST_ASSERT_TRUE(afterState >= 1 && afterState <= numNodes);
+        TEST_ASSERT_TRUE_DEBUG(afterState >= 1 && afterState <= numNodes);
     }
+    ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_083_random_stress_testing() {
+    ENHANCED_UNITY_START_TEST_METHOD("test_083_random_stress_testing", "test_random_coverage.hpp", __LINE__);
     sm->initializeState(1);
     
     // Set up rapid-fire transitions
@@ -217,10 +226,12 @@ void test_083_random_stress_testing() {
     }
     
     uint32_t elapsed = millis() - startTime;
-    TEST_ASSERT_TRUE(elapsed < 1000); // Should complete within 1 second
+    TEST_ASSERT_TRUE_DEBUG(elapsed < 1000); // Should complete within 1 second
+    ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_084_random_validation_scenarios() {
+    ENHANCED_UNITY_START_TEST_METHOD("test_084_random_validation_scenarios", "test_random_coverage.hpp", __LINE__);
     sm->initializeState(1);
     
     // Add random transitions and check validation
@@ -233,12 +244,14 @@ void test_084_random_validation_scenarios() {
         validationResult result = sm->addTransition(t);
         
         // Should be either valid or duplicate
-        TEST_ASSERT_TRUE(result == validationResult::VALID || 
+        TEST_ASSERT_TRUE_DEBUG(result == validationResult::VALID || 
                         result == validationResult::DUPLICATE_TRANSITION);
     }
+    ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_085_random_scoreboard_stress() {
+    ENHANCED_UNITY_START_TEST_METHOD("test_085_random_scoreboard_stress", "test_random_coverage.hpp", __LINE__);
     sm->initializeState(0);
     
     // Random scoreboard stress test
@@ -251,12 +264,14 @@ void test_085_random_scoreboard_stress() {
         // Occasionally read it back
         if (i % 10 == 0) {
             uint32_t retrieved = sm->getScoreboard(stateIndex);
-            TEST_ASSERT_EQUAL_UINT32(score, retrieved);
+            TEST_ASSERT_EQUAL_UINT32_DEBUG(score, retrieved);
         }
     }
+    ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_086_random_mixed_operations() {
+    ENHANCED_UNITY_START_TEST_METHOD("test_086_random_mixed_operations", "test_random_coverage.hpp", __LINE__);
     sm->initializeState(getRandomPage());
     
     // Mixed random operations
@@ -283,11 +298,13 @@ void test_086_random_mixed_operations() {
         
         // Verify state machine is still consistent
         uint8_t currentState = sm->getCurrentPage();
-        TEST_ASSERT_TRUE(currentState < 255);
+        TEST_ASSERT_TRUE_DEBUG(currentState < 255);
     }
+    ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_087_random_edge_cases() {
+    ENHANCED_UNITY_START_TEST_METHOD("test_087_random_edge_cases", "test_random_coverage.hpp", __LINE__);
     // Test random edge cases
     for (int test = 0; test < 10; test++) {
         delete sm;
@@ -307,11 +324,13 @@ void test_087_random_edge_cases() {
         sm->processEvent(getRandomEvent());
         
         uint8_t finalState = sm->getCurrentPage();
-        TEST_ASSERT_TRUE(finalState < 255);
+        TEST_ASSERT_TRUE_DEBUG(finalState < 255);
     }
+    ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_088_random_performance_validation() {
+    ENHANCED_UNITY_START_TEST_METHOD("test_088_random_performance_validation", "test_random_coverage.hpp", __LINE__);
     sm->initializeState(1);
     
     // Build random state machine
@@ -329,10 +348,12 @@ void test_088_random_performance_validation() {
     uint32_t elapsed = micros() - start;
     
     // Should complete within reasonable time
-    TEST_ASSERT_TRUE(elapsed < 50000); // Less than 50ms
+    TEST_ASSERT_TRUE_DEBUG(elapsed < 50000); // Less than 50ms
+    ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_089_random_statistics_validation() {
+    ENHANCED_UNITY_START_TEST_METHOD("test_089_random_statistics_validation", "test_random_coverage.hpp", __LINE__);
     sm->initializeState(1);
     sm->addTransition(stateTransition(1,0,1,2,0,nullptr));
     sm->addTransition(stateTransition(2,0,2,1,0,nullptr));
@@ -353,11 +374,13 @@ void test_089_random_statistics_validation() {
     stateMachineStats after = sm->getStatistics();
     
     // Verify statistics make sense
-    TEST_ASSERT_TRUE(after.totalTransitions >= before.totalTransitions + 50);
-    TEST_ASSERT_TRUE(after.stateChanges >= before.stateChanges);
+    TEST_ASSERT_TRUE_DEBUG(after.totalTransitions >= before.totalTransitions + 50);
+    TEST_ASSERT_TRUE_DEBUG(after.stateChanges >= before.stateChanges);
+    ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_090_random_comprehensive_coverage() {
+    ENHANCED_UNITY_START_TEST_METHOD("test_090_random_comprehensive_coverage", "test_random_coverage.hpp", __LINE__);
     // Comprehensive random test covering all major functionality
     for (int round = 0; round < 5; round++) {
         delete sm;
@@ -393,11 +416,13 @@ void test_090_random_comprehensive_coverage() {
         // Verify statistics are reasonable
         stateMachineStats stats = sm->getStatistics();
         TEST_ASSERT_TRUE(stats.totalTransitions < 100);
-        TEST_ASSERT_TRUE(stats.stateChanges <= stats.totalTransitions);
+        TEST_ASSERT_TRUE_DEBUG(stats.stateChanges <= stats.totalTransitions);
     }
+    ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_091_random_memory_safety() {
+    ENHANCED_UNITY_START_TEST_METHOD("test_091_random_memory_safety", "test_random_coverage.hpp", __LINE__);
     // Test memory safety with random operations
     for (int i = 0; i < 100; i++) {
         delete sm;
@@ -411,11 +436,13 @@ void test_091_random_memory_safety() {
         sm->processEvent(getRandomEvent());
         
         uint8_t state = sm->getCurrentPage();
-        TEST_ASSERT_TRUE(state < 255);
+        TEST_ASSERT_TRUE_DEBUG(state < 255);
     }
+    ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_092_random_concurrency_simulation() {
+    ENHANCED_UNITY_START_TEST_METHOD("test_092_random_concurrency_simulation", "test_random_coverage.hpp", __LINE__);
     sm->initializeState(1);
     
     // Set up transitions for concurrency simulation
@@ -442,11 +469,13 @@ void test_092_random_concurrency_simulation() {
         
         // Verify consistency
         uint8_t state = sm->getCurrentPage();
-        TEST_ASSERT_TRUE(state >= 1 && state <= 3);
+        TEST_ASSERT_TRUE_DEBUG(state >= 1 && state <= 3);
     }
+    ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_093_random_error_injection() {
+    ENHANCED_UNITY_START_TEST_METHOD("test_093_random_error_injection", "test_random_coverage.hpp", __LINE__);
     sm->initializeState(1);
     sm->addTransition(stateTransition(1,0,1,2,0,nullptr));
     
@@ -460,16 +489,18 @@ void test_093_random_error_injection() {
         uint8_t afterState = sm->getCurrentPage();
         
         // Verify state machine remains consistent
-        TEST_ASSERT_TRUE(afterState == 1 || afterState == 2);
+        TEST_ASSERT_TRUE_DEBUG(afterState == 1 || afterState == 2);
         
         // Valid transitions should work
         if (event == 1 && beforeState == 1) {
-            TEST_ASSERT_EQUAL_UINT8(2, afterState);
+            TEST_ASSERT_EQUAL_UINT8_DEBUG(2, afterState);
         }
     }
+    ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_094_random_pattern_detection() {
+    ENHANCED_UNITY_START_TEST_METHOD("test_094_random_pattern_detection", "test_random_coverage.hpp", __LINE__);
     sm->initializeState(1);
     
     // Set up pattern-based transitions
@@ -488,19 +519,21 @@ void test_094_random_pattern_detection() {
             sm->processEvent(1);
             uint8_t after = sm->getCurrentPage();
             
-            TEST_ASSERT_NOT_EQUAL(before, after);
+            TEST_ASSERT_NOT_EQUAL_DEBUG(before, after);
         } else {
             // Should stay in same state
             uint8_t before = sm->getCurrentPage();
             sm->processEvent(pattern);
             uint8_t after = sm->getCurrentPage();
             
-            TEST_ASSERT_EQUAL_UINT8(before, after);
+            TEST_ASSERT_EQUAL_UINT8_DEBUG(before, after);
         }
     }
+    ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_095_random_robustness_verification() {
+    ENHANCED_UNITY_START_TEST_METHOD("test_095_random_robustness_verification", "test_random_coverage.hpp", __LINE__);
     // Final comprehensive robustness test
     for (int iteration = 0; iteration < 3; iteration++) {
         delete sm;
@@ -544,34 +577,35 @@ void test_095_random_robustness_verification() {
         
         // Final validation
         uint8_t finalState = sm->getCurrentPage();
-        TEST_ASSERT_TRUE(finalState < numPages + 10);
+        TEST_ASSERT_TRUE_DEBUG(finalState < numPages + 10);
         
         stateMachineStats stats = sm->getStatistics();
-        TEST_ASSERT_TRUE(stats.totalTransitions < 1000);
+        TEST_ASSERT_TRUE_DEBUG(stats.totalTransitions < 1000);
     }
+    ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 // Unity test registration
 void register_random_coverage_tests() {
-    RUN_TEST(test_076_random_state_transitions);
-    RUN_TEST(test_077_random_event_sequences);
-    RUN_TEST(test_078_random_scoreboard_operations);
-    RUN_TEST(test_079_random_state_definitions);
-    RUN_TEST(test_080_fuzz_event_processing);
-    RUN_TEST(test_081_random_boundary_testing);
-    RUN_TEST(test_082_random_complex_graphs);
-    RUN_TEST(test_083_random_stress_testing);
-    RUN_TEST(test_084_random_validation_scenarios);
-    RUN_TEST(test_085_random_scoreboard_stress);
-    RUN_TEST(test_086_random_mixed_operations);
-    RUN_TEST(test_087_random_edge_cases);
-    RUN_TEST(test_088_random_performance_validation);
-    RUN_TEST(test_089_random_statistics_validation);
-    RUN_TEST(test_090_random_comprehensive_coverage);
-    RUN_TEST(test_091_random_memory_safety);
-    RUN_TEST(test_092_random_concurrency_simulation);
-    RUN_TEST(test_093_random_error_injection);
-    RUN_TEST(test_094_random_pattern_detection);
-    RUN_TEST(test_095_random_robustness_verification);
+    RUN_TEST_DEBUG(test_076_random_state_transitions);
+    RUN_TEST_DEBUG(test_077_random_event_sequences);
+    RUN_TEST_DEBUG(test_078_random_scoreboard_operations);
+    RUN_TEST_DEBUG(test_079_random_state_definitions);
+    RUN_TEST_DEBUG(test_080_fuzz_event_processing);
+    RUN_TEST_DEBUG(test_081_random_boundary_testing);
+    RUN_TEST_DEBUG(test_082_random_complex_graphs);
+    RUN_TEST_DEBUG(test_083_random_stress_testing);
+    RUN_TEST_DEBUG(test_084_random_validation_scenarios);
+    RUN_TEST_DEBUG(test_085_random_scoreboard_stress);
+    RUN_TEST_DEBUG(test_086_random_mixed_operations);
+    RUN_TEST_DEBUG(test_087_random_edge_cases);
+    RUN_TEST_DEBUG(test_088_random_performance_validation);
+    RUN_TEST_DEBUG(test_089_random_statistics_validation);
+    RUN_TEST_DEBUG(test_090_random_comprehensive_coverage);
+    RUN_TEST_DEBUG(test_091_random_memory_safety);
+    RUN_TEST_DEBUG(test_092_random_concurrency_simulation);
+    RUN_TEST_DEBUG(test_093_random_error_injection);
+    RUN_TEST_DEBUG(test_094_random_pattern_detection);
+    RUN_TEST_DEBUG(test_095_random_robustness_verification);
 }
 #endif

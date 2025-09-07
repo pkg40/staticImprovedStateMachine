@@ -30,7 +30,7 @@ void setup() {
 #endif
 
     UNITY_BEGIN();
-    RUN_TEST(test_conditional_compilation_flags);
+    RUN_TEST_DEBUG(test_conditional_compilation_flags);
     UNITY_END();
 
 #ifdef ARDUINO

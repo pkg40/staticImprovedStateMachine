@@ -147,7 +147,8 @@ void test_button_id_boundary_validation() {
     
     // Test boundary conditions for toButton: DONT_CARE_BUTTON-1, DONT_CARE_BUTTON, DONT_CARE_BUTTON+1
     // Test DONT_CARE_BUTTON-1 (should be valid)
-    stateTransition validToButton1(0, 0, 1, 1, DONT_CARE_BUTTON - 1, nullptr);
+    sm->clearTransitions();
+    stateTransition validToButton1(0, 0, 1, 1, DONT_CARE_BUTTON-1, nullptr);
     validationResult result = sm->addTransition(validToButton1);
     TEST_ASSERT_EQUAL_INT_DEBUG(static_cast<int>(validationResult::VALID), static_cast<int>(result));
     
@@ -220,6 +221,7 @@ void test_event_id_boundary_validation() {
 // Test duplicate transition detection
 void test_duplicate_transition_detection() {
     ENHANCED_UNITY_START_TEST_METHOD("test_duplicate_transition_detection", "test_safety.hpp", __LINE__);
+    sm->clearTransitions();
     
     // Add first transition
     stateTransition trans1(0, 0, 1, 1, 0, nullptr);
@@ -241,6 +243,9 @@ void test_duplicate_transition_detection() {
 
 // Test duplicate page detection
 void test_duplicate_page_detection() {
+    delete sm;
+    sm = new improvedStateMachine();
+    sm->setDebugMode(false);
     ENHANCED_UNITY_START_TEST_METHOD("test_duplicate_page_detection", "test_safety.hpp", __LINE__);
     
     // Add first state
@@ -254,10 +259,14 @@ void test_duplicate_page_detection() {
     TEST_ASSERT_EQUAL_INT_DEBUG(static_cast<int>(validationResult::DUPLICATE_PAGE), static_cast<int>(result));
 
     ENHANCED_UNITY_END_TEST_METHOD();
+    sm->setDebugMode(false);
 }
 
 // Test maximum capacity limits
 void test_maximum_capacity_limits() {
+    delete sm;
+    sm = new improvedStateMachine();
+    sm->setDebugMode(false);
     ENHANCED_UNITY_START_TEST_METHOD("test_maximum_capacity_limits", "test_safety.hpp", __LINE__);
 
     // Test maximum pages limit
@@ -293,10 +302,13 @@ void test_maximum_capacity_limits() {
     TEST_ASSERT_EQUAL_INT_DEBUG(static_cast<int>(validationResult::MAX_TRANSITIONS_EXCEEDED), static_cast<int>(result));
 
     ENHANCED_UNITY_END_TEST_METHOD();
+    sm->setDebugMode(false);
 }
 
 // Test enhanced error context functionality
 void test_enhanced_error_context() {
+    delete sm;
+    sm = new improvedStateMachine();
     ENHANCED_UNITY_START_TEST_METHOD("test_enhanced_error_context", "test_safety.hpp", __LINE__);
     
     // Test error context with location (use invalid toPage)
@@ -411,6 +423,9 @@ void test_statistics_safety_tracking() {
 
 // Test capacity query methods
 void test_capacity_query_methods() {
+    delete sm;
+    sm = new improvedStateMachine();
+    sm->setDebugMode(false);
     ENHANCED_UNITY_START_TEST_METHOD("test_capacity_query_methods", "test_safety.hpp", __LINE__);
     
     // Test capacity queries
@@ -435,10 +450,14 @@ void test_capacity_query_methods() {
     TEST_ASSERT_EQUAL_UINT32_DEBUG(STATEMACHINE_MAX_PAGES, availableStates);
     
     ENHANCED_UNITY_END_TEST_METHOD();
+    sm->setDebugMode(false);
 }
 
 // Test enhanced page validation features
 void test_enhanced_page_validation() {
+    delete sm;
+    sm = new improvedStateMachine();
+    sm->setDebugMode(false);
     ENHANCED_UNITY_START_TEST_METHOD("test_enhanced_page_validation", "test_safety.hpp", __LINE__);
     
     // Test page ID range validation
@@ -473,6 +492,7 @@ void test_enhanced_page_validation() {
     TEST_ASSERT_EQUAL_INT_DEBUG(static_cast<int>(validationResult::INVALID_MENU_TEMPLATE), static_cast<int>(result));
     
     ENHANCED_UNITY_END_TEST_METHOD();
+    sm->setDebugMode(false);
 }
 
 // Test enhanced page error context

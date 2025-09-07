@@ -97,9 +97,9 @@ void test_naming_consistency_safety_classes() {
 
 // Test runner integration
 void register_naming_consistency_tests() {
-    RUN_TEST(test_naming_consistency_basic);
-    RUN_TEST(test_naming_consistency_advanced);
-    RUN_TEST(test_naming_consistency_safety_classes);
+    RUN_TEST_DEBUG(test_naming_consistency_basic);
+    RUN_TEST_DEBUG(test_naming_consistency_advanced);
+    RUN_TEST_DEBUG(test_naming_consistency_safety_classes);
 }
 
 #endif // BUILDING_TEST_RUNNER_BUNDLE

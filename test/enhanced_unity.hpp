@@ -37,6 +37,7 @@
 #define TEST_ASSERT_EQUAL_INT_DEBUG(expected, actual) TEST_ASSERT_EQUAL_INT(expected, actual)
 #define TEST_ASSERT_EQUAL_UINT32_DEBUG(expected, actual) TEST_ASSERT_EQUAL_UINT32(expected, actual)
 #define TEST_ASSERT_EQUAL_UINT8_DEBUG(expected, actual) TEST_ASSERT_EQUAL_UINT8(expected, actual)
+#define TEST_ASSERT_NOT_EQUAL_DEBUG(expected, actual) TEST_ASSERT_NOT_EQUAL(expected, actual)
 #define TEST_ASSERT_GREATER_THAN_DEBUG(expected, actual) TEST_ASSERT_GREATER_THAN(expected, actual)
 #define TEST_ASSERT_GREATER_THAN_UINT32_DEBUG(expected, actual) TEST_ASSERT_GREATER_THAN_UINT32(expected, actual)
 #define TEST_ASSERT_LESS_THAN_DEBUG(expected, actual) TEST_ASSERT_LESS_THAN(expected, actual)
@@ -56,9 +57,17 @@
 #define ENHANCED_UNITY_ASSERT_NO_FAILURES()
 #define ENHANCED_UNITY_START_TEST_METHOD(methodName, fileName, lineNumber)
 #define ENHANCED_UNITY_END_TEST_METHOD()
-#define ENHANCED_UNITY_START_TEST_FILE(fileName)
-#define ENHANCED_UNITY_END_TEST_FILE()
-#define ENHANCED_UNITY_FINAL_SUMMARY()
+#define ENHANCED_UNITY_START_TEST_FILE(fileName) do { \
+    printf("Starting test file: %s\n", (fileName)); \
+} while(0)
+
+#define ENHANCED_UNITY_END_TEST_FILE(fileName) do { \
+    printf("Ending test file: %s\n", (fileName)); \
+} while(0)
+
+#define ENHANCED_UNITY_FINAL_SUMMARY() do { \
+    printf("Final summary: Enhanced Unity framework\n"); \
+} while(0)
 
 #else
 
@@ -72,6 +81,8 @@ extern int _enhancedUnityMethodCount;
 extern int _enhancedUnityMethodFailureCount;
 extern int _enhancedUnityMethodTotalCount;
 extern int _enhancedUnityMethodTotalFailureCount;
+extern int _enhancedUnityMethodFileCount;
+extern int _enhancedUnityMethodFileFailureCount;
 extern int _enhancedUnityAssertionTotalCount;
 extern int _enhancedUnityAssertionTotalFailureCount;
 
@@ -102,7 +113,7 @@ extern int _enhancedUnityFailureCount;
 // Start tracking a test method
 #define ENHANCED_UNITY_START_TEST_METHOD(methodName, fileName, lineNumber) do { \
   if (ENHANCED_UNITY_VERBOSITY <= VERBOSITY_TEST_METHODS) { \
-   printf("============= %s ========================\n", (methodName)) ; \
+   printf("===== %s \n", (methodName)) ; \
    } \
    _enhancedUnityMethodCount++; \
    _enhancedUnityMethodTotalCount++; \
@@ -132,7 +143,7 @@ extern int _enhancedUnityFailureCount;
     _enhancedUnityMethodFailureCount = 0; \
     _enhancedUnityTestCount++; \
     if (ENHANCED_UNITY_VERBOSITY <= VERBOSITY_TEST_FILES) { \
-        printf("========== %s ===================================\n", (fileName)); \
+        printf("====== %s \n", (fileName)); \
     } \
 } while(0)
 
@@ -170,17 +181,18 @@ extern int _enhancedUnityFailureCount;
 #define TEST_ASSERT_TRUE_DEBUG(condition) \
     do { \
         _enhancedUnityAssertionCount++; \
-        if (!(condition)) { \
+        bool _result = (condition); \
+        if (!_result) { \
             _enhancedUnityFailureCount++; \
             _enhancedUnityAssertionFailureCount++; \
             if (ENHANCED_UNITY_VERBOSITY <= VERBOSITY_FAILING_ASSERTIONS) { \
-                printf("    [FAILED] [ASSERTION] line %4d  TEST_ASSERT_TRUE(%s)\n", __LINE__, (condition)? "true" : "false"); \
+                printf("    [FAILED] [ASSERTION] line %4d  TEST_ASSERT_TRUE(%s)\n", __LINE__, _result ? "true" : "false"); \
             } \
             /* Call Unity's assertion but don't let it terminate the test */ \
             Unity.CurrentTestFailed = 1; \
             Unity.CurrentTestFailed = 0; /* Reset immediately to prevent termination */ \
         } else if (ENHANCED_UNITY_VERBOSITY <= VERBOSITY_ALL_ASSERTIONS && sm->getDebugMode()) { \
-            printf("    [PASSED] [ASSERTION] line %4d  TEST_ASSERT_TRUE(%s)\n", __LINE__, (condition)? "true" : "false"); \
+            printf("    [PASSED] [ASSERTION] line %4d  TEST_ASSERT_TRUE(%s)\n", __LINE__, _result ? "true" : "false"); \
         } \
     } while(0)
 
@@ -188,17 +200,18 @@ extern int _enhancedUnityFailureCount;
 #define TEST_ASSERT_FALSE_DEBUG(condition) \
     do { \
         _enhancedUnityAssertionCount++; \
-        if (condition) { \
+        bool _result = (condition); \
+        if (_result) { \
             _enhancedUnityFailureCount++; \
             _enhancedUnityAssertionFailureCount++; \
             if (ENHANCED_UNITY_VERBOSITY <= VERBOSITY_FAILING_ASSERTIONS) { \
-                printf("    [FAILED] [ASSERTION] line %4d  TEST_ASSERT_FALSE(%s)\n", __LINE__, (condition)? "true" : "false"); \
+                printf("    [FAILED] [ASSERTION] line %4d  TEST_ASSERT_FALSE(%s)\n", __LINE__, _result ? "true" : "false"); \
             } \
             /* Call Unity's assertion but don't let it terminate the test */ \
             Unity.CurrentTestFailed = 1; \
             Unity.CurrentTestFailed = 0; /* Reset immediately to prevent termination */ \
         } else if (ENHANCED_UNITY_VERBOSITY <= VERBOSITY_ALL_ASSERTIONS && sm->getDebugMode()) { \
-            printf("    [PASSED] [ASSERTION] line %4d  TEST_ASSERT_FALSE(%s)\n", __LINE__, (condition)? "true" : "false"); \
+            printf("    [PASSED] [ASSERTION] line %4d  TEST_ASSERT_FALSE(%s)\n", __LINE__, _result ? "true" : "false"); \
         } \
     } while(0)
 
@@ -252,13 +265,33 @@ extern int _enhancedUnityFailureCount;
             _enhancedUnityFailureCount++; \
             _enhancedUnityAssertionFailureCount++; \
             if (ENHANCED_UNITY_VERBOSITY <= VERBOSITY_FAILING_ASSERTIONS) { \
-                printf("[FAILED]  line %4d  TEST_ASSERT_EQUAL_UINT8(%d, %d)\n", __LINE__, _expected, _actual); \
+                printf("    [FAILED] [ASSERTION] line %4d  TEST_ASSERT_EQUAL_UINT8(%d, %d)\n", __LINE__, _expected, _actual); \
             } \
             /* Call Unity's assertion but don't let it terminate the test */ \
             Unity.CurrentTestFailed = 1; \
             Unity.CurrentTestFailed = 0; /* Reset immediately to prevent termination */ \
         } else if (ENHANCED_UNITY_VERBOSITY <= VERBOSITY_ALL_ASSERTIONS && sm->getDebugMode()) { \
-            printf("    [PASSED]  line %4d  TEST_ASSERT_EQUAL_UINT8(%d, %d)\n", __LINE__, _expected, _actual); \
+            printf("    [PASSED] [ASSERTION] line %4d  TEST_ASSERT_EQUAL_UINT8(%d, %d)\n", __LINE__, _expected, _actual); \
+        } \
+    } while(0)
+
+// Enhanced: Shows both expected and actual values, records failure but continues
+#define TEST_ASSERT_NOT_EQUAL_DEBUG(expected, actual) \
+    do { \
+        _enhancedUnityAssertionCount++; \
+        int _expected = (expected); \
+        int _actual = (actual); \
+        if (_expected == _actual) { \
+            _enhancedUnityFailureCount++; \
+            _enhancedUnityAssertionFailureCount++; \
+            if (ENHANCED_UNITY_VERBOSITY <= VERBOSITY_FAILING_ASSERTIONS) { \
+                printf("    [FAILED] [ASSERTION] line %4d  TEST_ASSERT_NOT_EQUAL(%d, %d)\n", __LINE__, _expected, _actual); \
+            } \
+            /* Call Unity's assertion but don't let it terminate the test */ \
+            Unity.CurrentTestFailed = 1; \
+            Unity.CurrentTestFailed = 0; /* Reset immediately to prevent termination */ \
+        } else if (ENHANCED_UNITY_VERBOSITY <= VERBOSITY_ALL_ASSERTIONS && sm->getDebugMode()) { \
+            printf("    [PASSED] [ASSERTION] line %4d  TEST_ASSERT_NOT_EQUAL(%d, %d)\n", __LINE__, _expected, _actual); \
         } \
     } while(0)
 
@@ -272,13 +305,13 @@ extern int _enhancedUnityFailureCount;
             _enhancedUnityFailureCount++; \
             _enhancedUnityAssertionFailureCount++; \
             if (ENHANCED_UNITY_VERBOSITY <= VERBOSITY_FAILING_ASSERTIONS) { \
-                printf("[FAIL] [ASSERTION] at line %d TEST_ASSERT_GREATER_THAN(%d, %d)\n", __LINE__, _expected, _actual); \
+                printf("    [FAILED] [ASSERTION] at line %d TEST_ASSERT_GREATER_THAN(%d, %d)\n", __LINE__, _expected, _actual); \
             } \
             /* Call Unity's assertion but don't let it terminate the test */ \
             Unity.CurrentTestFailed = 1; \
             Unity.CurrentTestFailed = 0; /* Reset immediately to prevent termination */ \
         } else if (ENHANCED_UNITY_VERBOSITY <= VERBOSITY_ALL_ASSERTIONS && sm->getDebugMode()) { \
-            printf("[PASS] [ASSERTION] at line %d TEST_ASSERT_GREATER_THAN(%d, %d)\n", __LINE__, _expected, _actual); \
+            printf("    [PASSED] [ASSERTION] at line %d TEST_ASSERT_GREATER_THAN(%d, %d)\n", __LINE__, _expected, _actual); \
         } \
     } while(0)
 
@@ -292,13 +325,13 @@ extern int _enhancedUnityFailureCount;
             _enhancedUnityFailureCount++; \
             _enhancedUnityAssertionFailureCount++; \
             if (ENHANCED_UNITY_VERBOSITY <= VERBOSITY_FAILING_ASSERTIONS) { \
-                printf("[FAIL] [ASSERTION] at line %d TEST_ASSERT_GREATER_THAN_UINT32(0x%08x, 0x%08x)\n", __LINE__, _expected, _actual); \
+                printf("    [FAILED] [ASSERTION] at line %d TEST_ASSERT_GREATER_THAN_UINT32(0x%08x, 0x%08x)\n", __LINE__, _expected, _actual); \
             } \
             /* Call Unity's assertion but don't let it terminate the test */ \
             Unity.CurrentTestFailed = 1; \
             Unity.CurrentTestFailed = 0; /* Reset immediately to prevent termination */ \
         } else if (ENHANCED_UNITY_VERBOSITY <= VERBOSITY_ALL_ASSERTIONS && sm->getDebugMode()) { \
-            printf("[PASS] [ASSERTION] at line %d TEST_ASSERT_GREATER_THAN_UINT32(0x%08x, 0x%08x)\n", __LINE__, _expected, _actual); \
+            printf("    [PASSED] [ASSERTION] at line %d TEST_ASSERT_GREATER_THAN_UINT32(0x%08x, 0x%08x)\n", __LINE__, _expected, _actual); \
         } \
     } while(0)
 
@@ -312,13 +345,13 @@ extern int _enhancedUnityFailureCount;
             _enhancedUnityFailureCount++; \
             _enhancedUnityAssertionFailureCount++; \
             if (ENHANCED_UNITY_VERBOSITY <= VERBOSITY_FAILING_ASSERTIONS) { \
-                printf("[FAIL] [ASSERTION] at line %d TEST_ASSERT_LESS_THAN(%d, %d)\n", __LINE__, _expected, _actual); \
+                printf("    [FAILED] [ASSERTION] at line %d TEST_ASSERT_LESS_THAN(%d, %d)\n", __LINE__, _expected, _actual); \
             } \
             /* Call Unity's assertion but don't let it terminate the test */ \
             Unity.CurrentTestFailed = 1; \
             Unity.CurrentTestFailed = 0; /* Reset immediately to prevent termination */ \
         } else if (ENHANCED_UNITY_VERBOSITY <= VERBOSITY_ALL_ASSERTIONS && sm->getDebugMode()) { \
-            printf("[PASS] [ASSERTION] at line %d TEST_ASSERT_LESS_THAN(%d, %d)\n", __LINE__, _expected, _actual); \
+            printf("    [PASSED] [ASSERTION] at line %d TEST_ASSERT_LESS_THAN(%d, %d)\n", __LINE__, _expected, _actual); \
         } \
     } while(0)
 
@@ -330,13 +363,13 @@ extern int _enhancedUnityFailureCount;
             _enhancedUnityFailureCount++; \
             _enhancedUnityAssertionFailureCount++; \
             if (ENHANCED_UNITY_VERBOSITY <= VERBOSITY_FAILING_ASSERTIONS) { \
-                printf("[FAIL] [ASSERTION] at line %d TEST_ASSERT_NULL(%p)\n", __LINE__, (pointer)); \
+                printf("    [FAILED] [ASSERTION] at line %d TEST_ASSERT_NULL(%p)\n", __LINE__, (pointer)); \
             } \
             /* Call Unity's assertion but don't let it terminate the test */ \
             Unity.CurrentTestFailed = 1; \
             Unity.CurrentTestFailed = 0; /* Reset immediately to prevent termination */ \
         } else if (ENHANCED_UNITY_VERBOSITY <= VERBOSITY_ALL_ASSERTIONS && sm->getDebugMode()) { \
-            printf("[PASS] [ASSERTION] at line %d TEST_ASSERT_NULL(%p)\n", __LINE__, (pointer)); \
+            printf("    [PASSED] [ASSERTION] at line %d TEST_ASSERT_NULL(%p)\n", __LINE__, (pointer)); \
         } \
     } while(0)
 
@@ -348,13 +381,13 @@ extern int _enhancedUnityFailureCount;
             _enhancedUnityFailureCount++; \
             _enhancedUnityAssertionFailureCount++; \
             if (ENHANCED_UNITY_VERBOSITY <= VERBOSITY_FAILING_ASSERTIONS) { \
-                printf("[FAIL] [ASSERTION] at line %d TEST_ASSERT_NOT_NULL(%p)\n", __LINE__, (pointer)); \
+                printf("    [FAILED] [ASSERTION] at line %d TEST_ASSERT_NOT_NULL(%p)\n", __LINE__, (pointer)); \
             } \
             /* Call Unity's assertion but don't let it terminate the test */ \
             Unity.CurrentTestFailed = 1; \
             Unity.CurrentTestFailed = 0; /* Reset immediately to prevent termination */ \
         } else if (ENHANCED_UNITY_VERBOSITY <= VERBOSITY_ALL_ASSERTIONS && sm->getDebugMode()) { \
-            printf("[PASS] [ASSERTION] at line %d TEST_ASSERT_NOT_NULL(%p)\n", __LINE__, (pointer)); \
+            printf("    [PASSED] [ASSERTION] at line %d TEST_ASSERT_NOT_NULL(%p)\n", __LINE__, (pointer)); \
         } \
     } while(0)
 
@@ -368,13 +401,13 @@ extern int _enhancedUnityFailureCount;
             _enhancedUnityFailureCount++; \
             _enhancedUnityAssertionFailureCount++; \
             if (ENHANCED_UNITY_VERBOSITY <= VERBOSITY_FAILING_ASSERTIONS) { \
-                printf("[FAIL] [ASSERTION] at line %d TEST_ASSERT_EQUAL_STRING(\"%s\", \"%s\")\n", __LINE__, _expected, _actual); \
+                printf("    [FAILED] [ASSERTION] at line %d TEST_ASSERT_EQUAL_STRING(\"%s\", \"%s\")\n", __LINE__, _expected, _actual); \
             } \
             /* Call Unity's assertion but don't let it terminate the test */ \
             Unity.CurrentTestFailed = 1; \
             Unity.CurrentTestFailed = 0; /* Reset immediately to prevent termination */ \
         } else if (ENHANCED_UNITY_VERBOSITY <= VERBOSITY_ALL_ASSERTIONS && sm->getDebugMode()) { \
-            printf("[PASS] [ASSERTION] at line %d TEST_ASSERT_EQUAL_STRING(\"%s\", \"%s\")\n", __LINE__, _expected, _actual); \
+            printf("    [PASSED] [ASSERTION] at line %d TEST_ASSERT_EQUAL_STRING(\"%s\", \"%s\")\n", __LINE__, _expected, _actual); \
         } \
     } while(0)
 
@@ -390,13 +423,13 @@ extern int _enhancedUnityFailureCount;
             _enhancedUnityFailureCount++; \
             _enhancedUnityAssertionFailureCount++; \
             if (ENHANCED_UNITY_VERBOSITY <= VERBOSITY_FAILING_ASSERTIONS) { \
-                printf("[FAIL] [ASSERTION] at line %d TEST_ASSERT_FLOAT_WITHIN(%f, %f, %f)\n", __LINE__, _expected, _delta, _actual); \
+                printf("    [FAILED] [ASSERTION] at line %d TEST_ASSERT_FLOAT_WITHIN(%f, %f, %f)\n", __LINE__, _expected, _delta, _actual); \
             } \
             /* Call Unity's assertion but don't let it terminate the test */ \
             Unity.CurrentTestFailed = 1; \
             Unity.CurrentTestFailed = 0; /* Reset immediately to prevent termination */ \
         } else if (ENHANCED_UNITY_VERBOSITY <= VERBOSITY_ALL_ASSERTIONS && sm->getDebugMode()) { \
-            printf("[PASS] [ASSERTION] at line %d TEST_ASSERT_FLOAT_WITHIN(%f, %f, %f)\n", __LINE__, _expected, _delta, _actual); \
+            printf("    [PASSED] [ASSERTION] at line %d TEST_ASSERT_FLOAT_WITHIN(%f, %f, %f)\n", __LINE__, _expected, _delta, _actual); \
         } \
     } while(0)
 
@@ -410,13 +443,13 @@ extern int _enhancedUnityFailureCount;
             _enhancedUnityFailureCount++; \
             _enhancedUnityAssertionFailureCount++; \
             if (ENHANCED_UNITY_VERBOSITY <= VERBOSITY_FAILING_ASSERTIONS) { \
-                printf("[FAIL] [ASSERTION] at line %d TEST_ASSERT_SCOREBOARD_INCREASED(%d, 0x%08x, 0x%08x)\n", __LINE__, index, _initial, _final); \
+                printf("    [FAILED] [ASSERTION] at line %d TEST_ASSERT_SCOREBOARD_INCREASED(%d, 0x%08x, 0x%08x)\n", __LINE__, index, _initial, _final); \
             } \
             /* Call Unity's assertion but don't let it terminate the test */ \
             Unity.CurrentTestFailed = 1; \
             Unity.CurrentTestFailed = 0; /* Reset immediately to prevent termination */ \
         } else if (ENHANCED_UNITY_VERBOSITY <= VERBOSITY_ALL_ASSERTIONS && sm->getDebugMode()) { \
-            printf("[PASS] [ASSERTION] at line %d TEST_ASSERT_SCOREBOARD_INCREASED(%d, 0x%08x, 0x%08x)\n", __LINE__, index, _initial, _final); \
+            printf("    [PASSED] [ASSERTION] at line %d TEST_ASSERT_SCOREBOARD_INCREASED(%d, 0x%08x, 0x%08x)\n", __LINE__, index, _initial, _final); \
         } \
     } while(0)
 
@@ -430,13 +463,13 @@ extern int _enhancedUnityFailureCount;
             _enhancedUnityFailureCount++; \
             _enhancedUnityAssertionFailureCount++; \
             if (ENHANCED_UNITY_VERBOSITY <= VERBOSITY_FAILING_ASSERTIONS) { \
-                printf("[FAIL] [ASSERTION] at line %d TEST_ASSERT_VALIDATION_RESULT(%s, %d, %d)\n", __LINE__, operation, _expected, _actual); \
+                printf("    [FAILED] [ASSERTION] at line %d TEST_ASSERT_VALIDATION_RESULT(%s, %d, %d)\n", __LINE__, operation, _expected, _actual); \
             } \
             /* Call Unity's assertion but don't let it terminate the test */ \
             Unity.CurrentTestFailed = 1; \
             Unity.CurrentTestFailed = 0; /* Reset immediately to prevent termination */ \
         } else if (ENHANCED_UNITY_VERBOSITY <= VERBOSITY_ALL_ASSERTIONS && sm->getDebugMode()) { \
-            printf("[PASS] [ASSERTION] at line %d TEST_ASSERT_VALIDATION_RESULT(%s, %d, %d)\n", __LINE__, operation, _expected, _actual); \
+            printf("    [PASSED] [ASSERTION] at line %d TEST_ASSERT_VALIDATION_RESULT(%s, %d, %d)\n", __LINE__, operation, _expected, _actual); \
         } \
     } while(0)
 
@@ -471,9 +504,15 @@ extern int _enhancedUnityFailureCount;
     } \
 } while(0)
 
+// Report current test statistics
+#define ENHANCED_UNITY_REPORT() do { \
+    printf("Enhanced Unity Report: %d total assertions, %d failures\n", \
+           _enhancedUnityAssertionTotalCount, _enhancedUnityAssertionTotalFailureCount); \
+} while(0)
+
 // Final comprehensive summary of all test results
 #define ENHANCED_UNITY_FINAL_SUMMARY() do { \
-    printf("==========Total ==========================\n"); \
+    printf("=====Total \n"); \
     printf("staticImprovedStateMachine\n"); \
     printf("files - total / passed / failed\n"); \
     printf("tests - total / passed / failed\n"); \
@@ -481,11 +520,4 @@ extern int _enhancedUnityFailureCount;
     fflush(stdout); \
 } while(0)
 
-// ============================================================================
-// GLOBAL VARIABLE DEFINITIONS (include this in ONE .cpp file)
-// ============================================================================
-
-// Uncomment this line in ONE of your .cpp files to define the global variables:
-// int _enhancedUnityFailureCount = 0;
-// int _enhancedUnityAssertionCount = 0;
 #endif

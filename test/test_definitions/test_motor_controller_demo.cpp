@@ -240,6 +240,6 @@ void test_menu_breadth_exploration() {
 
 // Register motor demo tests with shared runner
 void register_motor_demo_tests() {
-    RUN_TEST(test_motor_controller_visualization);
-    RUN_TEST(test_menu_breadth_exploration);
+    RUN_TEST_DEBUG(test_motor_controller_visualization);
+    RUN_TEST_DEBUG(test_menu_breadth_exploration);
 }

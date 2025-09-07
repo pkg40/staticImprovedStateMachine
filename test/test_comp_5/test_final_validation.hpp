@@ -34,7 +34,7 @@ extern int _enhancedUnityFailureCount;
 // =============================================================================
 
 void test_096_circular_dependency_detection() {
-    ENHANCED_UNITY_INIT();
+    ENHANCED_UNITY_START_TEST_METHOD("test_096_circular_dependency_detection", "test_final_validation.hpp", __LINE__);
     sm->initializeState(1);
     
     // Create circular dependencies
@@ -49,11 +49,11 @@ void test_096_circular_dependency_detection() {
         sm->processEvent(1);
         TEST_ASSERT_EQUAL_UINT8_DEBUG(expectedState, sm->getCurrentPage());
     }
-    ENHANCED_UNITY_FINAL_REPORT();
+    ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_097_self_referencing_states() {
-    ENHANCED_UNITY_INIT();
+    ENHANCED_UNITY_START_TEST_METHOD("test_097_self_referencing_states", "test_final_validation.hpp", __LINE__);
     sm->initializeState(FINAL_TEST_SELF_REF_STATE);
     
     // Self-referencing state (stays in same state)
@@ -69,10 +69,11 @@ void test_097_self_referencing_states() {
     // Test exit from self-reference
     sm->processEvent(FINAL_TEST_SELF_REF_EVENT_B);
     TEST_ASSERT_EQUAL_UINT8_DEBUG(FINAL_TEST_SELF_REF_STATE_B, sm->getCurrentPage());
-    ENHANCED_UNITY_FINAL_REPORT();
+    ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_098_massive_state_space() {
+    ENHANCED_UNITY_START_TEST_METHOD("test_098_massive_state_space", "test_final_validation.hpp", __LINE__);
     sm->initializeState(FINAL_TEST_WRAPAROUND_START);
     
     // Create transitions across large state space
@@ -86,11 +87,13 @@ void test_098_massive_state_space() {
     for (int i = 0; i < FINAL_TEST_WRAPAROUND_ITERATIONS; i++) {
         sm->processEvent(1);
         currentState = (currentState == FINAL_TEST_WRAPAROUND_LAST) ? FINAL_TEST_WRAPAROUND_START : currentState + 1;
-        TEST_ASSERT_EQUAL_UINT8(currentState, sm->getCurrentPage());
+        TEST_ASSERT_EQUAL_UINT8_DEBUG(currentState, sm->getCurrentPage());
     }
+    ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_099_event_storm_handling() {
+    ENHANCED_UNITY_START_TEST_METHOD("test_099_event_storm_handling", "test_final_validation.hpp", __LINE__);
     sm->initializeState(1);
     sm->addTransition(stateTransition(1,0,DONT_CARE_EVENT,2,0,nullptr));  // Wildcard: match any valid event from page 1
     sm->addTransition(stateTransition(2,0,DONT_CARE_EVENT,1,0,nullptr));  // Wildcard: match any valid event from page 2
@@ -103,19 +106,21 @@ void test_099_event_storm_handling() {
         
         // Should always be in valid state during storm
         uint8_t state = sm->getCurrentPage();
-        TEST_ASSERT_TRUE(state == 1 || state == 2);
+        TEST_ASSERT_TRUE_DEBUG(state == 1 || state == 2);
     }
     
     uint32_t elapsed = millis() - startTime;
     
     // Should handle event storm efficiently
-    TEST_ASSERT_TRUE(elapsed < FINAL_TEST_TIME_LIMIT_MS); // Less than 2 seconds
+    TEST_ASSERT_TRUE_DEBUG(elapsed < FINAL_TEST_TIME_LIMIT_MS); // Less than 2 seconds
     
     stateMachineStats stats = sm->getStatistics();
-    TEST_ASSERT_EQUAL_UINT32(FINAL_TEST_FUZZ_ITERATIONS, stats.totalTransitions);
+    TEST_ASSERT_EQUAL_UINT32_DEBUG(FINAL_TEST_FUZZ_ITERATIONS, stats.totalTransitions);
+    ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_100_multilayer_wildcard_resolution() {
+    ENHANCED_UNITY_START_TEST_METHOD("test_100_multilayer_wildcard_resolution", "test_final_validation.hpp", __LINE__);
     sm->initializeState(1);
     
     // Multiple wildcard layers
@@ -126,22 +131,24 @@ void test_100_multilayer_wildcard_resolution() {
     
     // Test resolution priority
     sm->processEvent(5);
-    TEST_ASSERT_EQUAL_UINT8(15, sm->getCurrentPage()); // Most specific wins
+    TEST_ASSERT_EQUAL_UINT8_DEBUG(15, sm->getCurrentPage()); // Most specific wins
     
     sm->setCurrentPage(2);
     sm->processEvent(5);
-    TEST_ASSERT_EQUAL_UINT8(50, sm->getCurrentPage()); // Event-specific
+    TEST_ASSERT_EQUAL_UINT8_DEBUG(50, sm->getCurrentPage()); // Event-specific
     
     sm->setCurrentPage(1);
     sm->processEvent(7);  // Use event 7 to trigger state-specific transition (any valid event)
-    TEST_ASSERT_EQUAL_UINT8(10, sm->getCurrentPage()); // State-specific
+    TEST_ASSERT_EQUAL_UINT8_DEBUG(10, sm->getCurrentPage()); // State-specific
     
     sm->setCurrentPage(3);
     sm->processEvent(8);  // Use event 8 to trigger catch-all transition (any valid event)
-    TEST_ASSERT_EQUAL_UINT8(DONT_CARE_PAGE-1, sm->getCurrentPage()); // Catch-all
+    TEST_ASSERT_EQUAL_UINT8_DEBUG(DONT_CARE_PAGE-1, sm->getCurrentPage()); // Catch-all
+    ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_101_deep_nesting_simulation() {
+    ENHANCED_UNITY_START_TEST_METHOD("test_101_deep_nesting_simulation", "test_final_validation.hpp", __LINE__);
     sm->initializeState(1);
     
     // Simulate deep nesting with sequential states
@@ -153,17 +160,19 @@ void test_101_deep_nesting_simulation() {
     // Deep descent
     for (int i = 0; i < 25; i++) {
         sm->processEvent(1);
-        TEST_ASSERT_EQUAL_UINT8(i + 2, sm->getCurrentPage());
+        TEST_ASSERT_EQUAL_UINT8_DEBUG(i + 2, sm->getCurrentPage());
     }
     
     // Deep ascent
     for (int i = 0; i < 25; i++) {
         sm->processEvent(2);
-        TEST_ASSERT_EQUAL_UINT8(25 - i, sm->getCurrentPage());
+        TEST_ASSERT_EQUAL_UINT8_DEBUG(25 - i, sm->getCurrentPage());
     }
+    ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_102_concurrent_scoreboard_operations() {
+    ENHANCED_UNITY_START_TEST_METHOD("test_102_concurrent_scoreboard_operations", "test_final_validation.hpp", __LINE__);
     sm->initializeState(0);
     
     // Simulate concurrent scoreboard access
@@ -175,14 +184,16 @@ void test_102_concurrent_scoreboard_operations() {
         sm->setScoreboard(round * 400, 3);
         
         // Verify all were set correctly
-        TEST_ASSERT_EQUAL_UINT32(round * 100, sm->getScoreboard(0));
-        TEST_ASSERT_EQUAL_UINT32(round * 200, sm->getScoreboard(1));
-        TEST_ASSERT_EQUAL_UINT32(round * 300, sm->getScoreboard(2));
-        TEST_ASSERT_EQUAL_UINT32(round * 400, sm->getScoreboard(3));
+        TEST_ASSERT_EQUAL_UINT32_DEBUG(round * 100, sm->getScoreboard(0));
+        TEST_ASSERT_EQUAL_UINT32_DEBUG(round * 200, sm->getScoreboard(1));
+        TEST_ASSERT_EQUAL_UINT32_DEBUG(round * 300, sm->getScoreboard(2));
+        TEST_ASSERT_EQUAL_UINT32_DEBUG(round * 400, sm->getScoreboard(3));
     }
+    ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_103_extreme_boundary_values() {
+    ENHANCED_UNITY_START_TEST_METHOD("test_103_extreme_boundary_values", "test_final_validation.hpp", __LINE__);
     // Test extreme boundary values
     sm->initializeState(0);  // Use valid page 0 instead of DONT_CARE_PAGE
     
@@ -195,25 +206,27 @@ void test_103_extreme_boundary_values() {
     validationResult r4 = sm->addTransition(stateTransition(DONT_CARE_PAGE-1,0,1,1,0,nullptr));
     
     // Check if transitions were added successfully
-    TEST_ASSERT_EQUAL(validationResult::VALID, r1);
-    TEST_ASSERT_EQUAL(validationResult::DUPLICATE_TRANSITION, r2);
-    TEST_ASSERT_EQUAL(validationResult::DUPLICATE_TRANSITION, r3);
-    TEST_ASSERT_EQUAL(validationResult::DUPLICATE_TRANSITION, r4);
+    TEST_ASSERT_EQUAL_INT_DEBUG(validationResult::VALID, r1);
+    TEST_ASSERT_EQUAL_INT_DEBUG(validationResult::DUPLICATE_TRANSITION, r2);
+    TEST_ASSERT_EQUAL_INT_DEBUG(validationResult::DUPLICATE_TRANSITION, r3);
+    TEST_ASSERT_EQUAL_INT_DEBUG(validationResult::DUPLICATE_TRANSITION, r4);
 
     sm->dumpStateTable();
     
     // Test extreme transitions - start from a different page to ensure wildcard works
     sm->setCurrentPage(5);
     sm->processEvent(31); 
-    TEST_ASSERT_EQUAL_UINT8(0, sm->getCurrentPage());  // Should go to page 0 (from DONT_CARE_PAGE wildcard)
+    TEST_ASSERT_EQUAL_UINT8_DEBUG(0, sm->getCurrentPage());  // Should go to page 0 (from DONT_CARE_PAGE wildcard)
     sm->processEvent(0);
-    TEST_ASSERT_EQUAL_UINT8(0, sm->getCurrentPage());
+    TEST_ASSERT_EQUAL_UINT8_DEBUG(0, sm->getCurrentPage());
     sm->setCurrentPage(27);
     sm->processEvent(28);
-    TEST_ASSERT_EQUAL_UINT8(0, sm->getCurrentPage());
+    TEST_ASSERT_EQUAL_UINT8_DEBUG(0, sm->getCurrentPage());
+    ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_104_state_machine_cloning_behavior() {
+    ENHANCED_UNITY_START_TEST_METHOD("test_104_state_machine_cloning_behavior", "test_final_validation.hpp", __LINE__);
     sm->initializeState(42);
     
     // Set up original state machine
@@ -242,14 +255,16 @@ void test_104_state_machine_cloning_behavior() {
     clone->processEvent(2);
     
     // Verify clone matches original
-    TEST_ASSERT_EQUAL_UINT8(originalState, clone->getCurrentPage());
-    TEST_ASSERT_EQUAL_UINT32(originalScore0, clone->getScoreboard(0));
-    TEST_ASSERT_EQUAL_UINT32(originalScore1, clone->getScoreboard(1));
+    TEST_ASSERT_EQUAL_UINT8_DEBUG(originalState, clone->getCurrentPage());
+    TEST_ASSERT_EQUAL_UINT32_DEBUG(originalScore0, clone->getScoreboard(0));
+    TEST_ASSERT_EQUAL_UINT32_DEBUG(originalScore1, clone->getScoreboard(1));
     
     delete clone;
+    ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_105_comprehensive_validation_pipeline() {
+    ENHANCED_UNITY_START_TEST_METHOD("test_105_comprehensive_validation_pipeline", "test_final_validation.hpp", __LINE__);
 
     sm -> setDebugMode(false);
     sm->initializeState(1);
@@ -280,19 +295,21 @@ void test_105_comprehensive_validation_pipeline() {
     results[9] = sm->addTransition(stateTransition(0,0,0,DONT_CARE_PAGE-1,0,nullptr));
 
     // Verify results
-    TEST_ASSERT_EQUAL(validationResult::VALID, results[0]);
-    TEST_ASSERT_EQUAL(validationResult::DUPLICATE_TRANSITION, results[1]);
-    TEST_ASSERT_EQUAL(validationResult::VALID, results[2]);
-    TEST_ASSERT_EQUAL(validationResult::DUPLICATE_PAGE, results[3]);
+    TEST_ASSERT_EQUAL_INT_DEBUG(validationResult::VALID, results[0]);
+    TEST_ASSERT_EQUAL_INT_DEBUG(validationResult::DUPLICATE_TRANSITION, results[1]);
+    TEST_ASSERT_EQUAL_INT_DEBUG(validationResult::VALID, results[2]);
+    TEST_ASSERT_EQUAL_INT_DEBUG(validationResult::DUPLICATE_PAGE, results[3]);
     
     for (int i = 4; i <= 9; i++) {
         TEST_ASSERT_TRUE(results[i] == validationResult::VALID || 
                         results[i] == validationResult::DUPLICATE_TRANSITION);
     }
     sm -> setDebugMode(false);
+    ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_106_final_integration_verification() {
+    ENHANCED_UNITY_START_TEST_METHOD("test_106_final_integration_verification", "test_final_validation.hpp", __LINE__);
     // Final comprehensive integration test
     sm->initializeState(1);
     
@@ -310,17 +327,17 @@ void test_106_final_integration_verification() {
     for (int cycle = 0; cycle < 3; cycle++) {
         // Reset
         sm->processEvent(0);
-        TEST_ASSERT_EQUAL_UINT8(1, sm->getCurrentPage());
+        TEST_ASSERT_EQUAL_UINT8_DEBUG(1, sm->getCurrentPage());
         
         // Full cycle
         sm->processEvent(1);
-        TEST_ASSERT_EQUAL_UINT8(2, sm->getCurrentPage());
+        TEST_ASSERT_EQUAL_UINT8_DEBUG(2, sm->getCurrentPage());
         
         sm->processEvent(2);
-        TEST_ASSERT_EQUAL_UINT8(3, sm->getCurrentPage());
+        TEST_ASSERT_EQUAL_UINT8_DEBUG(3, sm->getCurrentPage());
         
         sm->processEvent(3);
-        TEST_ASSERT_EQUAL_UINT8(1, sm->getCurrentPage());
+        TEST_ASSERT_EQUAL_UINT8_DEBUG(1, sm->getCurrentPage());
         
         // Update scoreboards
         sm->setScoreboard(cycle * 1000, cycle % 4);
@@ -330,25 +347,26 @@ void test_106_final_integration_verification() {
     stateMachineStats finalStats = sm->getStatistics();
     TEST_ASSERT_TRUE(finalStats.totalTransitions >= 12); // 4 events * 3 cycles
     TEST_ASSERT_TRUE(finalStats.stateChanges >= 12);
-    TEST_ASSERT_EQUAL_UINT8(1, sm->getCurrentPage());
+    TEST_ASSERT_EQUAL_UINT8_DEBUG(1, sm->getCurrentPage());
     
     // Verify scoreboards were set
-    TEST_ASSERT_EQUAL_UINT32(14, sm->getScoreboard(0)); // Bits for pages 1,2,3 set
-    TEST_ASSERT_EQUAL_UINT32(1000, sm->getScoreboard(1));
-    TEST_ASSERT_EQUAL_UINT32(2000, sm->getScoreboard(2));
-    TEST_ASSERT_EQUAL_UINT32(0, sm->getScoreboard(3)); // Unchanged
+    TEST_ASSERT_EQUAL_UINT32_DEBUG(14, sm->getScoreboard(0)); // Bits for pages 1,2,3 set
+    TEST_ASSERT_EQUAL_UINT32_DEBUG(1000, sm->getScoreboard(1));
+    TEST_ASSERT_EQUAL_UINT32_DEBUG(2000, sm->getScoreboard(2));
+    TEST_ASSERT_EQUAL_UINT32_DEBUG(0, sm->getScoreboard(3)); // Unchanged
+    ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 
 // Expose registration function for shared runner
 void register_final_validation_tests() {
 
-    RUN_TEST(test_101_deep_nesting_simulation);
-    RUN_TEST(test_102_concurrent_scoreboard_operations);
-    RUN_TEST(test_103_extreme_boundary_values);
-    RUN_TEST(test_104_state_machine_cloning_behavior);
-    RUN_TEST(test_105_comprehensive_validation_pipeline);
-    RUN_TEST(test_106_final_integration_verification);
+    RUN_TEST_DEBUG(test_101_deep_nesting_simulation);
+    RUN_TEST_DEBUG(test_102_concurrent_scoreboard_operations);
+    RUN_TEST_DEBUG(test_103_extreme_boundary_values);
+    RUN_TEST_DEBUG(test_104_state_machine_cloning_behavior);
+    RUN_TEST_DEBUG(test_105_comprehensive_validation_pipeline);
+    RUN_TEST_DEBUG(test_106_final_integration_verification);
 }
 
 #endif // BUILDING_TEST_RUNNER_BUNDLE

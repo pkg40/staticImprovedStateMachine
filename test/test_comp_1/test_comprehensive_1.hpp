@@ -62,25 +62,25 @@ struct TestStats {
 // =============================================================================
 
 void test_002_initial_state_setting() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_002_initial_state_setting", "test_comprehensive_1.hpp", __LINE__);
   sm->initializeState(TEST_STATE_A);
   TEST_ASSERT_EQUAL_UINT8_DEBUG(TEST_STATE_A, sm->getCurrentPage());
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_003_multiple_state_settings() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_003_multiple_state_settings", "test_comprehensive_1.hpp", __LINE__);
   for (uint8_t i = 0; i < SMALL_TEST_LIMIT; i++) {
     sm->initializeState(i);
     TEST_ASSERT_EQUAL_UINT8_DEBUG(i, sm->getCurrentPage());
   }
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_004_state_boundaries() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_004_state_boundaries", "test_comprehensive_1.hpp", __LINE__);
   sm->initializeState(TEST_STATE_A);
   sm->addTransition(stateTransition(TEST_STATE_A, 0, 1, TEST_STATE_B, 0, nullptr));
   uint8_t savedState = sm->getCurrentPage();
@@ -89,11 +89,11 @@ void test_004_state_boundaries() {
   TEST_ASSERT_EQUAL_UINT8_DEBUG(TEST_STATE_A, savedState);
   TEST_ASSERT_EQUAL_UINT8_DEBUG(TEST_STATE_B, newState);
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_005_basic_transition() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_005_basic_transition", "test_comprehensive_1.hpp", __LINE__);
   sm->setDebugMode(false);
   sm->initializeState(1);
 
@@ -112,11 +112,11 @@ void test_005_basic_transition() {
   TEST_ASSERT_TRUE_DEBUG(oldState != newState);
   testStats.passedTests++;
   sm->setDebugMode(false);
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_006_no_matching_transition() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_006_no_matching_transition", "test_comprehensive_1.hpp", __LINE__);
   sm->initializeState(1);
   stateTransition t(1, 0, 1, 2, 0, nullptr);
   sm->addTransition(t);
@@ -127,11 +127,11 @@ void test_006_no_matching_transition() {
 
   TEST_ASSERT_EQUAL_UINT8_DEBUG(oldState, newState); // Should stay same
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_007_circular_transitions() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_007_circular_transitions", "test_comprehensive_1.hpp", __LINE__);
   sm->initializeState(1);
   sm->addTransition(stateTransition(1, 0, 1, 2, 0, nullptr));
   sm->addTransition(stateTransition(2, 0, 2, 3, 0, nullptr));
@@ -146,22 +146,22 @@ void test_007_circular_transitions() {
   sm->processEvent(3); // 3->1
   TEST_ASSERT_EQUAL_UINT8_DEBUG(1, sm->getCurrentPage());
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_008_self_transitions() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_008_self_transitions", "test_comprehensive_1.hpp", __LINE__);
   sm->initializeState(5);
   sm->addTransition(stateTransition(5, 0, 1, 5, 0, nullptr)); // Self-transition
 
   sm->processEvent(1);
   TEST_ASSERT_EQUAL_UINT8_DEBUG(5, sm->getCurrentPage());
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_009_multiple_events_same_state() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_009_multiple_events_same_state", "test_comprehensive_1.hpp", __LINE__);
   sm->initializeState(1);
   sm->addTransition(stateTransition(1, 0, 1, 2, 0, nullptr));
   sm->addTransition(stateTransition(1, 0, 2, 3, 0, nullptr));
@@ -170,11 +170,11 @@ void test_009_multiple_events_same_state() {
   sm->processEvent(2); // Should go to state 3
   TEST_ASSERT_EQUAL_UINT8_DEBUG(3, sm->getCurrentPage());
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_010_overlapping_transitions() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_010_overlapping_transitions", "test_comprehensive_1.hpp", __LINE__);
   sm->initializeState(1);
   validationResult result1 = sm->addTransition(stateTransition(1, 0, 1, 2, 0, nullptr));
   validationResult result2 = sm->addTransition(stateTransition(1, 0, 1, 3, 0, nullptr)); // Conflicting transition
@@ -185,7 +185,7 @@ void test_010_overlapping_transitions() {
   sm->processEvent(1);
   TEST_ASSERT_EQUAL_UINT8_DEBUG(2, sm->getCurrentPage()); // Only first transition exists
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 // =============================================================================
@@ -193,7 +193,7 @@ void test_010_overlapping_transitions() {
 // =============================================================================
 
 void test_011_duplicate_transition_validation() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_011_duplicate_transition_validation", "test_comprehensive_1.hpp", __LINE__);
   sm->initializeState(1);
   stateTransition t(1, 0, 1, 2, 0, nullptr);
 
@@ -204,11 +204,11 @@ void test_011_duplicate_transition_validation() {
                           static_cast<uint8_t>(result1));
   TEST_ASSERT_TRUE_DEBUG(static_cast<uint8_t>(validationResult::VALID) != static_cast<uint8_t>(result2));
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_012_invalid_state_transitions() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_012_invalid_state_transitions", "test_comprehensive_1.hpp", __LINE__);
   sm->initializeState(1);
 
   // Try to add transition from non-existent state pattern
@@ -218,11 +218,11 @@ void test_012_invalid_state_transitions() {
   sm->processEvent(1); // Should not transition
   TEST_ASSERT_EQUAL_UINT8_DEBUG(1, sm->getCurrentPage());
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_013_wildcard_transitions() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_013_wildcard_transitions", "test_comprehensive_1.hpp", __LINE__);
   sm->initializeState(1);
   sm->addTransition(stateTransition(DONT_CARE_PAGE, 0, 5, 10, 0,
                                     nullptr)); // Any state, event 5 -> state 10
@@ -230,11 +230,11 @@ void test_013_wildcard_transitions() {
   sm->processEvent(5);
   TEST_ASSERT_EQUAL_UINT8_DEBUG(10, sm->getCurrentPage());
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_014_dont_care_event() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_014_dont_care_event", "test_comprehensive_1.hpp", __LINE__);
   sm->initializeState(1);
   sm->addTransition(stateTransition(1, 0, DONT_CARE_EVENT, 5, 0,
                                     nullptr)); // State 1, any event -> state 5
@@ -242,11 +242,11 @@ void test_014_dont_care_event() {
   sm->processEvent(DONT_CARE_EVENT - 1); // Any event should work
   TEST_ASSERT_EQUAL_UINT8_DEBUG(5, sm->getCurrentPage());
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_015_transition_priority() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_015_transition_priority", "test_comprehensive_1.hpp", __LINE__);
   /*
   sm->initializeState(1);
   sm->addTransition(stateTransition(1, 0, DONT_CARE, 5, 0, nullptr)); //
@@ -261,11 +261,11 @@ void test_015_transition_priority() {
          "ordered and processed one at a time from the event queue.\n");
   TEST_ASSERT_TRUE_DEBUG(true);
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_016_boundary_state_values() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_016_boundary_state_values", "test_comprehensive_1.hpp", __LINE__);
   sm->initializeState(0);
   sm->addTransition(stateTransition(0, 0, 1, DONT_CARE_PAGE, 0, nullptr));
 
@@ -273,11 +273,11 @@ void test_016_boundary_state_values() {
   TEST_ASSERT_EQUAL_UINT8_DEBUG(0, sm->getCurrentPage());
   testStats.boundaryTests++;
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_017_boundary_event_values() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_017_boundary_event_values", "test_comprehensive_1.hpp", __LINE__);
   sm->initializeState(1);
   //    sm->addTransition(stateTransition(1, 0, 0, 2, 0, nullptr));
   sm->addTransition(stateTransition(1, 0, DONT_CARE_EVENT, 3, 0, nullptr));
@@ -294,11 +294,11 @@ void test_017_boundary_event_values() {
   TEST_ASSERT_EQUAL_UINT8_DEBUG(3, sm->getCurrentPage());
   testStats.boundaryTests++;
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_018_maximum_transitions() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_018_maximum_transitions", "test_comprehensive_1.hpp", __LINE__);
   sm->initializeState(0);
 
   // Add many transitions to test capacity
@@ -309,11 +309,11 @@ void test_018_maximum_transitions() {
                             static_cast<uint8_t>(result));
   }
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_019_state_definition_validation() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_019_state_definition_validation", "test_comprehensive_1.hpp", __LINE__);
   stateDefinition state1(1, "State1", nullptr, nullptr);
   validationResult result = sm->addState(state1);
   TEST_ASSERT_EQUAL_UINT8_DEBUG(static_cast<uint8_t>(validationResult::VALID),
@@ -324,11 +324,11 @@ void test_019_state_definition_validation() {
   // TEST_ASSERT_NOT_NULL(retrieved);
   // TEST_ASSERT_EQUAL_UINT8(1, retrieved->id);
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_020_duplicate_state_validation() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_020_duplicate_state_validation", "test_comprehensive_1.hpp", __LINE__);
   stateDefinition state1(1, "State1", nullptr, nullptr);
   stateDefinition state2(1, "State2", nullptr, nullptr); // Same ID
 
@@ -339,7 +339,7 @@ void test_020_duplicate_state_validation() {
                           static_cast<uint8_t>(result1));
   TEST_ASSERT_TRUE_DEBUG(static_cast<uint8_t>(validationResult::VALID) != static_cast<uint8_t>(result2));
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 // =============================================================================
@@ -347,7 +347,7 @@ void test_020_duplicate_state_validation() {
 // =============================================================================
 
 void test_021_statistics_tracking() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_021_statistics_tracking", "test_comprehensive_1.hpp", __LINE__);
   sm->setDebugMode(false);
   sm->initializeState(1);
   sm->addTransition(stateTransition(1, 0, 0, 2, 2, nullptr));
@@ -364,11 +364,11 @@ void test_021_statistics_tracking() {
                            afterStats.stateChanges);
   testStats.passedTests++;
   sm->setDebugMode(false);
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_022_failed_transition_statistics() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_022_failed_transition_statistics", "test_comprehensive_1.hpp", __LINE__);
   sm->initializeState(1);
   sm->addTransition(stateTransition(1, 0, 1, 2, 0, nullptr));
 
@@ -379,11 +379,11 @@ void test_022_failed_transition_statistics() {
   TEST_ASSERT_EQUAL_UINT32_DEBUG(initialStats.failedTransitions + 1,
                            afterStats.failedTransitions);
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_023_scoreboard_functionality() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_023_scoreboard_functionality", "test_comprehensive_1.hpp", __LINE__);
   sm->initializeState(1);
   sm->updateScoreboard(1);
   sm->updateScoreboard(2);
@@ -391,11 +391,11 @@ void test_023_scoreboard_functionality() {
   TEST_ASSERT_TRUE_DEBUG(sm->getScoreboard(0) & (1UL << 2));
   TEST_ASSERT_EQUAL_UINT8_DEBUG(6, sm->getScoreboard(0));
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_024_scoreboard_updates() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_024_scoreboard_updates", "test_comprehensive_1.hpp", __LINE__);
   sm->setDebugMode(false);
   sm->initializeState(1);
   sm->addTransition(stateTransition(1, 0, 1, 2, 0, nullptr));
@@ -405,11 +405,11 @@ void test_024_scoreboard_updates() {
   TEST_ASSERT_EQUAL_UINT8_DEBUG(4, sm->getScoreboard(0));
   testStats.passedTests++;
   sm->setDebugMode(false);
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_025_scoreboard_boundaries() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_025_scoreboard_boundaries", "test_comprehensive_1.hpp", __LINE__);
   sm->initializeState(0);
   for (uint8_t i = 0; i < 32; i++) {
     sm->updateScoreboard(i);
@@ -417,11 +417,11 @@ void test_025_scoreboard_boundaries() {
   TEST_ASSERT_EQUAL_UINT32_DEBUG(0xFFFFFFFF, sm->getScoreboard(0));
   testStats.boundaryTests++;
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_026_performance_timing() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_026_performance_timing", "test_comprehensive_1.hpp", __LINE__);
   sm->initializeState(1);
   sm->addTransition(stateTransition(1, 0, 1, 2, 0, nullptr));
 
@@ -435,11 +435,11 @@ void test_026_performance_timing() {
   // Should complete 100 transitions in reasonable time
   TEST_ASSERT_TRUE_DEBUG(elapsed < PERFORMANCE_TIME_LIMIT_US); // Less than 100ms
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_027_statistics_reset() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_027_statistics_reset", "test_comprehensive_1.hpp", __LINE__);
   sm->initializeState(1);
   sm->addTransition(stateTransition(1, 0, 1, 2, 0, nullptr));
   sm->processEvent(1);
@@ -448,11 +448,11 @@ void test_027_statistics_reset() {
   stateMachineStats stats = sm->getStatistics();
   TEST_ASSERT_TRUE_DEBUG(stats.totalTransitions > 0);
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_028_action_execution_stats() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_028_action_execution_stats", "test_comprehensive_1.hpp", __LINE__);
   sm->initializeState(1);
   stateTransition t(1, 0, 1, 2, 0, nullptr);
   sm->addTransition(t);
@@ -463,11 +463,11 @@ void test_028_action_execution_stats() {
 
   TEST_ASSERT_TRUE_DEBUG(after.actionExecutions >= before.actionExecutions);
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_029_multi_state_scoreboard() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_029_multi_state_scoreboard", "test_comprehensive_1.hpp", __LINE__);
   sm->setDebugMode(false);
   sm->initializeState(0);
   for (uint8_t i = 0; i < 4; i++) {
@@ -480,11 +480,11 @@ void test_029_multi_state_scoreboard() {
   }
   testStats.passedTests++;
   sm->setDebugMode(false);
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_030_scoreboard_overflow_protection() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_030_scoreboard_overflow_protection", "test_comprehensive_1.hpp", __LINE__);
   sm->initializeState(0);
   for (uint8_t i = 0; i < 32; i++) {
     sm->updateScoreboard(i);
@@ -492,7 +492,7 @@ void test_030_scoreboard_overflow_protection() {
   uint32_t score = sm->getScoreboard(0);
   TEST_ASSERT_EQUAL_UINT32_DEBUG(0xFFFFFFFF, score);
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 // =============================================================================
@@ -500,7 +500,7 @@ void test_030_scoreboard_overflow_protection() {
 // =============================================================================
 
 void test_031_complex_state_graph() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_031_complex_state_graph", "test_comprehensive_1.hpp", __LINE__);
   sm->initializeState(1);
 
   // Create a complex state graph
@@ -522,11 +522,11 @@ void test_031_complex_state_graph() {
   sm->processEvent(1); // 4->1
   TEST_ASSERT_EQUAL_UINT8_DEBUG(1, sm->getCurrentPage());
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_032_state_machine_persistence() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_032_state_machine_persistence", "test_comprehensive_1.hpp", __LINE__);
   sm->initializeState(5);
   sm->addTransition(stateTransition(5, 0, 1, 10, 10, nullptr));
   uint8_t savedState = sm->getCurrentPage();
@@ -537,21 +537,21 @@ void test_032_state_machine_persistence() {
   TEST_ASSERT_EQUAL_UINT8_DEBUG(10, newState);
   TEST_ASSERT_EQUAL_UINT8_DEBUG(10, sm->getCurrentButton());
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_033_concurrent_event_processing() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_033_concurrent_event_processing", "test_comprehensive_1.hpp", __LINE__);
   printf("[DEPRECATED] test_033_concurrent_event_processing: Concurrent event "
          "processing is not valid for this state machine. Events are strictly "
          "ordered and processed one at a time from the event queue.\n");
   TEST_ASSERT_TRUE_DEBUG(true);
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_034_deep_state_nesting() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_034_deep_state_nesting", "test_comprehensive_1.hpp", __LINE__);
   sm->initializeState(1);
 
   // Create a deep chain of states
@@ -566,11 +566,11 @@ void test_034_deep_state_nesting() {
 
   TEST_ASSERT_EQUAL_UINT8_DEBUG(11, sm->getCurrentPage());
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_035_event_filtering() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_035_event_filtering", "test_comprehensive_1.hpp", __LINE__);
   sm->initializeState(1);
   sm->addTransition(
       stateTransition(1, 0, 5, 2, 0, nullptr)); // Only event 5 triggers
@@ -587,11 +587,11 @@ void test_035_event_filtering() {
   sm->processEvent(5);
   TEST_ASSERT_EQUAL_UINT8_DEBUG(2, sm->getCurrentPage());
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_036_state_machine_reset() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_036_state_machine_reset", "test_comprehensive_1.hpp", __LINE__);
   sm->initializeState(5);
   sm->addTransition(stateTransition(5, 0, 1, 10, 0, nullptr));
   sm->processEvent(1);
@@ -601,11 +601,11 @@ void test_036_state_machine_reset() {
   sm->initializeState(5);
   TEST_ASSERT_EQUAL_UINT8_DEBUG(5, sm->getCurrentPage());
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_037_multi_path_navigation() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_037_multi_path_navigation", "test_comprehensive_1.hpp", __LINE__);
   sm->initializeState(1);
 
   // Create multiple paths from state 1
@@ -617,11 +617,11 @@ void test_037_multi_path_navigation() {
   sm->processEvent(2); // Should go to state 3
   TEST_ASSERT_EQUAL_UINT8_DEBUG(3, sm->getCurrentPage());
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_038_state_validation_comprehensive() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_038_state_validation_comprehensive", "test_comprehensive_1.hpp", __LINE__);
   // Add multiple states with different properties
   sm->addState(stateDefinition(1, "Menu", nullptr, nullptr));
   sm->addState(stateDefinition(2, "Settings", nullptr, nullptr));
@@ -640,11 +640,11 @@ void test_038_state_validation_comprehensive() {
   // TEST_ASSERT_EQUAL_UINT8(2, state2->id);
   // TEST_ASSERT_EQUAL_UINT8(3, state3->id);
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_039_edge_case_transitions() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_039_edge_case_transitions", "test_comprehensive_1.hpp", __LINE__);
   sm->initializeState(0);
 
   // Test edge cases
@@ -662,11 +662,11 @@ void test_039_edge_case_transitions() {
   TEST_ASSERT_EQUAL_UINT8_DEBUG(DONT_CARE_PAGE - 1, sm->getCurrentPage());
   testStats.edgeCaseTests++;
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_040_performance_stress() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_040_performance_stress", "test_comprehensive_1.hpp", __LINE__);
   sm->initializeState(1);
   sm->addTransition(stateTransition(1, 0, 0, 1, 2, nullptr));
   sm->addTransition(stateTransition(2, 0, 0, 2, 1, nullptr));
@@ -688,7 +688,7 @@ void test_040_performance_stress() {
   TEST_ASSERT_TRUE_DEBUG(elapsed < 500000); // Less than 500ms
   testStats.stressTests++;
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 // =============================================================================
@@ -696,7 +696,7 @@ void test_040_performance_stress() {
 // =============================================================================
 
 void test_041_random_state_transitions() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_041_random_state_transitions", "test_comprehensive_1.hpp", __LINE__);
   uint8_t numPages = STATEMACHINE_MAX_PAGES-1;
   uint8_t numEvents = DONT_CARE_EVENT;
   uint8_t numButtons = DONT_CARE_BUTTON-1;
@@ -737,11 +737,11 @@ void test_041_random_state_transitions() {
 
   testStats.randomTests++;
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_042_random_event_sequences() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_042_random_event_sequences", "test_comprehensive_1.hpp", __LINE__);
   sm->initializeState(1);
 
   // Set up a small predictable state machine
@@ -766,11 +766,11 @@ void test_042_random_event_sequences() {
 
   testStats.randomTests++;
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_043_random_scoreboard_operations() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_043_random_scoreboard_operations", "test_comprehensive_1.hpp", __LINE__);
   sm->initializeState(1);
   for (int i = 0; i < 100; i++) {
     uint8_t state = getRandomNumber() % (DONT_CARE_PAGE - 1); // Use valid page range 0-126
@@ -779,11 +779,11 @@ void test_043_random_scoreboard_operations() {
   }
   testStats.randomTests++;
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_044_random_state_definitions() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_044_random_state_definitions", "test_comprehensive_1.hpp", __LINE__);
   // Add random state definitions
   for (int i = 0; i < 20; i++) {
     uint8_t stateId = getRandomNumber() % (DONT_CARE_PAGE - 1); // Use valid page range 0-126
@@ -797,11 +797,11 @@ void test_044_random_state_definitions() {
 
   testStats.randomTests++;
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_045_fuzz_event_processing() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_045_fuzz_event_processing", "test_comprehensive_1.hpp", __LINE__);
   sm->initializeState(1);
   sm->addTransition(stateTransition(1, 0, 0, 2, 0, nullptr));
   sm->addTransition(stateTransition(2, 0, 1, 1, 0, nullptr));
@@ -817,11 +817,11 @@ void test_045_fuzz_event_processing() {
   }
   testStats.randomTests++;
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_state_event_id_validation() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_state_event_id_validation", "test_comprehensive_1.hpp", __LINE__);
   sm->setDebugMode(false);
 
   // All of the BUTTON edge cases
@@ -886,12 +886,12 @@ void test_state_event_id_validation() {
   printf("State/Event ID validation tests completed.\n");
   testStats.passedTests++;
   sm->setDebugMode(false);
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 // Generate additional random tests
 void generateRandomTests() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("FUNCTION_NAME", "test_comprehensive_1.hpp", __LINE__);
   for (int testNum = 46; testNum <= 100; testNum++) {
     // Each random test follows a similar pattern but with different parameters
     sm->initializeState(getRandomPage() % 10);
@@ -919,7 +919,7 @@ void generateRandomTests() {
     testStats.randomTests++;
     testStats.passedTests++;
   }
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 // =============================================================================
@@ -927,7 +927,7 @@ void generateRandomTests() {
 // =============================================================================
 
 void test_comprehensive_coverage() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_comprehensive_coverage", "test_comprehensive_1.hpp", __LINE__);
 #ifdef ARDUINO
   Serial.println("\n=== EXECUTING COMPREHENSIVE COVERAGE TESTS ===");
   Serial.printf("Running comprehensive coverage tests...\n");
@@ -986,11 +986,11 @@ void test_comprehensive_coverage() {
 
   testStats.randomTests++;
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 void test_stress_testing() {
-  ENHANCED_UNITY_INIT();
+  ENHANCED_UNITY_START_TEST_METHOD("test_stress_testing", "test_comprehensive_1.hpp", __LINE__);
 #ifdef ARDUINO
   Serial.println("\n=== EXECUTING STRESS TESTS ===");
   Serial.printf("Running %d stress test iterations...\n",
@@ -1029,70 +1029,70 @@ void test_stress_testing() {
 
   testStats.stressTests++;
   testStats.passedTests++;
-  ENHANCED_UNITY_FINAL_REPORT();
+  ENHANCED_UNITY_END_TEST_METHOD();
 }
 
 // Expose as registration function for the shared runner
 void register_comprehensive_1_tests() {
   // Basic functionality tests (1-20)
-  //    RUN_TEST(test_001_basic_instantiation);
-  RUN_TEST(test_002_initial_state_setting);
-  RUN_TEST(test_003_multiple_state_settings);
-  RUN_TEST(test_004_state_boundaries);
-  RUN_TEST(test_005_basic_transition);
-  RUN_TEST(test_006_no_matching_transition);
-  RUN_TEST(test_007_circular_transitions);
-  RUN_TEST(test_008_self_transitions);
-  RUN_TEST(test_009_multiple_events_same_state);
-  RUN_TEST(test_010_overlapping_transitions);
+//  RUN_TEST_DEBUG(test_0011_basic_instantiation);
+//  RUN_TEST_DEBUG(test_0021_initial_state_setting);
+  RUN_TEST_DEBUG(test_003_multiple_state_settings);
+  RUN_TEST_DEBUG(test_004_state_boundaries);
+  RUN_TEST_DEBUG(test_005_basic_transition);
+  RUN_TEST_DEBUG(test_006_no_matching_transition);
+  RUN_TEST_DEBUG(test_007_circular_transitions);
+  RUN_TEST_DEBUG(test_008_self_transitions);
+  RUN_TEST_DEBUG(test_009_multiple_events_same_state);
+  RUN_TEST_DEBUG(test_010_overlapping_transitions);
 
   // Validation and error handling (11-30)
-  RUN_TEST(test_011_duplicate_transition_validation);
-  RUN_TEST(test_012_invalid_state_transitions);
-  RUN_TEST(test_013_wildcard_transitions);
-  RUN_TEST(test_014_dont_care_event);
-  RUN_TEST(test_015_transition_priority);
-  RUN_TEST(test_016_boundary_state_values);
-  RUN_TEST(test_017_boundary_event_values);
-  RUN_TEST(test_018_maximum_transitions);
-  RUN_TEST(test_019_state_definition_validation);
-  RUN_TEST(test_020_duplicate_state_validation);
+  RUN_TEST_DEBUG(test_011_duplicate_transition_validation);
+  RUN_TEST_DEBUG(test_012_invalid_state_transitions);
+  RUN_TEST_DEBUG(test_013_wildcard_transitions);
+  RUN_TEST_DEBUG(test_014_dont_care_event);
+  RUN_TEST_DEBUG(test_015_transition_priority);
+  RUN_TEST_DEBUG(test_016_boundary_state_values);
+  RUN_TEST_DEBUG(test_017_boundary_event_values);
+  RUN_TEST_DEBUG(test_018_maximum_transitions);
+  RUN_TEST_DEBUG(test_019_state_definition_validation);
+  RUN_TEST_DEBUG(test_020_duplicate_state_validation);
 
   // Statistics and scoreboard (21-40)
-  RUN_TEST(test_021_statistics_tracking);
-  RUN_TEST(test_022_failed_transition_statistics);
-  RUN_TEST(test_023_scoreboard_functionality);
-  RUN_TEST(test_024_scoreboard_updates);
-  RUN_TEST(test_025_scoreboard_boundaries);
-  RUN_TEST(test_026_performance_timing);
-  RUN_TEST(test_027_statistics_reset);
-  RUN_TEST(test_028_action_execution_stats);
-  RUN_TEST(test_029_multi_state_scoreboard);
-  RUN_TEST(test_030_scoreboard_overflow_protection);
+  RUN_TEST_DEBUG(test_021_statistics_tracking);
+  RUN_TEST_DEBUG(test_022_failed_transition_statistics);
+  RUN_TEST_DEBUG(test_023_scoreboard_functionality);
+  RUN_TEST_DEBUG(test_024_scoreboard_updates);
+  RUN_TEST_DEBUG(test_025_scoreboard_boundaries);
+  RUN_TEST_DEBUG(test_026_performance_timing);
+  RUN_TEST_DEBUG(test_027_statistics_reset);
+  RUN_TEST_DEBUG(test_028_action_execution_stats);
+  RUN_TEST_DEBUG(test_029_multi_state_scoreboard);
+  RUN_TEST_DEBUG(test_030_scoreboard_overflow_protection);
 
   // Complex state machines (31-60)
-  RUN_TEST(test_031_complex_state_graph);
-  RUN_TEST(test_032_state_machine_persistence);
-  RUN_TEST(test_033_concurrent_event_processing);
-  RUN_TEST(test_034_deep_state_nesting);
-  RUN_TEST(test_035_event_filtering);
-  RUN_TEST(test_036_state_machine_reset);
-  RUN_TEST(test_037_multi_path_navigation);
-  RUN_TEST(test_038_state_validation_comprehensive);
-  RUN_TEST(test_039_edge_case_transitions);
-  RUN_TEST(test_040_performance_stress);
+  RUN_TEST_DEBUG(test_031_complex_state_graph);
+  RUN_TEST_DEBUG(test_032_state_machine_persistence);
+  RUN_TEST_DEBUG(test_033_concurrent_event_processing);
+  RUN_TEST_DEBUG(test_034_deep_state_nesting);
+  RUN_TEST_DEBUG(test_035_event_filtering);
+  RUN_TEST_DEBUG(test_036_state_machine_reset);
+  RUN_TEST_DEBUG(test_037_multi_path_navigation);
+  RUN_TEST_DEBUG(test_038_state_validation_comprehensive);
+  RUN_TEST_DEBUG(test_039_edge_case_transitions);
+  RUN_TEST_DEBUG(test_040_performance_stress);
 
   // Random and coverage tests (41-100+)
-  RUN_TEST(test_041_random_state_transitions);
-  RUN_TEST(test_042_random_event_sequences);
-  //    RUN_TEST(test_043_random_scoreboard_operations);
-  //    RUN_TEST(test_044_random_state_definitions);
-  RUN_TEST(test_045_fuzz_event_processing);
+  RUN_TEST_DEBUG(test_041_random_state_transitions);
+  RUN_TEST_DEBUG(test_042_random_event_sequences);
+  //    RUN_TEST_DEBUG(test_043_random_scoreboard_operations);
+  //    RUN_TEST_DEBUG(test_044_random_state_definitions);
+  RUN_TEST_DEBUG(test_045_fuzz_event_processing);
 
   // Comprehensive coverage and stress testing
-  RUN_TEST(test_comprehensive_coverage);
-  RUN_TEST(test_stress_testing);
+  RUN_TEST_DEBUG(test_comprehensive_coverage);
+  RUN_TEST_DEBUG(test_stress_testing);
 
-  RUN_TEST(test_state_event_id_validation);
+  RUN_TEST_DEBUG(test_state_event_id_validation);
 }
 #endif

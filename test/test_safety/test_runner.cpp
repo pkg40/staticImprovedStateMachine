@@ -17,6 +17,8 @@ int _enhancedUnityMethodCount = 0;
 int _enhancedUnityMethodFailureCount = 0;
 int _enhancedUnityMethodTotalCount = 0;
 int _enhancedUnityMethodTotalFailureCount = 0;
+int _enhancedUnityMethodFileCount = 0;
+int _enhancedUnityMethodFileFailureCount = 0;
 
 int _enhancedUnityTestCount = 0;
 int _enhancedUnityTestFailureCount = 0;

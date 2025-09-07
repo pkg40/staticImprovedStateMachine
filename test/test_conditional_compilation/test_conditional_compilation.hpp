@@ -7,7 +7,7 @@ extern int _enhancedUnityFailureCount;
 
 // Test that conditional compilation flags are properly defined
 void test_conditional_compilation_flags(void) {
-    ENHANCED_UNITY_INIT();
+    ENHANCED_UNITY_START_TEST_METHOD("test_conditional_compilation_flags", "test_conditional_compilation.hpp", __LINE__);
     // Test that basic functionality works
     TEST_ASSERT_TRUE_DEBUG(true);
 
@@ -31,5 +31,5 @@ void test_conditional_compilation_flags(void) {
     #else
     TEST_FAIL_MESSAGE_DEBUG("SAFETY_CRITICAL_BUILD should be defined");
     #endif
-    ENHANCED_UNITY_FINAL_REPORT();
+    ENHANCED_UNITY_END_TEST_METHOD();
 }

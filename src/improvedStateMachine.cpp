@@ -195,6 +195,11 @@ validationResult improvedStateMachine::addTransition(const stateTransition &tran
           printDuplicateTransitionError(transition, conflictingTrans, conflictingIndex);
         }
       }
+      
+      // Populate error context for all validation failures
+      _lastErrorContext = transitionErrorContext(result, transition, 
+                                                _transitionCount, _addTransitionCallSequence, __FUNCTION__);
+      
       _stats.validationErrors++;
       return result;
     }
@@ -1065,7 +1070,7 @@ validationResult improvedStateMachine::validatePage(const pageDefinition& page, 
   }
   
   // Check display name validity
-  if (!page.displayName || strlen(page.displayName) >= sizeof(page.displayName)) {
+  if (!page.displayName || strlen(page.displayName) == 0 || strlen(page.displayName) >= sizeof(page.displayName)) {
     if (verbose && _debugModeVerbose) {
       Serial.printf("ERROR: Invalid display name for page %d\n", page.id);
     }
