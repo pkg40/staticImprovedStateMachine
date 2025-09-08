@@ -18,11 +18,7 @@ void tearDown() {
 }
 
 void setup() {
-    Serial.begin(115200);
-    while(!Serial) {
-        delay(100);
-    }
-    Serial.flush();
+    ENHANCED_UNITY_INIT_SERIAL();
     delay(5000);
 
     // Fresh state machine before Unity begins

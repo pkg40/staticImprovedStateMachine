@@ -105,7 +105,7 @@ void test_031_multiple_state_definitions() {
 
 void test_032_state_boundary_validation() {
     stateDefinition state0(0, "State0", nullptr, nullptr);
-    stateDefinition state255(255, "State255", nullptr, nullptr);
+    stateDefinition state255(DONT_CARE_PAGE, "State255", nullptr, nullptr);
     
     validationResult result0 = sm->addState(state0);
     validationResult result255 = sm->addState(state255);
@@ -147,8 +147,8 @@ void test_034_error_recovery() {
 void test_035_boundary_event_handling() {
     sm->setInitialState(1);
     sm->addTransition(stateTransition(1, 0, 2));    // Min event
-    sm->addTransition(stateTransition(1, 255, 3));  // Max event
-    sm->addTransition(stateTransition(1, 128, 4));  // Mid event
+    sm->addTransition(stateTransition(1, DONT_CARE_BUTTON, 3));  // Max event
+    sm->addTransition(stateTransition(1, DONT_CARE_BUTTON>>1, 4));  // Mid event
     
     // Test minimum event
     sm->processEvent(0);
@@ -156,7 +156,7 @@ void test_035_boundary_event_handling() {
     
     sm->setInitialState(1);
     // Test maximum event
-    sm->processEvent(255);
+    sm->processEvent(DONT_CARE_PAGE);
     TEST_ASSERT_EQUAL_UINT8(3, sm->getCurrentStateId());
     
     sm->setInitialState(1);
@@ -243,11 +243,11 @@ void test_040_transition_table_integrity() {
     // Test random transitions
     sm->processEvent(1); // Should work regardless of current state
     uint8_t state1 = sm->getCurrentStateId();
-    TEST_ASSERT_TRUE(state1 >= 1 && state1 <= 5);
+    TEST_ASSERT_TRUE(state1 > 0 && state1 < 6);
     
     sm->processEvent(2);
     uint8_t state2 = sm->getCurrentStateId();
-    TEST_ASSERT_TRUE(state2 >= 1 && state2 <= 5);
+    TEST_ASSERT_TRUE(state2 > 0 && state2 < 6);
 }
 
 void test_041_wildcard_priority_validation() {
@@ -350,7 +350,7 @@ void test_046_robustness_under_stress() {
         
         // Verify state is always valid
         uint8_t newState = sm->getCurrentStateId();
-        TEST_ASSERT_TRUE(newState >= 1 && newState <= 3);
+        TEST_ASSERT_TRUE(newState > 0 && newState < 4);
     }
 }
 
@@ -359,19 +359,19 @@ void test_047_error_boundary_conditions() {
     
     // Test boundary conditions
     sm->addTransition(stateTransition(0, 0, 1));
-    sm->addTransition(stateTransition(1, 255, 254));
-    sm->addTransition(stateTransition(254, 1, 255));
+    sm->addTransition(stateTransition(1, DONT_CARE_BUTTON, DONT_CARE_BUTTON-1));
+    sm->addTransition(stateTransition(DONT_CARE_PAGE-1, 1, DONT_CARE_EVENT));
     
     // Test minimum boundaries
     sm->processEvent(0);
     TEST_ASSERT_EQUAL_UINT8(1, sm->getCurrentStateId());
     
     // Test maximum boundaries
-    sm->processEvent(255);
-    TEST_ASSERT_EQUAL_UINT8(254, sm->getCurrentStateId());
+    sm->processEvent(DONT_CARE_PAGE);
+    TEST_ASSERT_EQUAL_UINT8(DONT_CARE_PAGE-1, sm->getCurrentStateId());
     
     sm->processEvent(1);
-    TEST_ASSERT_EQUAL_UINT8(255, sm->getCurrentStateId());
+    TEST_ASSERT_EQUAL_UINT8(DONT_CARE_PAGE, sm->getCurrentStateId());
 }
 
 void test_048_validation_consistency() {

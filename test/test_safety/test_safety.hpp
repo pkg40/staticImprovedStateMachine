@@ -312,13 +312,13 @@ void test_enhanced_error_context() {
     ENHANCED_UNITY_START_TEST_METHOD("test_enhanced_error_context", "test_safety.hpp", __LINE__);
     
     // Test error context with location (use invalid toPage)
-    stateTransition invalidTrans(0, 0, 1, 255, 0, nullptr);
+    stateTransition invalidTrans(0, 0, 1, DONT_CARE_PAGE, 0, nullptr);
     transitionErrorContext errorContext;
     validationResult result = sm->addTransition(invalidTrans, "test_location", errorContext);
     
     TEST_ASSERT_EQUAL_INT_DEBUG(static_cast<int>(validationResult::INVALID_PAGE_ID), static_cast<int>(result));
     TEST_ASSERT_EQUAL_INT_DEBUG(static_cast<int>(validationResult::INVALID_PAGE_ID), static_cast<int>(errorContext.errorCode));
-    TEST_ASSERT_EQUAL_INT_DEBUG(255, static_cast<int>(errorContext.failedTransition.toPage));
+    TEST_ASSERT_EQUAL_INT_DEBUG(DONT_CARE_PAGE, static_cast<int>(errorContext.failedTransition.toPage));
     
     // Test getLastErrorContext
     TEST_ASSERT_TRUE_DEBUG(sm->hasLastError());
@@ -342,7 +342,7 @@ void test_validation_methods() {
     TEST_ASSERT_EQUAL_INT_DEBUG(static_cast<int>(validationResult::VALID), static_cast<int>(result));
     
     // Test validateTransition with invalid transition (use invalid toPage)
-    stateTransition invalidTrans(0, 0, 1, 255, 0, nullptr);
+    stateTransition invalidTrans(0, 0, 1, DONT_CARE_PAGE, 0, nullptr);
     result = sm->validateTransition(invalidTrans);
     TEST_ASSERT_EQUAL_INT_DEBUG(static_cast<int>(validationResult::INVALID_PAGE_ID), static_cast<int>(result));
     
@@ -368,7 +368,7 @@ void test_error_printing_methods() {
     ENHANCED_UNITY_START_TEST_METHOD("test_error_printing_methods", "test_safety.hpp", __LINE__);
     
     // Create an error condition
-    stateTransition invalidTrans(255, 0, 1, 0, 0, nullptr);
+    stateTransition invalidTrans(DONT_CARE_PAGE+1, 0, 1, 0, 0, nullptr);
     sm->addTransition(invalidTrans);
     
     if (sm->getDebugMode()) {
@@ -411,7 +411,7 @@ void test_statistics_safety_tracking() {
     TEST_ASSERT_EQUAL_UINT32_DEBUG(0, stats.validationErrors);
     
     // Create some validation errors
-    stateTransition invalidTrans(255, 0, 1, 0, 0, nullptr);
+    stateTransition invalidTrans(DONT_CARE_PAGE+1, 0, 1, 0, 0, nullptr);
     sm->addTransition(invalidTrans);
     
     // Check that validation errors are tracked
@@ -461,12 +461,12 @@ void test_enhanced_page_validation() {
     ENHANCED_UNITY_START_TEST_METHOD("test_enhanced_page_validation", "test_safety.hpp", __LINE__);
     
     // Test page ID range validation
-    pageDefinition validPage(254, "ValidPage", "Valid Display");
+    pageDefinition validPage(DONT_CARE_PAGE-1, "ValidPage", "Valid Display");
     validationResult result = sm->validatePage(validPage);
     TEST_ASSERT_EQUAL_INT_DEBUG(static_cast<int>(validationResult::VALID), static_cast<int>(result));
     
-    // Test invalid page ID (> 254)
-    pageDefinition invalidPageId(255, "InvalidPage", "Invalid Display");
+    // Test invalid page ID (> DONT_CARE_PAGE-1)
+    pageDefinition invalidPageId(DONT_CARE_PAGE, "InvalidPage", "Invalid Display");
     result = sm->validatePage(invalidPageId);
     TEST_ASSERT_EQUAL_INT_DEBUG(static_cast<int>(validationResult::INVALID_PAGE_ID), static_cast<int>(result));
     
@@ -487,7 +487,7 @@ void test_enhanced_page_validation() {
     
     // Test invalid menu template
     pageDefinition invalidMenu(1, "ValidName", "Valid Display");
-    invalidMenu.menu.templateType = static_cast<menuTemplate>(255); // Invalid template
+    invalidMenu.menu.templateType = static_cast<menuTemplate>(DONT_CARE_PAGE); // Invalid template
     result = sm->validatePage(invalidMenu);
     TEST_ASSERT_EQUAL_INT_DEBUG(static_cast<int>(validationResult::INVALID_MENU_TEMPLATE), static_cast<int>(result));
     
@@ -500,13 +500,13 @@ void test_enhanced_page_error_context() {
     ENHANCED_UNITY_START_TEST_METHOD("test_enhanced_page_error_context", "test_safety.hpp", __LINE__);
     
     // Test error context with location
-    pageDefinition invalidPage(255, "InvalidPage", "Invalid Display");
+    pageDefinition invalidPage(DONT_CARE_PAGE, "InvalidPage", "Invalid Display");
     pageErrorContext errorContext;
     validationResult result = sm->addState(invalidPage, "test_location", errorContext);
     
     TEST_ASSERT_EQUAL_INT_DEBUG(static_cast<int>(validationResult::INVALID_PAGE_ID), static_cast<int>(result));
     TEST_ASSERT_EQUAL_INT_DEBUG(static_cast<int>(validationResult::INVALID_PAGE_ID), static_cast<int>(errorContext.errorCode));
-    TEST_ASSERT_EQUAL_INT_DEBUG(255, static_cast<int>(errorContext.failedPage.id));
+    TEST_ASSERT_EQUAL_INT_DEBUG(DONT_CARE_PAGE, static_cast<int>(errorContext.failedPage.id));
     
     // Test getLastPageErrorContext
     TEST_ASSERT_TRUE_DEBUG(sm->hasLastPageError());
@@ -545,7 +545,7 @@ void test_page_error_printing_methods() {
     ENHANCED_UNITY_START_TEST_METHOD("test_page_error_printing_methods", "test_safety.hpp", __LINE__);
     
     // Create an error condition
-    pageDefinition invalidPage(255, "InvalidPage", "Invalid Display");
+    pageDefinition invalidPage(DONT_CARE_PAGE, "InvalidPage", "Invalid Display");
     sm->addState(invalidPage);
     
     if (sm->getDebugMode()) {

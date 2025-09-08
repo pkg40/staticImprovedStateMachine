@@ -41,7 +41,7 @@ void test_naming_consistency_basic() {
 
     // Test method naming consistency
     uint8_t page = sm->getPage();
-    TEST_ASSERT_TRUE_DEBUG(page <= 255); // page is uint8_t, so it's always <= 255
+    TEST_ASSERT_TRUE_DEBUG(page <= DONT_CARE_PAGE); // page is uint8_t, so it's always <= 255
 
     // Test variable naming in our code
     stateTransition trans(0, 0, 1, 1, 0, nullptr);
@@ -68,7 +68,7 @@ void test_naming_consistency_advanced() {
     // Verify scoreboard updates work (camelCase methods)
 #if STATEMACHINE_STATISTICS_ENABLED
     stateMachineStats stats = sm->getStatistics();
-    TEST_ASSERT_TRUE_DEBUG(stats.totalTransitions >= 1);
+    TEST_ASSERT_TRUE_DEBUG(stats.totalTransitions > 0);
 #endif
 
     delete sm;

@@ -18,11 +18,7 @@ void setup() __attribute__((weak));
 void loop() __attribute__((weak));
 
 void setup() {
-    Serial.begin(115200);
-    while(!Serial) {
-        delay(100);
-    }
-    Serial.flush();
+    ENHANCED_UNITY_INIT_SERIAL();
     delay(5000);
 
 #ifdef ARDUINO

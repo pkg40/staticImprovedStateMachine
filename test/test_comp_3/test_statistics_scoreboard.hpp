@@ -129,7 +129,7 @@ void test_060_performance_timing() {
         }
     }
     uint32_t elapsed = micros() - start;
-    TEST_ASSERT_TRUE_DEBUG(elapsed < 100000);
+    TEST_ASSERT_LESS_THAN_DEBUG(100000, elapsed);
     ENHANCED_UNITY_END_TEST_METHOD();
 }
 
@@ -166,9 +166,9 @@ void test_062_scoreboard_state_correlation() {
     uint32_t score1_after = sm->getScoreboard(0);
     uint32_t score2_after = sm->getScoreboard(0);
     uint32_t score3_after = sm->getScoreboard(0);
-    TEST_ASSERT_TRUE_DEBUG(score1_after > score1_before);
-    TEST_ASSERT_TRUE_DEBUG(score2_after > score2_before);
-    TEST_ASSERT_TRUE_DEBUG(score3_after > score3_before);
+    TEST_ASSERT_GREATER_THAN_UINT32_DEBUG(score1_before, score1_after);
+    TEST_ASSERT_GREATER_THAN_UINT32_DEBUG(score2_before, score2_after);
+    TEST_ASSERT_GREATER_THAN_UINT32_DEBUG(score3_before, score3_after);
     ENHANCED_UNITY_END_TEST_METHOD();
 }
 
@@ -200,14 +200,16 @@ void test_064_scoreboard_persistence() {
     uint32_t score1=0;
     uint32_t score2=0;
     uint32_t score3=0;
+
+    // Fill in the transition table to count up on e1 and down on e2
     for (uint8_t i = 0; i<31; i++) {
         validationResult result1 = sm->addTransition(
-            stateTransition(i,0,1,i+1,0,nullptr), 
+            stateTransition(i,DONT_CARE_BUTTON,1,i+1,0,nullptr), 
             ("test_064: transition1-" + std::to_string(i)).c_str()
         );
         TEST_ASSERT_EQUAL_UINT8_DEBUG((i < DONT_CARE_PAGE ? VALID : INVALID_PAGE_ID), result1);
         validationResult result2 = sm->addTransition(
-            stateTransition(31-i,0,2,31-i-1,0,nullptr),  // Changed fromButton from 0 to 1 to avoid conflicts
+            stateTransition(31-i,DONT_CARE_BUTTON,2,31-i-1,2,nullptr),  // Changed fromButton from 0 to 1 to avoid conflicts
             ("test_064: transition2-" + std::to_string(i)).c_str()
         );
         TEST_ASSERT_EQUAL_UINT8_DEBUG((i < DONT_CARE_PAGE ? VALID : INVALID_PAGE_ID), result2);
@@ -218,9 +220,17 @@ void test_064_scoreboard_persistence() {
             sm->printLastErrorDetails();  // Shows full error context automatically
         }
     }
-    sm->clearScoreboard();
+    sm->initializeState(0);
+//    sm->clearTransitions();
+//    sm->addTransition(stateTransition(0,0,0,0,1,nullptr));
+//    sm->clearScoreboard();
+    stateMachineStats statsBefore1 = sm->getStatistics();
     for (uint8_t i = 0; i<31; i++) {
-//        uint32_t tmp = sm->processEvent(1);
+        sm->processEvent(1); // Page should count up on e1
+        TEST_ASSERT_EQUAL_UINT8_DEBUG(i+1, sm->getCurrentPage());
+        stateMachineStats statsNow1 = sm->getStatistics();
+//        TEST_ASSERT_EQUAL_UINT32_DEBUG(statsBefore1.totalTransitions + (i + 1), statsNow1.totalTransitions);
+        TEST_ASSERT_EQUAL_UINT32_DEBUG(i+1, statsNow1.stateChanges);
         tmpScoreBoard1=tmpScoreBoard1<<1 | 2;
         if(sm->getDebugMode()) Serial.printf("test_064: tmpScoreBoard1=%08x, sm->getScoreboard(0)=%08x\n", tmpScoreBoard1, sm->getScoreboard(0));
         TEST_ASSERT_EQUAL_UINT32_DEBUG(tmpScoreBoard1, sm->getScoreboard(0));
@@ -231,8 +241,14 @@ void test_064_scoreboard_persistence() {
     TEST_ASSERT_EQUAL_UINT32_DEBUG(0, score3);
 
     sm->clearScoreboard();
+    stateMachineStats statsBefore2 = sm->getStatistics();
     for (uint8_t i = 0; i<31; i++) {
         sm->processEvent(2);
+        // Page should remain count down
+        TEST_ASSERT_EQUAL_UINT8_DEBUG(30-i, sm->getCurrentPage());
+        stateMachineStats statsNow2 = sm->getStatistics();
+//        TEST_ASSERT_EQUAL_UINT32_DEBUG(statsBefore2.totalTransitions + (i + 1), statsNow2.totalTransitions);
+        TEST_ASSERT_EQUAL_UINT32_DEBUG(i+32, statsNow2.stateChanges);
         tmpScoreBoard2=tmpScoreBoard2>>1 | 0x40000000;
         if(sm->getDebugMode()) Serial.printf("test_064: tmpScoreBoard2=%08x, sm->getScoreboard(0)=%08x\n", tmpScoreBoard2, sm->getScoreboard(0));
         TEST_ASSERT_EQUAL_UINT32_DEBUG(tmpScoreBoard2, sm->getScoreboard(0));
@@ -259,9 +275,9 @@ void test_065_performance_stress() {
         }
     }
     uint32_t elapsed = millis() - startTime;
-    TEST_ASSERT_TRUE_DEBUG(elapsed < 500);
+    TEST_ASSERT_LESS_THAN_DEBUG(500, elapsed);
     stateMachineStats stats = sm->getStatistics();
-    TEST_ASSERT_TRUE_DEBUG(stats.totalTransitions >= 1000);
+    TEST_ASSERT_TRUE_DEBUG(stats.totalTransitions > 999);
     ENHANCED_UNITY_END_TEST_METHOD();
 }
 
@@ -280,7 +296,7 @@ void test_066_scoreboard_concurrent_updates() {
         sm->processEvent(3);
     }
     uint32_t finalScore = sm->getScoreboard(0);
-    TEST_ASSERT_TRUE_DEBUG(finalScore >= 2); // Bit 1 should be set (value 2)
+    TEST_ASSERT_TRUE_DEBUG(finalScore > 1); // Bit 1 should be set (value 2)
     ENHANCED_UNITY_END_TEST_METHOD();
 }
 
@@ -308,7 +324,7 @@ void test_068_scoreboard_array_bounds() {
         TEST_ASSERT_EQUAL_UINT32_DEBUG(i * 100, sm->getScoreboard(i));
     }
     uint32_t score = sm->getScoreboard(10);
-    TEST_ASSERT_TRUE_DEBUG(score == 0);
+    TEST_ASSERT_EQUAL_UINT32_DEBUG(0, score);
     ENHANCED_UNITY_END_TEST_METHOD();
 }
 
@@ -321,8 +337,8 @@ void test_069_statistics_timing_accuracy() {
     sm->processEvent(1);
     uint32_t elapsed = micros() - startTime;
     stateMachineStats after = sm->getStatistics();
-    TEST_ASSERT_TRUE_DEBUG(after.totalTransitions == before.totalTransitions + 1);
-    TEST_ASSERT_TRUE_DEBUG(elapsed < 10000);
+    TEST_ASSERT_EQUAL_UINT32_DEBUG(before.totalTransitions + 1, after.totalTransitions);
+    TEST_ASSERT_LESS_THAN_DEBUG(10000, elapsed);
     ENHANCED_UNITY_END_TEST_METHOD();
 }
 
@@ -336,7 +352,7 @@ void test_070_scoreboard_incremental_updates() {
         sm->processEvent(1);
     }
     uint32_t finalScore = sm->getScoreboard(0);
-    TEST_ASSERT_TRUE_DEBUG(finalScore > initialScore);
+    TEST_ASSERT_GREATER_THAN_UINT32_DEBUG(initialScore, finalScore);
     ENHANCED_UNITY_END_TEST_METHOD();
 }
 
@@ -353,9 +369,9 @@ void test_071_statistics_overflow_protection() {
         }
     }
     stateMachineStats stats = sm->getStatistics();
-    TEST_ASSERT_TRUE_DEBUG(stats.totalTransitions >= 10000);
-    TEST_ASSERT_TRUE_DEBUG(stats.stateChanges >= 10000);
-    TEST_ASSERT_TRUE_DEBUG(stats.totalTransitions < 0xFFFFFFFF);
+    TEST_ASSERT_TRUE_DEBUG(stats.totalTransitions > 9999);
+    TEST_ASSERT_TRUE_DEBUG(stats.stateChanges > 9999);
+    TEST_ASSERT_LESS_THAN_DEBUG(0xFFFFFFFF, stats.totalTransitions);
     ENHANCED_UNITY_END_TEST_METHOD();
 }
 

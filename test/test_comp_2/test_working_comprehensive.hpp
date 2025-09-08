@@ -70,7 +70,7 @@ void test_005_wildcard_transitions() {
 
 void test_006_boundary_states() {
     ENHANCED_UNITY_START_TEST_METHOD("test_006_boundary_states", "test_working_comprehensive.hpp", __LINE__);
-    sm->setDebugMode(true);
+    sm->setDebugMode(false);
     sm->initializeState(0);
     TEST_ASSERT_EQUAL_UINT8_DEBUG(0, sm->getPage());
     sm->initializeState(DONT_CARE_PAGE);
@@ -168,7 +168,7 @@ void test_012_circular_states() {
 void test_013_performance_validation() {
     ENHANCED_UNITY_START_TEST_METHOD("test_013_performance_validation", "test_working_comprehensive.hpp", __LINE__);
     sm->initializeState(1);
-    for (int i = 1; i <= 20; i++) {
+    for (int i = 1; i < 21; i++) {
         sm->addTransition(stateTransition(i,0,1,(i % 20) + 1,0,nullptr));
     }
     uint32_t startTime = micros();

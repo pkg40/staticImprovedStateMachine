@@ -82,7 +82,7 @@ void test_005_wildcard_transitions() {
     // Add some states first
     sm->addState(stateDefinition(1, "State1", "State 1"));
     sm->addState(stateDefinition(42, "State42", "State 42"));
-    sm->addState(stateDefinition(100, "State100", "State 100")); // Use 100 instead of 255
+    sm->addState(stateDefinition(DONT_CARE_PAGE-10, "State100", "State 100")); // Use 100 instead of 255
     
     // Wildcard state transition (from any state to 100)
     sm->addTransition(stateTransition(DONT_CARE, 99, 100));
@@ -102,10 +102,10 @@ void test_006_boundary_states() {
     sm->setInitialState(0);
     TEST_ASSERT_EQUAL_UINT8(0, sm->getCurrentStateId());
     
-    sm->setInitialState(255);
-    TEST_ASSERT_EQUAL_UINT8(255, sm->getCurrentStateId());
+    sm->setInitialState(DONT_CARE_PAGE);
+    TEST_ASSERT_EQUAL_UINT8(DONT_CARE_PAGE, sm->getCurrentStateId());
     
-    sm->addTransition(stateTransition(255, 1, 0));
+    sm->addTransition(stateTransition(DONT_CARE_PAGE, 1, 0));
     sm->processEvent(1);
     TEST_ASSERT_EQUAL_UINT8(0, sm->getCurrentStateId());
 }
@@ -218,7 +218,7 @@ void test_013_performance_validation() {
     sm->setInitialState(1);
     
     // Add many transitions
-    for (int i = 1; i <= 20; i++) {
+    for (int i = 1; i < 21; i++) {
         sm->addTransition(stateTransition(i, 1, (i % 20) + 1));
     }
     

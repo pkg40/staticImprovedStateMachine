@@ -1,5 +1,6 @@
 // Simple master test runner that orchestrates test suites
 #include "../test_common.hpp"
+#include "../enhanced_unity.hpp"
 
 // Include only non-conflicting test suite headers
 #include "../test_basic/test_basic_functionality.hpp"
@@ -14,6 +15,9 @@
 
 // Define the shared test state machine used by all tests
 improvedStateMachine* sm = nullptr;
+
+// Define the serial initialization flag
+bool _serialInitialized = false;
 
 // Define the enhanced Unity failure counter and assertion counter
 int _enhancedUnityAssertionCount = 0;
@@ -41,6 +45,7 @@ struct TestSuite {
     int testCount;
     int failureCount;
     bool enabled;
+    const char* testFileName;
 };
 
 // Stack trace test function to help debug crashes
@@ -71,45 +76,44 @@ void register_stack_trace_test() {
 
 // Define all test suites (only non-conflicting ones)
 TestSuite testSuites[] = {
- //   {"Basic Functionality", register_basic_tests, 0, 0, true},
- //   {"Comprehensive 1", register_comprehensive_1_tests, 0, 0, true},
- //   {"Working Comprehensive", register_working_comprehensive_tests, 0, 0, true},
- //   {"Statistics & Scoreboard", register_statistics_scoreboard_tests, 0, 0, true},
- //   {"Random Coverage", register_random_coverage_tests, 0, 0, true},
- //   {"Final Validation", register_final_validation_tests, 0, 0, true},
-    {"Safety Tests", register_safety_tests, 0, 0, true}
+    {"Basic Tests", register_basic_tests, 0, 0, true, "test_basic_functionality.hpp"},
+    {"Comprehensive Tests 1", register_comprehensive_1_tests, 0, 0, true, "test_comprehensive_1.hpp"},
+    {"Comprehensive Tests 2", register_working_comprehensive_tests, 0, 0, true, "test_working_comprehensive.hpp"},
+    {"Comprehensive Tests 3", register_statistics_scoreboard_tests, 0, 0, true, "test_statistics_scoreboard.hpp"},
+    {"Comprehensive Tests 4", register_random_coverage_tests, 0, 0, true, "test_random_coverage.hpp"},
+    {"Comprehensive Tests 5", register_final_validation_tests, 0, 0, true, "test_final_validation.hpp"},
+    {"Safety Tests", register_safety_tests, 0, 0, true, "test_safety.hpp"}
 };
 
 const int NUM_TEST_SUITES = sizeof(testSuites) / sizeof(testSuites[0]);
+
 
 // Unity lifecycle hooks
 void setUp() {
     delete sm;
     sm = new improvedStateMachine();
+    sm->setDebugMode(false);
 }
 
 void tearDown() {
+    sm->setDebugMode(false);
     delete sm;
     sm = nullptr;
 }
 
 void setup() {
-    Serial.begin(115200);
-    while(!Serial) {
-        delay(100);
-    }
-    Serial.flush();
+    ENHANCED_UNITY_INIT_SERIAL();
     delay(5000);
 
     // Fresh state machine before Unity begins
     delete sm;
     sm = new improvedStateMachine();
 
-    printf("\n");
+//    printf("\n");
     printf("========================================\n");
     printf("    MASTER TEST SUITE EXECUTION\n");
     printf("========================================\n");
-    printf("\n");
+//    printf("\n");
 
     int totalTests = 0;
     int totalFailures = 0;
@@ -121,32 +125,44 @@ void setup() {
             continue;
         }
         
-        printf("\n--- Running Test Suite: %s ---\n", testSuites[i].name);
+        /*!SECTION
+        printf("\n");
+        printf("=======================================================\n");
+        printf("--- Running Test Suite: %s ---\n", testSuites[i].name);
+        printf("=======================================================\n");
+        printf("\n");
+        */
 #ifdef USE_BASELINE_UNITY
         UNITY_BEGIN();
         testSuites[i].registerFunction();
         UNITY_END();
 #else
-        ENHANCED_UNITY_START_TEST_FILE("test_safety.hpp");
+        ENHANCED_UNITY_START_TEST_FILE(testSuites[i].name, testSuites[i].testFileName);
         testSuites[i].registerFunction();
-//        ENHANCED_UNITY_FINAL_SUMMARY();
-        ENHANCED_UNITY_END_TEST_FILE("test_safety.hpp");
+        ENHANCED_UNITY_END_TEST_FILE(testSuites[i].name, testSuites[i].testFileName);
 #endif
         
         // For now, just report that the suite ran
-        printf("Suite %s: Completed\n", testSuites[i].name);
+       /*!SECTION
+        printf("\n");
+        printf("=======================================================\n");
+        printf("--- Completed Test Suite: %s ---\n", testSuites[i].name);
+        printf("=======================================================\n");
+        printf("\n");
+       */ 
     }
     
     // Print comprehensive summary
-    printf("\n");
-    printf("========================================\n");
-    printf("         COMPREHENSIVE SUMMARY\n");
-    printf("========================================\n");
-    printf("Total Test Suites: %d\n", NUM_TEST_SUITES);
-    printf("All test suites completed execution\n");
-    printf("========================================\n");
+    ENHANCED_UNITY_FINAL_SUMMARY();
+    
+    // UnityEnd() will now call our custom termination function
+//    UnityEnd();
+    UnityPrint("Tests");
+    UnityPrint("Failures");
+    UnityPrint("Ignored");
+    UnityPrint("OK");
+    UNITY_PRINT_EOL();
 }
 
 void loop() {
-    // No-op: tests execute in setup()
 }

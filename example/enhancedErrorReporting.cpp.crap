@@ -28,7 +28,7 @@ void demonstrateEnhancedErrorReporting() {
     
     transitionErrorContext errorContext;
     result = sm.addTransition(
-        stateTransition(0, 0, 1, 255, 0, nullptr),  // Invalid toPage (255)
+        stateTransition(0, 0, 1, DONT_CARE_PAGE, 0, nullptr),  // Invalid toPage (255)
         "navigation_setup",
         errorContext
     );
