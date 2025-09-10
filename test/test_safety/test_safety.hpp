@@ -487,7 +487,7 @@ void test_enhanced_page_validation() {
     
     // Test invalid menu template
     pageDefinition invalidMenu(1, "ValidName", "Valid Display");
-    invalidMenu.menu.templateType = static_cast<menuTemplate>(DONT_CARE_PAGE); // Invalid template
+    invalidMenu.templateType = static_cast<menuTemplate>(DONT_CARE_PAGE); // Invalid template
     result = sm->validatePage(invalidMenu);
     TEST_ASSERT_EQUAL_INT_DEBUG(static_cast<int>(validationResult::INVALID_MENU_TEMPLATE), static_cast<int>(result));
     

@@ -531,7 +531,7 @@ void improvedStateMachine::dumpStateTable() const {
 #ifdef ARDUINO
   Serial.println("\n--- STATES ---");
   for (size_t i = 0; i < _stateCount; i++) {
-    Serial.printf("State %d: %s\n", _states[i].id, _states[i].name);
+    Serial.printf("State %d: %s\n", _states[i].id, _states[i].shortName);
   }
 
 
@@ -1062,7 +1062,7 @@ validationResult improvedStateMachine::validatePage(const pageDefinition& page, 
   }
   
   // Check page name validity
-  if (!page.name || strlen(page.name) == 0 || strlen(page.name) >= sizeof(page.name)) {
+  if (!page.shortName || strlen(page.shortName) == 0 || strlen(page.shortName) >= sizeof(page.shortName)) {
     if (verbose && _debugModeVerbose) {
       Serial.printf("ERROR: Invalid page name for page %d\n", page.id);
     }
@@ -1070,7 +1070,7 @@ validationResult improvedStateMachine::validatePage(const pageDefinition& page, 
   }
   
   // Check display name validity
-  if (!page.displayName || strlen(page.displayName) == 0 || strlen(page.displayName) >= sizeof(page.displayName)) {
+  if (!page.longName || strlen(page.longName) == 0 || strlen(page.longName) >= sizeof(page.longName)) {
     if (verbose && _debugModeVerbose) {
       Serial.printf("ERROR: Invalid display name for page %d\n", page.id);
     }
@@ -1078,10 +1078,10 @@ validationResult improvedStateMachine::validatePage(const pageDefinition& page, 
   }
   
   // Check menu template validity
-  if (static_cast<uint8_t>(page.menu.templateType) >= static_cast<uint8_t>(menuTemplate::MAX_NUMBER_OF_BUTTONS)) {
+  if (static_cast<uint8_t>(page.templateType) >= static_cast<uint8_t>(menuTemplate::MAX_NUMBER_OF_BUTTONS)) {
     if (verbose && _debugModeVerbose) {
       Serial.printf("ERROR: Invalid menu template %d for page %d\n", 
-                   static_cast<int>(page.menu.templateType), page.id);
+                    static_cast<int>(page.templateType), page.id);
     }
     return INVALID_MENU_TEMPLATE;
   }
@@ -1236,9 +1236,9 @@ void improvedStateMachine::printLastPageErrorDetails() const {
 void improvedStateMachine::printPageError(const pageDefinition& page) const {
   Serial.println("=== PAGE ERROR ===");
   Serial.printf("Page ID: %d\n", page.id);
-  Serial.printf("Page Name: %s\n", page.name);
-  Serial.printf("Display Name: %s\n", page.displayName);
-  Serial.printf("Menu Template: %d\n", static_cast<int>(page.menu.templateType));
+  Serial.printf("Page Name: %s\n", page.shortName);
+  Serial.printf("Display Name: %s\n", page.longName);
+  Serial.printf("Menu Template: %d\n", static_cast<int>(page.templateType));
   Serial.println("==================");
 }
 
@@ -1255,17 +1255,17 @@ void improvedStateMachine::printPageError(const pageErrorContext& error) const {
   
   Serial.println("Failed Page Details:");
   Serial.printf("  ID: %d\n", error.failedPage.id);
-  Serial.printf("  Name: %s\n", error.failedPage.name);
-  Serial.printf("  Display Name: %s\n", error.failedPage.displayName);
-  Serial.printf("  Menu Template: %d\n", static_cast<int>(error.failedPage.menu.templateType));
+  Serial.printf("  Name: %s\n", error.failedPage.shortName);
+  Serial.printf("  Display Name: %s\n", error.failedPage.longName);
+  Serial.printf("  Menu Template: %d\n", static_cast<int>(error.failedPage.templateType));
   
   // For duplicate pages, show the conflicting page details
   if (error.errorCode == DUPLICATE_PAGE && error.conflictingPageIndex > 0) {
     Serial.println("\nConflicts with existing page (index " + String(error.conflictingPageIndex) + "):");
     Serial.printf("  ID: %d\n", error.conflictingPage.id);
-    Serial.printf("  Name: %s\n", error.conflictingPage.name);
-    Serial.printf("  Display Name: %s\n", error.conflictingPage.displayName);
-    Serial.printf("  Menu Template: %d\n", static_cast<int>(error.conflictingPage.menu.templateType));
+    Serial.printf("  Name: %s\n", error.conflictingPage.shortName);
+    Serial.printf("  Display Name: %s\n", error.conflictingPage.longName);
+    Serial.printf("  Menu Template: %d\n", static_cast<int>(error.conflictingPage.templateType));
   }
   
   if (error.timestamp > 0) {
@@ -1281,20 +1281,135 @@ void improvedStateMachine::printDuplicatePageError(const pageDefinition& newPage
   Serial.println("=== DUPLICATE PAGE ERROR ===");
   Serial.println("New page (rejected):");
   Serial.printf("  ID: %d\n", newPage.id);
-  Serial.printf("  Name: %s\n", newPage.name);
-  Serial.printf("  Display Name: %s\n", newPage.displayName);
-  Serial.printf("  Menu Template: %d\n", static_cast<int>(newPage.menu.templateType));
+  Serial.printf("  Name: %s\n", newPage.shortName);
+  Serial.printf("  Display Name: %s\n", newPage.longName);
+  Serial.printf("  Menu Template: %d\n", static_cast<int>(newPage.templateType));
   
   Serial.println("\nConflicts with existing page (index " + String(existingIndex) + "):");
   Serial.printf("  ID: %d\n", existingPage.id);
-  Serial.printf("  Name: %s\n", existingPage.name);
-  Serial.printf("  Display Name: %s\n", existingPage.displayName);
-  Serial.printf("  Menu Template: %d\n", static_cast<int>(existingPage.menu.templateType));
+  Serial.printf("  Name: %s\n", existingPage.shortName);
+  Serial.printf("  Display Name: %s\n", existingPage.longName);
+  Serial.printf("  Menu Template: %d\n", static_cast<int>(existingPage.templateType));
   
   Serial.println("\nConflict Analysis:");
   Serial.printf("  - Both pages have the same ID (%d)\n", newPage.id);
   Serial.println("  - Page IDs must be unique");
   
   Serial.println("=== END DUPLICATE PAGE ERROR ===");
+}
+
+// Button config key getters and setters
+String improvedStateMachine::getButtonConfigKey(pageID pageId, buttonID buttonId) const {
+    const pageDefinition* page = getState(pageId);
+    if (!page || buttonId >= static_cast<buttonID>(menuTemplate::MAX_NUMBER_OF_BUTTONS)) {
+        return String("");
+    }
+    return page->buttons[buttonId].storage.first;
+}
+
+String improvedStateMachine::getButtonConfigValue(pageID pageId, buttonID buttonId) const {
+    const pageDefinition* page = getState(pageId);
+    if (!page || buttonId >= static_cast<buttonID>(menuTemplate::MAX_NUMBER_OF_BUTTONS)) {
+        return String("");
+    }
+    return page->buttons[buttonId].storage.second;
+}
+
+void improvedStateMachine::setButtonConfigKey(pageID pageId, buttonID buttonId, const String& key) {
+    const pageDefinition* page = getState(pageId);
+    if (!page || buttonId >= static_cast<buttonID>(menuTemplate::MAX_NUMBER_OF_BUTTONS)) {
+        return;
+    }
+    // Find the page in the states array and modify it
+    for (size_t i = 0; i < _stateCount; i++) {
+        if (_states[i].id == pageId) {
+            _states[i].buttons[buttonId].storage.first = key;
+            break;
+        }
+    }
+}
+
+void improvedStateMachine::setButtonConfigValue(pageID pageId, buttonID buttonId, const String& value) {
+    const pageDefinition* page = getState(pageId);
+    if (!page || buttonId >= static_cast<buttonID>(menuTemplate::MAX_NUMBER_OF_BUTTONS)) {
+        return;
+    }
+    // Find the page in the states array and modify it
+    for (size_t i = 0; i < _stateCount; i++) {
+        if (_states[i].id == pageId) {
+            _states[i].buttons[buttonId].storage.second = value;
+            break;
+        }
+    }
+}
+
+void improvedStateMachine::setButtonConfigPair(pageID pageId, buttonID buttonId, const String& key, const String& value) {
+    const pageDefinition* page = getState(pageId);
+    if (!page || buttonId >= static_cast<buttonID>(menuTemplate::MAX_NUMBER_OF_BUTTONS)) {
+        return;
+    }
+    // Find the page in the states array and modify it
+    for (size_t i = 0; i < _stateCount; i++) {
+        if (_states[i].id == pageId) {
+            _states[i].buttons[buttonId].storage = std::make_pair(key, value);
+            break;
+        }
+    }
+}
+
+std::pair<String, String> improvedStateMachine::getButtonConfigPair(pageID pageId, buttonID buttonId) const {
+    const pageDefinition* page = getState(pageId);
+    if (!page || buttonId >= static_cast<buttonID>(menuTemplate::MAX_NUMBER_OF_BUTTONS)) {
+        return std::make_pair(String(""), String(""));
+    }
+    return page->buttons[buttonId].storage;
+}
+
+// Button label getters and setters
+const char* improvedStateMachine::getButtonLabel(pageID pageId, buttonID buttonId) const {
+    const pageDefinition* page = getState(pageId);
+    if (!page || buttonId >= static_cast<buttonID>(menuTemplate::MAX_NUMBER_OF_BUTTONS)) {
+        return "";
+    }
+    return page->buttons[buttonId].label;
+}
+
+void improvedStateMachine::setButtonLabel(pageID pageId, buttonID buttonId, const char* label) {
+    const pageDefinition* page = getState(pageId);
+    if (!page || buttonId >= static_cast<buttonID>(menuTemplate::MAX_NUMBER_OF_BUTTONS)) {
+        return;
+    }
+    // Find the page in the states array and modify it
+    for (size_t i = 0; i < _stateCount; i++) {
+        if (_states[i].id == pageId) {
+            strncpy(_states[i].buttons[buttonId].label, label ? label : "", BUTTON_STRING_LENGTH - 1);
+            _states[i].buttons[buttonId].label[BUTTON_STRING_LENGTH - 1] = '\0';
+            break;
+        }
+    }
+}
+
+// Button EEPROM key getters and setters
+const eepromKey& improvedStateMachine::getButtonEepromKey(pageID pageId, buttonID buttonId) const {
+    static const eepromKey emptyKey;
+    const pageDefinition* page = getState(pageId);
+    if (!page || buttonId >= static_cast<buttonID>(menuTemplate::MAX_NUMBER_OF_BUTTONS)) {
+        return emptyKey;
+    }
+    return page->buttons[buttonId].eepromKeyData;
+}
+
+void improvedStateMachine::setButtonEepromKey(pageID pageId, buttonID buttonId, const eepromKey& key) {
+    const pageDefinition* page = getState(pageId);
+    if (!page || buttonId >= static_cast<buttonID>(menuTemplate::MAX_NUMBER_OF_BUTTONS)) {
+        return;
+    }
+    // Find the page in the states array and modify it
+    for (size_t i = 0; i < _stateCount; i++) {
+        if (_states[i].id == pageId) {
+            _states[i].buttons[buttonId].eepromKeyData = key;
+            break;
+        }
+    }
 }
 

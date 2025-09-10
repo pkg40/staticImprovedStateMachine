@@ -10,6 +10,8 @@
 #include <array>
 #include <functional>
 #include <limits>
+#include <utility>
+#include <string>
 
 #ifndef ARDUINO
 // Forward declarations for mock functions
@@ -53,6 +55,10 @@ unsigned long micros();
     #define STATEMACHINE_MAX_MENU_LABELS 8
 #endif
 
+#ifndef BUTTON_STRING_LENGTH
+    #define BUTTON_STRING_LENGTH 4
+#endif
+
 #ifndef STATEMACHINE_MAX_KEY_LENGTH
     #define STATEMACHINE_MAX_KEY_LENGTH 12
 #endif
@@ -79,11 +85,11 @@ unsigned long micros();
     #define DESCRIPTION_BUFFER_SIZE 12
 #endif
 
-enum class debugFlag_t {
-    VERBOSE = 0,
-    SHOW_PASS = 1,
-    ALT_UNITY = 2
-};
+//enum class debugFlag_t {
+//    VERBOSE = 0,
+//    SHOW_PASS = 1,
+//    ALT_UNITY = 2
+//};
 
 // Validation results
 enum validationResult {
@@ -217,6 +223,19 @@ struct transitionErrorContext {
           conflictingTransition(conflicting), conflictingTransitionIndex(conflictingIndex) {}
 };
 
+// Button values structure - groups all button-related data for a single button
+struct buttonValues {
+    std::pair<String, String> storage;
+    char label[BUTTON_STRING_LENGTH];
+    eepromKey eepromKeyData;
+    
+    buttonValues() {
+        storage = std::make_pair(String(""), String(""));
+        label[0] = '\0';
+        eepromKeyData = eepromKey();
+    }
+};
+
 // Static storage menu definition (without pageID since it's embedded in page)
 struct menuDefinition {
     menuTemplate templateType;
@@ -251,38 +270,44 @@ struct menuDefinition {
     }
 };
 
-// Static storage page definition with embedded menu
+// Static storage page definition with improved organization
 struct pageDefinition {
     pageID id;
-    char name[16];          // Fixed-size name storage
-    char displayName[16];   // Fixed-size display name storage
-    menuDefinition menu;  // Embedded menu definition
+    char shortName[16]; 
+    char longName[32]; 
+    menuTemplate templateType;
+    buttonValues buttons[static_cast<size_t>(menuTemplate::MAX_NUMBER_OF_BUTTONS)];
     
-    // Constructor with optional menu (for backward compatibility)
-    pageDefinition(pageID pID, const char* pageName, const char* display, 
-                        const void* menuPtr = nullptr)
-        : id(pID), menu() {
-        strncpy(name, pageName ? pageName : "", sizeof(name) - 1);
-        name[sizeof(name) - 1] = '\0';
-        strncpy(displayName, display ? display : pageName ? pageName : "", sizeof(displayName) - 1);
-        displayName[sizeof(displayName) - 1] = '\0';
-        // menuPtr is ignored - use default menu
+    // Constructor with page info and template type
+    pageDefinition(pageID pID, const char* shortNm, const char* longNm, 
+                        menuTemplate templ = menuTemplate::ONE_X_ONE)
+        : id(pID), templateType(templ) {
+        strncpy(shortName, shortNm ? shortNm : "", sizeof(shortName) - 1);
+        shortName[sizeof(shortName) - 1] = '\0';
+        strncpy(longName, longNm ? longNm : shortNm ? shortNm : "", sizeof(longName) - 1);
+        longName[sizeof(longName) - 1] = '\0';
+        
+        // Initialize button values (buttonValues constructor handles initialization)
     }
     
-    // Constructor with menu
+    // Backward compatibility constructor for tests (with explicit void* parameter)
     pageDefinition(pageID pID, const char* pageName, const char* display, 
-                        const menuDefinition& menuDef)
-        : id(pID), menu(menuDef) {
-        strncpy(name, pageName ? pageName : "", sizeof(name) - 1);
-        name[sizeof(name) - 1] = '\0';
-        strncpy(displayName, display ? display : pageName ? pageName : "", sizeof(displayName) - 1);
-        displayName[sizeof(displayName) - 1] = '\0';
+                        const void* menuPtr)
+        : id(pID), templateType(menuTemplate::ONE_X_ONE) {
+        strncpy(shortName, pageName ? pageName : "", sizeof(shortName) - 1);
+        shortName[sizeof(shortName) - 1] = '\0';
+        strncpy(longName, display ? display : pageName ? pageName : "", sizeof(longName) - 1);
+        longName[sizeof(longName) - 1] = '\0';
+        
+        // Initialize button values (buttonValues constructor handles initialization)
     }
     
     // Default constructor
-    pageDefinition() : id(0), menu() {
-        name[0] = '\0';
-        displayName[0] = '\0';
+    pageDefinition() : id(0), templateType(menuTemplate::ONE_X_ONE) {
+        shortName[0] = '\0';
+        longName[0] = '\0';
+        
+        // Initialize button values (buttonValues constructor handles initialization)
     }
 };
 
@@ -425,6 +450,22 @@ public:
 
     // State lookup
     const pageDefinition* getState(pageID id) const;
+    
+    // Button config key getters and setters
+    String getButtonConfigKey(pageID pageId, buttonID buttonId) const;
+    String getButtonConfigValue(pageID pageId, buttonID buttonId) const;
+    void setButtonConfigKey(pageID pageId, buttonID buttonId, const String& key);
+    void setButtonConfigValue(pageID pageId, buttonID buttonId, const String& value);
+    void setButtonConfigPair(pageID pageId, buttonID buttonId, const String& key, const String& value);
+    std::pair<String, String> getButtonConfigPair(pageID pageId, buttonID buttonId) const;
+    
+    // Button label getters and setters
+    const char* getButtonLabel(pageID pageId, buttonID buttonId) const;
+    void setButtonLabel(pageID pageId, buttonID buttonId, const char* label);
+    
+    // Button EEPROM key getters and setters
+    const eepromKey& getButtonEepromKey(pageID pageId, buttonID buttonId) const;
+    void setButtonEepromKey(pageID pageId, buttonID buttonId, const eepromKey& key);
 
     // Debug and utilities
     void setDebugMode(bool value);
