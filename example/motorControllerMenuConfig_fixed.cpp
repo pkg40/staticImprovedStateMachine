@@ -66,3 +66,4 @@ void MotorControllerMenuConfig::setupMenuSystem(improvedStateMachine* sm) {
     // Set initial state
     sm->setState(MENU_MAIN);
 }
+

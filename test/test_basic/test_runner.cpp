@@ -42,3 +42,4 @@ void setup() {
 void loop() {
     // No-op: tests execute in setup()
 }
+

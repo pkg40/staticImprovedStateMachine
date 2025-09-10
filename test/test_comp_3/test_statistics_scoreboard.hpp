@@ -3,7 +3,7 @@
 #include <Arduino.h>
 #endif
 #include "../test_common.hpp"
-#include "../enhanced_unity.hpp"
+#include <enhanced_unity.hpp>
 
 // STATISTICS AND SCOREBOARD TESTS
 // All test functions use extern improvedStateMachine* sm from test_common.hpp
@@ -146,8 +146,8 @@ void test_061_statistics_consistency() {
         }
     }
     stateMachineStats stats = sm->getStatistics();
-    TEST_ASSERT_TRUE_DEBUG(stats.stateChanges <= stats.totalTransitions);
-    TEST_ASSERT_TRUE_DEBUG(stats.actionExecutions <= stats.totalTransitions);
+    TEST_ASSERT_LE_UINT32_DEBUG(stats.totalTransitions, stats.stateChanges);
+    TEST_ASSERT_LE_UINT32_DEBUG(stats.totalTransitions, stats.actionExecutions);
     ENHANCED_UNITY_END_TEST_METHOD();
 }
 
@@ -223,8 +223,8 @@ void test_064_scoreboard_persistence() {
     sm->initializeState(0);
 //    sm->clearTransitions();
 //    sm->addTransition(stateTransition(0,0,0,0,1,nullptr));
-//    sm->clearScoreboard();
-    stateMachineStats statsBefore1 = sm->getStatistics();
+//    sm->clearScoreboard();getStatistics
+//    stateMachineStats statsBefore1 = sm->();
     for (uint8_t i = 0; i<31; i++) {
         sm->processEvent(1); // Page should count up on e1
         TEST_ASSERT_EQUAL_UINT8_DEBUG(i+1, sm->getCurrentPage());
@@ -241,7 +241,7 @@ void test_064_scoreboard_persistence() {
     TEST_ASSERT_EQUAL_UINT32_DEBUG(0, score3);
 
     sm->clearScoreboard();
-    stateMachineStats statsBefore2 = sm->getStatistics();
+//    stateMachineStats statsBefore2 = sm->getStatistics();
     for (uint8_t i = 0; i<31; i++) {
         sm->processEvent(2);
         // Page should remain count down
@@ -277,7 +277,7 @@ void test_065_performance_stress() {
     uint32_t elapsed = millis() - startTime;
     TEST_ASSERT_LESS_THAN_DEBUG(500, elapsed);
     stateMachineStats stats = sm->getStatistics();
-    TEST_ASSERT_TRUE_DEBUG(stats.totalTransitions > 999);
+    TEST_ASSERT_GE_UINT32_DEBUG(1000, stats.totalTransitions);
     ENHANCED_UNITY_END_TEST_METHOD();
 }
 
@@ -296,7 +296,7 @@ void test_066_scoreboard_concurrent_updates() {
         sm->processEvent(3);
     }
     uint32_t finalScore = sm->getScoreboard(0);
-    TEST_ASSERT_TRUE_DEBUG(finalScore > 1); // Bit 1 should be set (value 2)
+    TEST_ASSERT_GE_UINT32_DEBUG(2, finalScore); // Bit 1 should be set (value 2)
     ENHANCED_UNITY_END_TEST_METHOD();
 }
 
@@ -369,9 +369,9 @@ void test_071_statistics_overflow_protection() {
         }
     }
     stateMachineStats stats = sm->getStatistics();
-    TEST_ASSERT_TRUE_DEBUG(stats.totalTransitions > 9999);
-    TEST_ASSERT_TRUE_DEBUG(stats.stateChanges > 9999);
-    TEST_ASSERT_LESS_THAN_DEBUG(0xFFFFFFFF, stats.totalTransitions);
+    TEST_ASSERT_GE_UINT32_DEBUG(10000, stats.totalTransitions);
+    TEST_ASSERT_GE_UINT32_DEBUG(10000, stats.stateChanges);
+    TEST_ASSERT_LESS_THAN_UINT32_DEBUG(0xFFFFFFFF, stats.totalTransitions);
     ENHANCED_UNITY_END_TEST_METHOD();
 }
 
@@ -526,3 +526,4 @@ inline void register_statistics_scoreboard_tests() {
     // Enhanced Unity demo tests
 
 }
+

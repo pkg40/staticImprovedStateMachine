@@ -4,7 +4,7 @@
 
 #define BUILDING_TEST_RUNNER_BUNDLE 1
 #include "../test_common.hpp"
-#include "../enhanced_unity.hpp"
+#include <enhanced_unity.hpp>
 
 // External declaration for enhanced Unity failure counter
 extern int _enhancedUnityFailureCount;
@@ -135,8 +135,8 @@ void test_080_fuzz_event_processing() {
         
         // State should toggle between 1 and 2
         if (sm->getDebugMode()) printf("Fuzzing event: %d, before: %d, after: %d\n", event, beforePage, afterPage);
-        TEST_ASSERT_TRUE(afterPage == 1 || afterPage == 2);
-        TEST_ASSERT_NOT_EQUAL(beforePage, afterPage);
+        TEST_ASSERT_TRUE_DEBUG(afterPage == 1 || afterPage == 2);
+        TEST_ASSERT_NOT_EQUAL_DEBUG(beforePage, afterPage);
     }
     sm->setDebugMode(false);
 }
@@ -160,7 +160,7 @@ void test_081_random_boundary_testing() {
         sm->processEvent(event);
         
         uint8_t currentState = sm->getCurrentPage();
-        TEST_ASSERT_TRUE(currentState < DONT_CARE_PAGE); // Should be valid
+        TEST_ASSERT_LESS_THAN_DEBUG(DONT_CARE_PAGE, currentState); // Should be valid
     }
 }
 
@@ -184,7 +184,8 @@ void test_082_random_complex_graphs() {
         sm->processEvent(event);
         uint8_t afterState = sm->getCurrentPage();
         
-        TEST_ASSERT_TRUE(afterState > 0 && afterState <= numNodes);
+        TEST_ASSERT_GREATER_THAN_UINT32_DEBUG(0, afterState);
+        TEST_ASSERT_LE_UINT32_DEBUG(numNodes, afterState);
     }
 }
 
@@ -213,11 +214,12 @@ void test_083_random_stress_testing() {
         
         // Verify we're still in valid state
         uint8_t newState = sm->getCurrentPage();
-        TEST_ASSERT_TRUE(newState > 0 && newState < 5);
+        TEST_ASSERT_GREATER_THAN_UINT32_DEBUG(0, newState);
+        TEST_ASSERT_LESS_THAN_DEBUG(5, newState);
     }
     
     uint32_t elapsed = millis() - startTime;
-    TEST_ASSERT_TRUE(elapsed < 1000); // Should complete within 1 second
+    TEST_ASSERT_LESS_THAN_DEBUG(1000, elapsed); // Should complete within 1 second
 }
 
 void test_084_random_validation_scenarios() {
@@ -251,7 +253,7 @@ void test_085_random_scoreboard_stress() {
         // Occasionally read it back
         if (i % 10 == 0) {
             uint32_t retrieved = sm->getScoreboard(stateIndex);
-            TEST_ASSERT_EQUAL_UINT32(score, retrieved);
+            TEST_ASSERT_EQUAL_UINT32_DEBUG(score, retrieved);
         }
     }
 }
@@ -283,7 +285,7 @@ void test_086_random_mixed_operations() {
         
         // Verify state machine is still consistent
         uint8_t currentState = sm->getCurrentPage();
-        TEST_ASSERT_TRUE(currentState < DONT_CARE_PAGE);
+        TEST_ASSERT_LESS_THAN_DEBUG(DONT_CARE_PAGE, currentState);
     }
 }
 
@@ -307,7 +309,7 @@ void test_087_random_edge_cases() {
         sm->processEvent(getRandomEvent());
         
         uint8_t finalState = sm->getCurrentPage();
-        TEST_ASSERT_TRUE(finalState < DONT_CARE_PAGE);
+        TEST_ASSERT_LESS_THAN_DEBUG(DONT_CARE_PAGE, finalState);
     }
 }
 
@@ -329,7 +331,7 @@ void test_088_random_performance_validation() {
     uint32_t elapsed = micros() - start;
     
     // Should complete within reasonable time
-    TEST_ASSERT_TRUE(elapsed < 50000); // Less than 50ms
+    TEST_ASSERT_LESS_THAN_DEBUG(50000, elapsed); // Less than 50ms
 }
 
 void test_089_random_statistics_validation() {
@@ -353,8 +355,8 @@ void test_089_random_statistics_validation() {
     stateMachineStats after = sm->getStatistics();
     
     // Verify statistics make sense
-    TEST_ASSERT_TRUE(after.totalTransitions > before.totalTransitions + 49);
-    TEST_ASSERT_TRUE(after.stateChanges > before.stateChanges-1);
+    TEST_ASSERT_GREATER_THAN_UINT32_DEBUG(before.totalTransitions + 49, after.totalTransitions);
+    TEST_ASSERT_GE_UINT32_DEBUG(before.stateChanges, after.stateChanges);
 }
 
 void test_090_random_comprehensive_coverage() {
@@ -388,12 +390,12 @@ void test_090_random_comprehensive_coverage() {
         
         // Verify final state is valid
         uint8_t finalState = sm->getCurrentPage();
-        TEST_ASSERT_TRUE(finalState < DONT_CARE_PAGE);
+        TEST_ASSERT_LESS_THAN_DEBUG(DONT_CARE_PAGE, finalState);
         
         // Verify statistics are reasonable
         stateMachineStats stats = sm->getStatistics();
-        TEST_ASSERT_TRUE(stats.totalTransitions < DONT_CARE_PAGE-10);
-        TEST_ASSERT_TRUE(stats.stateChanges <= stats.totalTransitions);
+        TEST_ASSERT_LESS_THAN_DEBUG(DONT_CARE_PAGE-10, stats.totalTransitions);
+        TEST_ASSERT_LE_UINT32_DEBUG(stats.totalTransitions, stats.stateChanges);
     }
 }
 
@@ -411,7 +413,7 @@ void test_091_random_memory_safety() {
         sm->processEvent(getRandomEvent());
         
         uint8_t state = sm->getCurrentPage();
-        TEST_ASSERT_TRUE(state < DONT_CARE_PAGE);
+        TEST_ASSERT_LESS_THAN_DEBUG(DONT_CARE_PAGE, state);
     }
 }
 
@@ -442,7 +444,8 @@ void test_092_random_concurrency_simulation() {
         
         // Verify consistency
         uint8_t state = sm->getCurrentPage();
-        TEST_ASSERT_TRUE(state > 0 && state < 4);
+        TEST_ASSERT_GREATER_THAN_UINT32_DEBUG(0, state);
+        TEST_ASSERT_LESS_THAN_DEBUG(4, state);
     }
 }
 
@@ -460,11 +463,11 @@ void test_093_random_error_injection() {
         uint8_t afterState = sm->getCurrentPage();
         
         // Verify state machine remains consistent
-        TEST_ASSERT_TRUE(afterState == 1 || afterState == 2);
+        TEST_ASSERT_TRUE_DEBUG(afterState == 1 || afterState == 2);
         
         // Valid transitions should work
         if (event == 1 && beforeState == 1) {
-            TEST_ASSERT_EQUAL_UINT8(2, afterState);
+            TEST_ASSERT_EQUAL_UINT8_DEBUG(2, afterState);
         }
     }
 }
@@ -488,14 +491,14 @@ void test_094_random_pattern_detection() {
             sm->processEvent(1);
             uint8_t after = sm->getCurrentPage();
             
-            TEST_ASSERT_NOT_EQUAL(before, after);
+            TEST_ASSERT_NOT_EQUAL_DEBUG(before, after);
         } else {
             // Should stay in same state
             uint8_t before = sm->getCurrentPage();
             sm->processEvent(pattern);
             uint8_t after = sm->getCurrentPage();
             
-            TEST_ASSERT_EQUAL_UINT8(before, after);
+            TEST_ASSERT_EQUAL_UINT8_DEBUG(before, after);
         }
     }
 }
@@ -544,10 +547,10 @@ void test_095_random_robustness_verification() {
         
         // Final validation
         uint8_t finalState = sm->getCurrentPage();
-        TEST_ASSERT_TRUE(finalState < numPages + 10);
+        TEST_ASSERT_LESS_THAN_DEBUG(numPages + 10, finalState);
         
         stateMachineStats stats = sm->getStatistics();
-        TEST_ASSERT_TRUE(stats.totalTransitions < 1000);
+        TEST_ASSERT_LESS_THAN_DEBUG(1000, stats.totalTransitions);
     }
 }
 
@@ -575,3 +578,4 @@ void register_random_coverage_tests() {
     RUN_TEST_DEBUG(test_095_random_robustness_verification);
 }
 #endif
+

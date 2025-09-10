@@ -4,7 +4,7 @@
 
 #define BUILDING_TEST_RUNNER_BUNDLE 1
 #include "../test_common.hpp"
-#include "../enhanced_unity.hpp"
+#include <enhanced_unity.hpp>
 
 // External declaration for enhanced Unity failure counter
 extern int _enhancedUnityFailureCount;
@@ -112,7 +112,7 @@ void test_099_event_storm_handling() {
     uint32_t elapsed = millis() - startTime;
     
     // Should handle event storm efficiently
-    TEST_ASSERT_TRUE_DEBUG(elapsed < FINAL_TEST_TIME_LIMIT_MS); // Less than 2 seconds
+    TEST_ASSERT_LESS_THAN_DEBUG(FINAL_TEST_TIME_LIMIT_MS, elapsed); // Less than 2 seconds
     
     stateMachineStats stats = sm->getStatistics();
     TEST_ASSERT_EQUAL_UINT32_DEBUG(FINAL_TEST_FUZZ_ITERATIONS, stats.totalTransitions);
@@ -240,7 +240,7 @@ void test_104_state_machine_cloning_behavior() {
     sm->processEvent(1);
     sm->processEvent(2);
     
-    stateMachineStats originalStats = sm->getStatistics();
+//    stateMachineStats originalStats = sm->getStatistics();
     uint8_t originalState = sm->getCurrentPage();
     uint32_t originalScore0 = sm->getScoreboard(0);
     uint32_t originalScore1 = sm->getScoreboard(1);
@@ -371,3 +371,4 @@ void register_final_validation_tests() {
 }
 
 #endif // BUILDING_TEST_RUNNER_BUNDLE
+

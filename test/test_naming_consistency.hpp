@@ -4,7 +4,7 @@
 
 #define BUILDING_TEST_RUNNER_BUNDLE 1
 #include "../test_common.hpp"
-#include "../enhanced_unity.hpp"
+#include <enhanced_unity.hpp>
 
 // External declaration for enhanced Unity failure counter
 extern int _enhancedUnityFailureCount;
@@ -68,7 +68,7 @@ void test_naming_consistency_advanced() {
     // Verify scoreboard updates work (camelCase methods)
 #if STATEMACHINE_STATISTICS_ENABLED
     stateMachineStats stats = sm->getStatistics();
-    TEST_ASSERT_TRUE_DEBUG(stats.totalTransitions > 0);
+    TEST_ASSERT_GREATER_THAN_UINT32_DEBUG(0, stats.totalTransitions);
 #endif
 
     delete sm;
@@ -103,3 +103,4 @@ void register_naming_consistency_tests() {
 }
 
 #endif // BUILDING_TEST_RUNNER_BUNDLE
+

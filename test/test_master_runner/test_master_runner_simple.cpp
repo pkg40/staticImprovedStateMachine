@@ -1,6 +1,7 @@
 // Simple master test runner that orchestrates test suites
 #include "../test_common.hpp"
-#include "../enhanced_unity.hpp"
+#include <enhanced_unity.hpp>
+extern "C" void enhancedUnityLinkAnchor();
 
 // Include only non-conflicting test suite headers
 #include "../test_basic/test_basic_functionality.hpp"
@@ -16,27 +17,7 @@
 // Define the shared test state machine used by all tests
 improvedStateMachine* sm = nullptr;
 
-// Define the serial initialization flag
-bool _serialInitialized = false;
-
-// Define the enhanced Unity failure counter and assertion counter
-int _enhancedUnityAssertionCount = 0;
-int _enhancedUnityAssertionFailureCount = 0;
-int _enhancedUnityAssertionFileCount = 0;
-int _enhancedUnityAssertionFileFailureCount = 0;
-int _enhancedUnityAssertionTotalCount = 0;
-int _enhancedUnityAssertionTotalFailureCount = 0;
-
-int _enhancedUnityMethodCount = 0;
-int _enhancedUnityMethodFailureCount = 0;
-int _enhancedUnityMethodFileCount = 0;
-int _enhancedUnityMethodFileFailureCount = 0;
-int _enhancedUnityMethodTotalCount = 0;
-int _enhancedUnityMethodTotalFailureCount = 0;
-
-int _enhancedUnityTestCount = 0;
-int _enhancedUnityTestFailureCount = 0;
-int _enhancedUnityFailureCount = 0;
+// Globals now defined by enhancedUnity library
 
 // Test suite tracking
 struct TestSuite {
@@ -103,6 +84,8 @@ void tearDown() {
 
 void setup() {
     ENHANCED_UNITY_INIT_SERIAL();
+    // Ensure enhancedUnity library object is linked
+    enhancedUnityLinkAnchor();
     delay(5000);
 
     // Fresh state machine before Unity begins
@@ -115,8 +98,8 @@ void setup() {
     printf("========================================\n");
 //    printf("\n");
 
-    int totalTests = 0;
-    int totalFailures = 0;
+//    int totalTests = 0;
+//    int totalFailures = 0;
     
     // Run each enabled test suite
     for (int i = 0; i < NUM_TEST_SUITES; i++) {
@@ -166,3 +149,4 @@ void setup() {
 
 void loop() {
 }
+

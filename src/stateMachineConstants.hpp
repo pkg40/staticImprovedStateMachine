@@ -137,3 +137,4 @@ constexpr uint8_t SAFETY_LEVEL_CRITICAL = 2;
 constexpr uint8_t SAFETY_LEVEL_EMERGENCY = 3;
 
 } // namespace StateMachineConstants
+

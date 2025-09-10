@@ -23,7 +23,7 @@ unsigned long micros();
 #endif
 
 #ifndef STATEMACHINE_MAX_PAGES
-#define STATEMACHINE_MAX_PAGES 255
+#define STATEMACHINE_MAX_PAGES 250
 #define DONT_CARE_PAGE STATEMACHINE_MAX_PAGES
 #endif
 
@@ -495,3 +495,4 @@ public:
     void printDuplicatePageError(const pageDefinition& newPage, const pageDefinition& existingPage, 
                                 size_t existingIndex) const;
 };
+

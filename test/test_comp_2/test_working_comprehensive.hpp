@@ -3,7 +3,7 @@
 #include <Arduino.h>
 #endif
 #include "../test_common.hpp"
-#include "../enhanced_unity.hpp"
+#include <enhanced_unity.hpp>
 
 // External declaration for enhanced Unity failure counter
 extern int _enhancedUnityFailureCount;
@@ -176,7 +176,7 @@ void test_013_performance_validation() {
         sm->processEvent(1);
     }
     uint32_t elapsed = micros() - startTime;
-    TEST_ASSERT_TRUE_DEBUG(elapsed < 10000);
+    TEST_ASSERT_LESS_THAN_DEBUG(10000, elapsed);
     ENHANCED_UNITY_END_TEST_METHOD();
 }
 
@@ -228,3 +228,4 @@ inline void register_working_comprehensive_tests() {
     RUN_TEST_DEBUG(test_014_memory_safety);
     RUN_TEST_DEBUG(test_015_comprehensive_integration);
 }
+

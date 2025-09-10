@@ -1,7 +1,7 @@
 // Test runner for naming consistency tests
 #include "../test_common.hpp"
 #include "test_naming_consistency.hpp"
-#include "../enhanced_unity.hpp"
+#include <enhanced_unity.hpp>"
 
 // Define the shared test state machine used by all tests
 improvedStateMachine* sm = nullptr;
@@ -52,3 +52,4 @@ void setup() {
 void loop() {
     // No-op: tests execute in setup()
 }
+

@@ -3,7 +3,7 @@
 #endif
 #include <unity.h>
 #include "../src/improvedStateMachine.hpp"
-#include "../enhanced_unity.hpp"
+#include <enhanced_unity.hpp>"
 
 extern improvedStateMachine* sm;
 
@@ -325,3 +325,4 @@ void register_menu_visualizer_tests() {
     RUN_TEST(test_menu_visualization_comprehensive);
     RUN_TEST(test_menu_structure_dump);
 }
+

@@ -5,24 +5,7 @@
 // Define the shared test state machine used by all tests
 improvedStateMachine* sm = nullptr;
 
-// Define the enhanced Unity failure counter and assertion counter
-int _enhancedUnityAssertionCount = 0;
-int _enhancedUnityAssertionFailureCount = 0;
-int _enhancedUnityAssertionFileCount = 0;
-int _enhancedUnityAssertionFileFailureCount = 0;
-int _enhancedUnityAssertionTotalCount = 0;
-int _enhancedUnityAssertionTotalFailureCount = 0;
-
-int _enhancedUnityMethodCount = 0;
-int _enhancedUnityMethodFailureCount = 0;
-int _enhancedUnityMethodTotalCount = 0;
-int _enhancedUnityMethodTotalFailureCount = 0;
-int _enhancedUnityMethodFileCount = 0;
-int _enhancedUnityMethodFileFailureCount = 0;
-
-int _enhancedUnityTestCount = 0;
-int _enhancedUnityTestFailureCount = 0;
-int _enhancedUnityFailureCount = 0;
+// Enhanced unity globals provided by library
 
 // Unity lifecycle hooks
 void setUp() {
@@ -58,3 +41,4 @@ void setup() {
 void loop() {
     // No-op: tests execute in setup()
 }
+

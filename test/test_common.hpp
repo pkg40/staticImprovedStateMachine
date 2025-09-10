@@ -29,3 +29,4 @@ static inline uint8_t getRandomEvent() { return static_cast<uint8_t>(getRandomNu
 // Shared Unity setUp/tearDown will be defined in the runner TU
 void setUp();
 void tearDown();
+

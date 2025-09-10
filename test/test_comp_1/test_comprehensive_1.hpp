@@ -4,7 +4,7 @@
 
 #define BUILDING_TEST_RUNNER_BUNDLE 1
 #include "../test_common.hpp"
-#include "../enhanced_unity.hpp"
+#include <enhanced_unity.hpp>
 
 // External declaration for enhanced Unity failure counter
 extern int _enhancedUnityFailureCount;
@@ -438,7 +438,7 @@ void test_026_performance_timing() {
   uint32_t elapsed = micros() - start;
 
   // Should complete 100 transitions in reasonable time
-  TEST_ASSERT_TRUE_DEBUG(elapsed < PERFORMANCE_TIME_LIMIT_US); // Less than 100ms
+  TEST_ASSERT_LESS_THAN_DEBUG(PERFORMANCE_TIME_LIMIT_US, elapsed); // Less than 100ms
   testStats.passedTests++;
   ENHANCED_UNITY_END_TEST_METHOD();
 }
@@ -451,7 +451,7 @@ void test_027_statistics_reset() {
 
   // Verify we have some stats
   stateMachineStats stats = sm->getStatistics();
-  TEST_ASSERT_TRUE_DEBUG(stats.totalTransitions > 0);
+  TEST_ASSERT_GREATER_THAN_UINT32_DEBUG(0, stats.totalTransitions);
   testStats.passedTests++;
   ENHANCED_UNITY_END_TEST_METHOD();
 }
@@ -466,7 +466,7 @@ void test_028_action_execution_stats() {
   sm->processEvent(1);
   stateMachineStats after = sm->getStatistics();
 
-  TEST_ASSERT_TRUE_DEBUG(after.actionExecutions+1 > before.actionExecutions);
+  TEST_ASSERT_GREATER_THAN_UINT32_DEBUG(before.actionExecutions, after.actionExecutions+0);
   testStats.passedTests++;
   ENHANCED_UNITY_END_TEST_METHOD();
 }
@@ -690,7 +690,7 @@ void test_040_performance_stress() {
   uint32_t elapsed = micros() - start;
 
   // Should handle 1000 transitions efficiently
-  TEST_ASSERT_TRUE_DEBUG(elapsed < 500000); // Less than 500ms
+  TEST_ASSERT_LESS_THAN_DEBUG(500000, elapsed); // Less than 500ms
   testStats.stressTests++;
   testStats.passedTests++;
   ENHANCED_UNITY_END_TEST_METHOD();
@@ -914,7 +914,7 @@ void generateRandomTests() {
       afterState = sm->getCurrentPage();
 
       // Basic sanity checks
-      TEST_ASSERT_TRUE_DEBUG(afterState < 20); // Reasonable state range
+      TEST_ASSERT_LESS_THAN_DEBUG(20, afterState); // Reasonable state range
     }
 
     testStats.randomTests++;
@@ -1094,3 +1094,4 @@ void register_comprehensive_1_tests() {
   RUN_TEST_DEBUG(test_state_event_id_validation);
 }
 #endif
+

@@ -1,6 +1,6 @@
 // Test conditional compilation flags
 #include <unity.h>
-#include "../enhanced_unity.hpp"
+#include <enhanced_unity.hpp>
 
 // External declaration for enhanced Unity failure counter
 extern int _enhancedUnityFailureCount;
@@ -33,3 +33,4 @@ void test_conditional_compilation_flags(void) {
     #endif
     ENHANCED_UNITY_END_TEST_METHOD();
 }
+

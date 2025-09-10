@@ -105,3 +105,4 @@ void compareMemoryUsage() {
     Serial.println("Static version: Zero heap usage after init");
     Serial.println("Dynamic version: Heap usage grows with transitions/states");
 }
+

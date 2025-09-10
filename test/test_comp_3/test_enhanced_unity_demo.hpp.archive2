@@ -1,0 +1,51 @@
+#pragma once
+#include "../enhanced_unity.hpp"
+
+void test_enhanced_unity_demo() {
+    ENHANCED_UNITY_INIT();
+    
+    printf("=== Enhanced Unity Demo Test ===\n");
+    
+    // Test passing assertions
+    TEST_ASSERT_TRUE_DEBUG(1 == 1);
+    TEST_ASSERT_FALSE_DEBUG(1 == 2);
+    TEST_ASSERT_EQUAL_INT_DEBUG(5, 5);
+    TEST_ASSERT_EQUAL_UINT32_DEBUG(0x1234, 0x1234);
+    TEST_ASSERT_EQUAL_UINT8_DEBUG(42, 42);
+    TEST_ASSERT_GREATER_THAN_DEBUG(5, 10);
+    TEST_ASSERT_LESS_THAN_DEBUG(15, 10);
+    
+    // Test failing assertions (these will record failures but continue)
+    TEST_ASSERT_TRUE_DEBUG(1 == 2);
+    TEST_ASSERT_FALSE_DEBUG(1 == 1);
+    TEST_ASSERT_EQUAL_INT_DEBUG(5, 10);
+    TEST_ASSERT_EQUAL_UINT32_DEBUG(0x1234, 0x5678);
+    TEST_ASSERT_EQUAL_UINT8_DEBUG(42, 99);
+    TEST_ASSERT_GREATER_THAN_DEBUG(15, 10);
+    TEST_ASSERT_LESS_THAN_DEBUG(5, 10);
+    
+    // Report results
+    ENHANCED_UNITY_REPORT();
+}
+
+void test_enhanced_unity_failure_demo() {
+    ENHANCED_UNITY_INIT();
+    
+    printf("=== Enhanced Unity Failure Demo Test ===\n");
+    
+    // This test will have several failures but continue running
+    TEST_ASSERT_TRUE_DEBUG(1 == 2);  // This will fail
+    TEST_ASSERT_EQUAL_INT_DEBUG(10, 20);  // This will fail
+    TEST_ASSERT_EQUAL_UINT32_DEBUG(0x1000, 0x2000);  // This will fail
+    
+    // Some passing assertions
+    TEST_ASSERT_TRUE_DEBUG(2 == 2);
+    TEST_ASSERT_EQUAL_INT_DEBUG(30, 30);
+    
+    // More failures
+    TEST_ASSERT_GREATER_THAN_DEBUG(5, 3);  // This will fail
+    TEST_ASSERT_LESS_THAN_DEBUG(8, 12);  // This will fail
+    
+    // Report results
+    ENHANCED_UNITY_REPORT();
+}

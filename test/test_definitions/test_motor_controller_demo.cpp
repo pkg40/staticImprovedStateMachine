@@ -4,7 +4,7 @@
 #include <unity.h>
 #include "../src/improvedStateMachine.hpp"
 #include "../example/motorControllerMenuConfig_fixed.hpp"
-#include "../enhanced_unity.hpp"
+#include <enhanced_unity.hpp>"
 
 // Use shared ImprovedStateMachine from runner
 extern improvedStateMachine* sm;
@@ -243,3 +243,4 @@ void register_motor_demo_tests() {
     RUN_TEST_DEBUG(test_motor_controller_visualization);
     RUN_TEST_DEBUG(test_menu_breadth_exploration);
 }
+

@@ -4,7 +4,7 @@
 
 #define BUILDING_TEST_RUNNER_BUNDLE 1
 #include "../test_common.hpp"
-#include "../enhanced_unity.hpp"
+#include <enhanced_unity.hpp>
 
 // External declaration for enhanced Unity failure counter
 extern int _enhancedUnityFailureCount;
@@ -398,3 +398,4 @@ void register_basic_tests() {
 }
 
 #endif // BUILDING_TEST_RUNNER_BUNDLE
+

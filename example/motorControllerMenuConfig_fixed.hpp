@@ -36,3 +36,4 @@ public:
 // Alias for backward compatibility
 typedef uint8_t EventId;
 typedef uint8_t StateId;
+

@@ -1,6 +1,6 @@
 #include <unity.h>
 #include "../src/improvedStateMachine.hpp"
-#include "../enhanced_unity.hpp"
+#include <enhanced_unity.hpp>"
 
 // Shared state machine instance for all tests
 improvedStateMachine* sm = nullptr;
@@ -48,3 +48,4 @@ void setup() {
 void loop() {
     // Empty loop for Arduino
 }
+
