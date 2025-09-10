@@ -46,25 +46,23 @@ See `example/interfaceExample.cpp` and `example/basicUsage.cpp` for complete exa
 
 - `src/iStateMachine.hpp/.cpp`: **NEW** - abstract interface
 - `src/improvedStateMachine.hpp/.cpp`: Core implementation
-- `docs/`: Feature and validation guides
-- `example/`: Usage examples including interface demonstration
+- `docs/`
+- `example/`
 
 ## Features
 
 ### Core Interface (`iStateMachine`)
-- ✅ **Core-agnostic** - works with any Arduino core
-- ✅ **Clean API** - simplified public interface
-- ✅ **Type safety** - strongly typed parameters
-- ✅ **Factory pattern** - easy instantiation and cleanup
-- ✅ **Validation** - comprehensive error checking
+- ✅ **API**
+- ✅ **Factory pattern**
+- ✅ **Validation**
 - ✅ **Statistics** - runtime performance tracking
 
 ### Implementation (`improvedStateMachine`)
-- ✅ **Static memory** - no dynamic allocation
-- ✅ **Deterministic** - predictable behavior
-- ✅ **C++11 compliant** - works with older compilers
-- ✅ **Comprehensive testing** - 9,200+ test assertions
-- ✅ **High performance** - 294,000+ transitions/second
+- ✅ **Static memory**
+- ✅ **Deterministic** - ambiguous state definitions/transitions flagged
+- ✅ **C++11 compliant** 
+- ✅ **Testing** - 9,200+ test assertions
+- ✅ **Performance** - 250,000+ transitions/second
 
 ## Build
 
