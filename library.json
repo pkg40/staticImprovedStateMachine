@@ -1,7 +1,7 @@
 {
-  "name": "improvedStateMachine",
-  "version": "1.0.0",
-  "description": "A robust, type-safe finite state machine library for embedded systems with extensive testing and safety features",
+  "name": "staticImprovedStateMachine",
+  "version": "2.0.0",
+  "description": "A robust, type-safe finite state machine library for embedded systems with core-agnostic interface abstraction, extensive testing and safety features",
   "keywords": [
     "state machine",
     "fsm",
@@ -11,7 +11,10 @@
     "platformio",
     "motor control",
     "ui",
-    "navigation"
+    "navigation",
+    "interface",
+    "abstraction",
+    "cross-platform"
   ],
   "repository": {
     "type": "git",
@@ -59,6 +62,13 @@
     ]
   },
   "examples": [
+    {
+      "name": "Interface Usage (Recommended)",
+      "base": "example",
+      "files": [
+        "interfaceExample.cpp"
+      ]
+    },
     {
       "name": "Basic Usage",
       "base": "example",
