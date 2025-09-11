@@ -158,3 +158,4 @@ improvedStateMachine sm;
 - **C++11**: Maintained C++11 compliance
 - **Platforms**: All existing platforms supported
 - **Arduino Cores**: ESP32, ESP8266, AVR, Native
+
